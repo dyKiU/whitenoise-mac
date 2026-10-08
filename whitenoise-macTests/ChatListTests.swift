@@ -26,6 +26,72 @@ import UserNotifications
 
 struct ChatListTests: WorkspaceTestSupport {
     @MainActor
+    @Test func nicknameUpdatesPreparedChatWithAnAvatarCacheKey() async throws {
+        let summary = desktopAccount()
+        let account = AccountItem(summary: summary)
+        let contact = String(repeating: "2", count: 64)
+        var row = chatListRow(
+            groupIdHex: "dm", title: "Alice", preview: "Hello", sender: contact, timelineAt: 1_700_000_000)
+        row.conversationKind = .direct
+        var prepared = Self.presentedChatRow(row)
+        prepared.presentation.peerId = contact
+        prepared.presentation.avatar = .remoteImage(url: "https://example.com/alice.png", cacheKey: "avatar:alice")
+        let chat = ChatItem(presented: prepared, activeAccountIdHex: account.accountIdHex)
+        let runtime = FakeMarmotRuntime(accounts: [summary])
+        runtime.presentedChatListSnapshot = PresentedChatListSnapshotFfi(
+            rows: [prepared],
+            presentationVersion: PresentationVersionFfi(accountStoreEpoch: Data(repeating: 1, count: 16), revision: 1)
+        )
+        let model = ChatListViewModel(account: account, runtime: runtime)
+        model.start()
+        defer { model.stop() }
+        let didLoad = await waitFor { model.windowSnapshot != nil && !model.presentedRows.isEmpty }
+        #expect(didLoad)
+        let state = WorkspaceState(
+            accounts: [account],
+            chatsByAccount: [account.id: [chat]],
+            clientFactory: { FakeMarmotRuntime(accounts: [summary]) }
+        )
+        state.activeAccountId = account.id
+        state.setArchivedChats([chat], forAccountId: account.id)
+        #expect(chat.avatarSeed == "avatar:alice")
+        #expect(ChatListOrdering.preservingResolvedMetadata(in: chat, from: chat).directPeerAccountIdHex == contact)
+        // The contact sheet must save against the same identity the sidebar overlay resolves.
+        let peer = try #require(chat.directPeerAccountIdHex)
+        #expect(peer == contact)
+        #expect(state.filteredChats(matching: "mum").isEmpty)
+
+        state.setContactNickname("Mum", forContactAccountIdHex: peer)
+        #expect(model.chats(view: .chats, nicknames: state.activeContactNicknames).first?.title == "Mum")
+        #expect(
+            model.chats(view: .chats, nicknames: state.activeContactNicknames, useWindow: false).first?.title == "Mum")
+        #expect(state.activeChats.first?.title == "Mum")
+        #expect(state.archivedChats.first?.title == "Mum")
+        #expect(state.filteredChats(matching: "mum").map(\.id) == ["dm"])
+        #expect(state.activeChats.first?.publishedTitle == "Alice")
+        #expect(state.activeChats.first?.avatarSeed == "avatar:alice")
+
+        state.setContactNickname("Mother", forContactAccountIdHex: peer)
+        #expect(state.activeChats.first?.title == "Mother")
+        #expect(state.archivedChats.first?.title == "Mother")
+        state.setContactNickname(nil, forContactAccountIdHex: peer)
+        #expect(model.chats(view: .chats, nicknames: state.activeContactNicknames).first?.title == "Alice")
+        #expect(state.activeChats.first?.title == "Alice")
+        #expect(state.archivedChats.first?.title == "Alice")
+        #expect(state.activeChats.first?.publishedTitle == nil)
+
+        prepared.presentation.avatar = .placeholder(stableSeed: "placeholder:alice", source: .peerFallback)
+        #expect(
+            ChatItem(presented: prepared, activeAccountIdHex: account.accountIdHex).directPeerAccountIdHex == contact)
+        prepared.presentation.peerId = nil
+        #expect(ChatItem(presented: prepared, activeAccountIdHex: account.accountIdHex).directPeerAccountIdHex == nil)
+        prepared.row.conversationKind = .group
+        prepared.row.groupName = "Book club"
+        prepared.presentation.peerId = contact
+        #expect(ChatItem(presented: prepared, activeAccountIdHex: account.accountIdHex).directPeerAccountIdHex == nil)
+    }
+
+    @MainActor
     @Test func settingANicknameRelabelsChatRowsAndTheLiveTimelineWithoutTouchingOtherRows() async throws {
         let account = desktopAccount()
         let contact = String(repeating: "2", count: 64)

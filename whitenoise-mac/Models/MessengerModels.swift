@@ -233,16 +233,9 @@ nonisolated struct ChatItem: Identifiable, Hashable {
             : L10n.string("You have been invited to a secure chat", locale: locale)
     }
 
-    /// The other party's account hex, for a direct chat whose peer has actually resolved.
-    ///
-    /// `avatarSeed` carries that hex, but falls back to the group id whenever no peer resolved —
-    /// before roster enrichment lands, and permanently for a note-to-self chat, which has no other
-    /// member. Contact affordances must key off this rather than the seed, so they never offer to
-    /// act on a group id as though it were a person.
-    var directPeerAccountIdHex: String? {
-        guard isDirect, avatarSeed != id else { return nil }
-        return avatarSeed
-    }
+    /// The resolved direct peer's identity, independent of the avatar's cache key or seed.
+    /// Contact actions and nickname updates must address the peer, not an image asset.
+    private(set) var directPeerAccountIdHex: String?
 
     /// A chat row's last-message line with the sender it is attributed to, or the line alone when
     /// nobody's name precedes it.
@@ -376,6 +369,7 @@ nonisolated struct ChatItem: Identifiable, Hashable {
         manuallyMarkedUnread: Bool = false,
         unreadMentionCount: Int = 0,
         isDirect: Bool = false,
+        directPeerAccountIdHex: String? = nil,
         isBlockedDirectPeer: Bool = false,
         hasAuthoritativeConversationKind: Bool = false,
         isAuthoritativeGroup: Bool = false,
@@ -405,6 +399,10 @@ nonisolated struct ChatItem: Identifiable, Hashable {
         self.manuallyMarkedUnread = manuallyMarkedUnread
         self.unreadMentionCount = unreadMentionCount
         self.isDirect = isDirect
+        self.directPeerAccountIdHex =
+            isDirect
+            ? directPeerAccountIdHex ?? (!hasAuthoritativeConversationKind && avatarSeed != id ? avatarSeed : nil)
+            : nil
         self.isBlockedDirectPeer = isBlockedDirectPeer
         self.hasAuthoritativeConversationKind = hasAuthoritativeConversationKind
         self.isAuthoritativeGroup = isAuthoritativeGroup
@@ -489,6 +487,7 @@ extension ChatItem {
 
         title = nickname ?? selectedTitle
         publishedTitle = nickname == nil ? nil : selectedTitle
+        directPeerAccountIdHex = isDirect ? presented.presentation.peerId : nil
         self.avatarSeed = avatarSeed
         self.pictureURL = pictureURL
         sanitizedPictureURL = RemoteImageURLPolicy.sanitizedURL(from: pictureURL)

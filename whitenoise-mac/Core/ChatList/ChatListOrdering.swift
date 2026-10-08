@@ -81,6 +81,7 @@ nonisolated enum ChatListOrdering {
             manuallyMarkedUnread: chat.manuallyMarkedUnread,
             unreadMentionCount: chat.unreadMentionCount,
             isDirect: chat.hasAuthoritativeConversationKind ? chat.isDirect : current.isDirect,
+            directPeerAccountIdHex: current.directPeerAccountIdHex,
             hasAuthoritativeConversationKind: chat.hasAuthoritativeConversationKind,
             isAuthoritativeGroup: chat.isAuthoritativeGroup,
             muted: chat.muted,

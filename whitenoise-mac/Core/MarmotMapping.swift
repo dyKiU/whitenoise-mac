@@ -244,6 +244,7 @@ extension ChatItem {
             manuallyMarkedUnread: row.manuallyMarkedUnread,
             unreadMentionCount: Int(clamping: row.unreadMentionCount),
             isDirect: isDirect,
+            directPeerAccountIdHex: peer?.accountIdHex,
             hasAuthoritativeConversationKind: row.conversationKind != .unknown,
             isAuthoritativeGroup: row.conversationKind == .group,
             muted: row.muted,
