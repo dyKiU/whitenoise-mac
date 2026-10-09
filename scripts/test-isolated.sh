@@ -21,6 +21,8 @@ if [[ -e "$result_bundle" ]]; then
   exit 1
 fi
 
+source "$repo_root/scripts/local-device-sync-settings.sh"
+
 settings=(
   -project "$repo_root/whitenoise-mac.xcodeproj"
   -scheme whitenoise-mac -configuration Debug -testPlan PR
@@ -32,6 +34,7 @@ settings=(
   WN_APP_URL_SCHEME=marmot-tests
   "TEST_HOST=$app/Contents/MacOS/White Noise Unit Host"
   CODE_SIGNING_ALLOWED=NO
+  ${device_sync_settings[@]+"${device_sync_settings[@]}"}
 )
 
 xcodebuild build-for-testing "${settings[@]}"

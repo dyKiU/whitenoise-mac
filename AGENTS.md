@@ -89,8 +89,12 @@ task-specific `WN_SYNC_DERIVED_DATA` path. App-only `WN_APP_*` settings keep the
 SwiftPM privacy resource bundle name intact. The script signs locally with the
 project's sandbox entitlements, verifies signing, and performs no installation.
 The sidecar registers `marmot-syncdev`, preserving production URL registration;
-development deep-link flow verification remains pending. Its baseline remains
-published MarmotKit 0.12.0 and does not establish experimental sync provenance.
+development deep-link flow verification remains pending. By default it uses
+published MarmotKit 0.12.0. Explicit `WN_EXPERIMENTAL_DEVICE_SYNC=1` enables the
+native device-linking runtime methods only after checking the installed local
+framework, generated Swift, source/builder identity and feature cohort. Use the
+same flag with `scripts/test-isolated.sh`; never enable it for published bindings.
+Keep fresh pairing and chat delivery acceptance separate from runtime smoke tests.
 
 For a reviewed local experimental cohort, use `scripts/sync-local-bindings.sh`
 with a clean MDK checkout/full SHA and explicit `EXPERIMENTAL_DEVICE_SYNC=1`.

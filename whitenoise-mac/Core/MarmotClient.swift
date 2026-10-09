@@ -10,6 +10,15 @@ nonisolated protocol MarmotRuntime: Sendable {
 
     func start() async throws
     func listAccounts() throws -> [AccountSummaryFfi]
+
+    #if WN_EXPERIMENTAL_DEVICE_SYNC
+        func deviceLinkingCapabilities() -> DeviceLinkingCapabilitiesFfi
+        func deviceLinkingTargets(accountRef: String) async throws -> [DeviceLinkingTargetFfi]
+        func pendingDeviceLinkingApprovals(accountRef: String) async throws -> [DeviceLinkingApproval]
+        func beginDeviceLinkingSession(accountRef: String) async throws -> DeviceLinkingSession
+        func approveDeviceLinkingSession(accountRef: String, request: Data, target: Data?) async throws
+            -> DeviceLinkingSession
+    #endif
     func npub(accountIdHex: String) -> String?
     func displayName(accountIdHex: String) -> String?
     func userProfile(accountIdHex: String) throws -> UserProfileMetadataFfi?
@@ -403,6 +412,30 @@ nonisolated final class MarmotClient: MarmotRuntime, @unchecked Sendable {
     func listAccounts() throws -> [AccountSummaryFfi] {
         try marmot.listAccounts()
     }
+
+    #if WN_EXPERIMENTAL_DEVICE_SYNC
+        func deviceLinkingCapabilities() -> DeviceLinkingCapabilitiesFfi {
+            marmot.deviceLinkingCapabilities()
+        }
+
+        func deviceLinkingTargets(accountRef: String) async throws -> [DeviceLinkingTargetFfi] {
+            try await marmot.deviceLinkingTargets(accountRef: accountRef)
+        }
+
+        func pendingDeviceLinkingApprovals(accountRef: String) async throws -> [DeviceLinkingApproval] {
+            try await marmot.pendingDeviceLinkingApprovals(accountRef: accountRef)
+        }
+
+        func beginDeviceLinkingSession(accountRef: String) async throws -> DeviceLinkingSession {
+            try await marmot.beginDeviceLinkingSession(accountRef: accountRef)
+        }
+
+        func approveDeviceLinkingSession(accountRef: String, request: Data, target: Data?) async throws
+            -> DeviceLinkingSession
+        {
+            try await marmot.approveDeviceLinkingSession(accountRef: accountRef, request: request, target: target)
+        }
+    #endif
 
     func npub(accountIdHex: String) -> String? {
         marmot.npub(accountIdHex: accountIdHex)

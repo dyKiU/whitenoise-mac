@@ -46,3 +46,40 @@ independently checked. Subsequent formatting changes only the new binary-target
 declaration; the resolved SwiftPM JSON remains identical. Two existing trailing-
 comma lint findings outside that declaration remain; no whole-file lint pass is
 claimed. This still qualifies the published-core development profile, not sync.
+
+## Experimental native runtime adoption
+
+After installing a matching experimental cohort, explicitly select its app APIs:
+
+```sh
+WN_EXPERIMENTAL_DEVICE_SYNC=1 scripts/test-isolated.sh \
+  -only-testing:'whitenoise-macTests/NativeDeviceLinkingRuntimeTests'
+WN_EXPERIMENTAL_DEVICE_SYNC=1 scripts/build-sync-development.sh
+```
+
+Both test phases receive the same Swift flag. The runner refuses a missing local
+manifest, a mismatched feature/source/builder cohort, modified generated Swift or
+a changed native archive. Default builds retain the published pin. Runtime
+methods forward the original opaque SDK sessions and approvals without adding
+application permission or synthesizing approval state.
+
+With MDK `e6b0e9c159b632b8c07eb68f12f46c3bc930699c`, the actual Mac framework
+build and validator pass. Five isolated native runtime tests pass on M1 and M5:
+verification is supported, enrollment is still not advertised, and all four
+account-dependent factories/reads retain the typed missing-account error without
+creating an identity. The M5 experimental PR suite passes1,654 tests; the final
+published default suite passes1,649. No failures or skips occur in those runs.
+The matching native archive and Swift cohort were verified before M1 adoption.
+
+Two fixture conveniences cover added draft-version and attachment-role fields
+only for the experimental test target. Local provenance is checked separately
+from the published release pin. Three initial experimental compile failures
+(draft version, attachment role, local provenance) and one stale-header cache
+failure on returning to default are retained as compile failures, not behavioral
+RED evidence. Only the two named stale FFI PCM cache files were retired.
+
+See `docs/native-device-linking-runtime-verification.json` for exact frozen input
+and log hashes. Generated local overrides and binaries are excluded from the
+commit. These checks qualify native API adoption, not fresh pairing, ordinary
+recipient admission, message delivery or history. The iOS device/simulator
+framework build remains separate and in progress at this checkpoint.
