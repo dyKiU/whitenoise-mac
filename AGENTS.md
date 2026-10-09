@@ -92,6 +92,12 @@ The sidecar registers `marmot-syncdev`, preserving production URL registration;
 development deep-link flow verification remains pending. Its baseline remains
 published MarmotKit 0.12.0 and does not establish experimental sync provenance.
 
+For a reviewed local experimental cohort, use `scripts/sync-local-bindings.sh`
+with a clean MDK checkout/full SHA and explicit `EXPERIMENTAL_DEVICE_SYNC=1`.
+Reuse `CARGO_TARGET_DIR`; do not commit local binaries or generated local binding
+overrides. Restore published bindings before integration. See
+`docs/local-marmotkit-development.md` for checks and remaining native gates.
+
 Tests write real files, so every on-disk root a test double hands out is isolated
 per test and per process by default — see `whitenoise-macTests/Support/TestStorageRoot.swift`.
 
