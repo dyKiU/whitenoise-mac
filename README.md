@@ -136,14 +136,20 @@ whitespace the install step strips.
 
 ## Testing
 
-Run the tests from Xcode (⌘U) or via `xcodebuild`:
+Run the PR unit suite in a separate host identity:
 
 ```sh
-xcodebuild test \
-  -project whitenoise-mac.xcodeproj \
-  -scheme whitenoise-mac \
-  -destination 'platform=macOS'
+scripts/test-isolated.sh
 ```
+
+The runner builds `White Noise Unit Host.app` with bundle ID
+`dev.ipf.whitenoise.mac.tests`, its own storage/Keychain profile and `marmot-tests`
+URL scheme. It verifies the host identity before running tests and unregisters
+that temporary app afterward. Choose task-specific `WN_TEST_DERIVED_DATA` and
+fresh `WN_TEST_RESULT_BUNDLE` paths when retaining evidence. Pass Xcode test
+selection arguments to the script for focused runs. `just test` uses the same
+runner and keeps the result at `TestResults.xcresult` for coverage. Running ⌘U
+under a production bundle ID uses that app's defaults domain.
 
 - `whitenoise-macTests/` — the unit-test target run by the shared scheme above.
 

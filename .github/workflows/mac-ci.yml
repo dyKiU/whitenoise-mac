@@ -99,14 +99,8 @@ jobs:
         run: |
           set -o pipefail
           rm -rf TestResults.xcresult
-          xcodebuild test \
-            -project "$PROJECT" \
-            -scheme "$SCHEME" \
-            -testPlan PR \
-            -destination "$DESTINATION" \
-            -resultBundlePath TestResults.xcresult \
-            -enableCodeCoverage YES \
-            CODE_SIGNING_ALLOWED=NO
+          WN_TEST_RESULT_BUNDLE="$PWD/TestResults.xcresult" \
+            scripts/test-isolated.sh -enableCodeCoverage YES
 
       # No `if:` on purpose. Coverage from a run whose tests failed measures a
       # partial suite, and publishing that number would quietly lower the

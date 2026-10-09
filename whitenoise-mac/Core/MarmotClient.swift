@@ -365,6 +365,7 @@ nonisolated final class MarmotClient: MarmotRuntime, @unchecked Sendable {
 
     let marmot: Marmot
     let rootPath: String
+    private let storageProfile: MarmotStorageProfile
     var storageRootPath: String { rootPath }
 
     convenience init() throws {
@@ -378,15 +379,18 @@ nonisolated final class MarmotClient: MarmotRuntime, @unchecked Sendable {
     init(
         rootPath: String,
         relayUrls: [String],
-        cursorPersistence: CursorPersistenceFfi = .advance
+        cursorPersistence: CursorPersistenceFfi = .advance,
+        storageProfile: MarmotStorageProfile = .current
     ) throws {
         self.rootPath = rootPath
+        self.storageProfile = storageProfile
         self.marmot = try Marmot.newWithConfiguration(
             rootPath: rootPath,
             relayUrls: relayUrls,
             options: MarmotOptions(
                 cursorPersistence: cursorPersistence,
                 clientName: "whitenoise",
+                secretStore: storageProfile.makeSecretStore(),
                 attachmentAcquisitionMode: .hostManaged
             )
         )
@@ -891,6 +895,9 @@ nonisolated final class MarmotClient: MarmotRuntime, @unchecked Sendable {
 
     func deleteAllLocalData() async throws {
         try await Self.deleteAllLocalData(
+            purgeAccountKeychain: {
+                try MarmotAccountKeychain.purgeAllAccountKeys(service: storageProfile.keychainService)
+            },
             shutdown: { await marmot.shutdown() },
             rootPath: rootPath
         )
@@ -1527,9 +1534,11 @@ nonisolated enum MarmotAccountKeychainPurgeError: LocalizedError, Equatable {
 }
 
 nonisolated enum MarmotAccountKeychain {
-    private static let service = "com.marmot.whitenoise"
-
     static func purgeAllAccountKeys() throws {
+        try purgeAllAccountKeys(service: MarmotStorageProfile.current.keychainService)
+    }
+
+    static func purgeAllAccountKeys(service: String) throws {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -1565,7 +1574,6 @@ enum MarmotStorageRootError: LocalizedError {
 }
 
 nonisolated enum MarmotStorageRoot {
-    private static let appSupportDirectoryName = "White Noise"
     private static let marmotDirectoryName = "Marmot"
 
     static func resolve(
@@ -1589,8 +1597,10 @@ nonisolated enum MarmotStorageRoot {
         return try resolve(baseURL: base, fileManager: fileManager)
     }
 
-    static func resolve(baseURL: URL, fileManager: FileManager = .default) throws -> String {
-        let root = storageRootURL(baseURL: baseURL)
+    static func resolve(
+        baseURL: URL, fileManager: FileManager = .default, profile: MarmotStorageProfile = .current
+    ) throws -> String {
+        let root = storageRootURL(baseURL: baseURL, profile: profile)
         var isDirectory: ObjCBool = false
 
         if fileManager.fileExists(atPath: root.path, isDirectory: &isDirectory) {
@@ -1614,12 +1624,12 @@ nonisolated enum MarmotStorageRoot {
         guard let base = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
             return L10n.string("Application Support unavailable")
         }
-        return storageRootURL(baseURL: base).path
+        return storageRootURL(baseURL: base, profile: .current).path
     }
 
-    private static func storageRootURL(baseURL: URL) -> URL {
+    private static func storageRootURL(baseURL: URL, profile: MarmotStorageProfile) -> URL {
         baseURL
-            .appendingPathComponent(appSupportDirectoryName, isDirectory: true)
+            .appendingPathComponent(profile.directoryName, isDirectory: true)
             .appendingPathComponent(marmotDirectoryName, isDirectory: true)
     }
 }

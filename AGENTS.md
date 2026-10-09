@@ -22,9 +22,8 @@ xcodebuild -scheme whitenoise-mac -configuration Debug build CODE_SIGNING_ALLOWE
 # Build the unit-test target (catches test-only breakage without running)
 xcodebuild -scheme whitenoise-mac -configuration Debug build-for-testing CODE_SIGNING_ALLOWED=NO
 
-# Run the unit tests in the PR test plan
-xcodebuild test-without-building -scheme whitenoise-mac -configuration Debug \
-  -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO
+# Run unit tests in the PR plan with an isolated host identity
+scripts/test-isolated.sh
 
 # Run UI performance tests (requires macOS UI automation permissions)
 xcodebuild test -scheme whitenoise-mac -configuration Debug -testPlan UIPerformance \
@@ -38,8 +37,7 @@ smaller focused suites, with shared fakes and helpers in
 test function, which is how you iterate without paying for the full suite:
 
 ```sh
-xcodebuild test-without-building -scheme whitenoise-mac -configuration Debug \
-  -destination 'platform=macOS,arch=arm64' -testPlan PR CODE_SIGNING_ALLOWED=NO \
+scripts/test-isolated.sh \
   -only-testing:'whitenoise-macTests/TimelineTests/someTestName()'
 ```
 
@@ -65,6 +63,34 @@ UI performance tests live in `whitenoise-macUITests/`, are isolated in the
 `-uiFixture heavy-chat` argument for deterministic chat/search/media data.
 
 ## Test isolation on disk
+
+Use `scripts/test-isolated.sh` for unit tests, including focused `-only-testing:`
+arguments. `just test` and CI call the same runner. It overrides the hardcoded
+`TEST_HOST` path and verifies `dev.ipf.whitenoise.mac.tests` before execution;
+`MarmotStorageProfile.testHost` has a separate disk root and account-ID Keychain
+service. Its product name is `White Noise Unit Host`, so coverage's test-bundle
+name filter keeps the app. Choose task-specific `WN_TEST_DERIVED_DATA` and fresh
+`WN_TEST_RESULT_BUNDLE` paths. The runner unregisters only its temporary test host
+on exit and performs no installation. Preserve production preferences when
+checking erase/reset behavior; use synthetic sentinel keys and remove them.
+Storage-root fixtures describing production paths must inject `.production`
+against their temporary support root, rather than assuming the running profile.
+
+
+The explicit development bundle `dev.ipf.whitenoise.mac.syncdev` selects
+`MarmotStorageProfile.syncDevelopment`: a separate Application Support root and
+account-ID keyed `SyncDevelopmentSecretStore`. Production keeps the platform
+default account store. Keep initialization and reset on the same captured
+profile. Keychain regressions must use unique test service names and synthetic
+credentials, with cleanup; never query production credentials.
+
+Build the separate Mac sidecar with `scripts/build-sync-development.sh` and a
+task-specific `WN_SYNC_DERIVED_DATA` path. App-only `WN_APP_*` settings keep the
+SwiftPM privacy resource bundle name intact. The script signs locally with the
+project's sandbox entitlements, verifies signing, and performs no installation.
+The sidecar registers `marmot-syncdev`, preserving production URL registration;
+development deep-link flow verification remains pending. Its baseline remains
+published MarmotKit 0.12.0 and does not establish experimental sync provenance.
 
 Tests write real files, so every on-disk root a test double hands out is isolated
 per test and per process by default — see `whitenoise-macTests/Support/TestStorageRoot.swift`.
