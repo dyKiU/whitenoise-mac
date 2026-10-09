@@ -31,3 +31,11 @@ Run `python3 -m unittest discover -s scripts/tests -v` to repeat these checks.
 These tests use synthetic native build outputs. Actual experimental artifact
 compilation, linking APIs, native pairing and message delivery require their
 separate end-to-end qualification before installation.
+
+The production sanity gate validates the resolved display name and URL scheme
+from Xcode settings, and checks SwiftPM's actual binary target against the
+published URL/checksum. On M5 the old literal-name check failed; the corrected
+gate passes with the production defaults and rejects a temporary local override
+pointing to the valid cached 0.12.0 XCFramework. The pin was restored afterward.
+Two initial refusal probes used absolute binary paths and failed Xcode package
+resolution before reaching the new guard; those are separate tooling failures.
