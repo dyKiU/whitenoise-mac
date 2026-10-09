@@ -12,9 +12,10 @@ let marmotKitBinaryURL =
 
 // Explicit local pin: keep generated Swift paired with its built binary.
 let marmotKitLocalPath: String? = nil
-let marmotKitBinaryTarget: Target = marmotKitLocalPath.map {
-    .binaryTarget(name: "MarmotKitFFI", path: $0)
-} ?? .binaryTarget(name: "MarmotKitFFI", url: marmotKitBinaryURL, checksum: marmotKitChecksum)
+let marmotKitBinaryTarget: Target =
+    marmotKitLocalPath.map {
+        .binaryTarget(name: "MarmotKitFFI", path: $0)
+    } ?? .binaryTarget(name: "MarmotKitFFI", url: marmotKitBinaryURL, checksum: marmotKitChecksum)
 
 let package = Package(
     name: "MarmotKit",

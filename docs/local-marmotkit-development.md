@@ -39,3 +39,10 @@ gate passes with the production defaults and rejects a temporary local override
 pointing to the valid cached 0.12.0 XCFramework. The pin was restored afterward.
 Two initial refusal probes used absolute binary paths and failed Xcode package
 resolution before reaching the new guard; those are separate tooling failures.
+
+The M5 full PR suite from signed `6fef644` passes all1,649 tests with zero failures
+or skips (43.344seconds in the Swift Testing summary). The actual xcresult was
+independently checked. Subsequent formatting changes only the new binary-target
+declaration; the resolved SwiftPM JSON remains identical. Two existing trailing-
+comma lint findings outside that declaration remain; no whole-file lint pass is
+claimed. This still qualifies the published-core development profile, not sync.
