@@ -10,6 +10,9 @@ nonisolated protocol MarmotRuntime: Sendable {
 
     func start() async throws
     func listAccounts() throws -> [AccountSummaryFfi]
+    func synchronizedHistoryPage(
+        accountRef: String, groupIdHex: String, afterMessageIdHex: String?, limit: UInt32
+    ) throws -> SynchronizedHistoryPage
 
     #if WN_EXPERIMENTAL_DEVICE_SYNC
         func deviceLinkingCapabilities() -> DeviceLinkingCapabilitiesFfi
@@ -414,6 +417,18 @@ nonisolated final class MarmotClient: MarmotRuntime, @unchecked Sendable {
 
     func listAccounts() throws -> [AccountSummaryFfi] {
         try marmot.listAccounts()
+    }
+
+    func synchronizedHistoryPage(
+        accountRef: String, groupIdHex: String, afterMessageIdHex: String?, limit: UInt32
+    ) throws -> SynchronizedHistoryPage {
+        #if WN_EXPERIMENTAL_DEVICE_SYNC
+            return SynchronizedHistoryPage(
+                try marmot.synchronizedHistoryPage(
+                    accountRef: accountRef, groupIdHex: groupIdHex, afterMessageIdHex: afterMessageIdHex, limit: limit))
+        #else
+            throw SynchronizedHistoryReadError.unavailable
+        #endif
     }
 
     #if WN_EXPERIMENTAL_DEVICE_SYNC

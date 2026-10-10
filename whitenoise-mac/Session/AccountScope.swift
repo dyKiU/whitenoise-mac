@@ -166,6 +166,15 @@ final class AccountScope {
     }
 
     func synchronizedHistoryModel(
+        groupIdHex: String
+    ) -> SynchronizedHistoryViewModel {
+        synchronizedHistoryModel(groupIdHex: groupIdHex) { [runtime] account, group, cursor, limit in
+            try runtime.synchronizedHistoryPage(
+                accountRef: account, groupIdHex: group, afterMessageIdHex: cursor, limit: limit)
+        }
+    }
+
+    func synchronizedHistoryModel(
         groupIdHex: String,
         read: @escaping SynchronizedHistoryViewModel.Reader
     ) -> SynchronizedHistoryViewModel {

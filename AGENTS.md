@@ -307,3 +307,10 @@ which captures the account reference and registers exact reader invalidation.
 Account replacement invalidates before teardown; releasing a chat retires its
 reader even when no live conversation has been opened. Retired scopes return
 inactive readers and must never call the injected storage read dependency.
+
+The default reader factory captures the scope's exact `MarmotRuntime`; synchronous
+history storage calls run through the model's detached task. Update protocol,
+`MarmotClient` and shared fake together. Experimental native history requires the
+matching history-capable SDK; the older SDK83 cohort cannot compile the new
+bridge with `WN_EXPERIMENTAL_DEVICE_SYNC` enabled. Published builds refuse the
+unavailable query. Mapping preserves source attestation, not live authorship.
