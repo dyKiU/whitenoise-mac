@@ -129,7 +129,9 @@ final class SessionState {
 
         /// App teardown selects the actual current scope; a background account exit cannot cancel it.
         func prepareForAccountExit(accountID: String? = nil) async throws {
-            if let accountID, accountScope?.account.id != accountID { return }
+            if let accountID, let current = accountScope, current.account.id != accountID { return }
+            // A previous failed exit already detached the scope. Its retained original
+            // cleanup must still finish before a repeat exit can reach Core.
             activationToken = UUID()
             invalidateDeviceLinking()
             let previous = accountScope

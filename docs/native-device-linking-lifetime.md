@@ -20,15 +20,17 @@ On M5 with the installed e6 SDK and dedicated MacTestIsolationM5 isolated host:
 - Original lifetime RED: 0/3, including parameterized replacement/deactivation.
 - Actual reset ordering RED: 0/1.
 - Actual reset cleanup RED: 0/1 (implicit second cancel after failure).
-- Final feature lifetime: 8/8, including real MarmotClient factory errors and
-  sign-out/removal cleanup failure controls.
+- Final feature lifetime: 9/9, including real MarmotClient factory errors and
+  sign-out/removal cleanup failure controls and repeated detached-exit refusal.
 - Affected feature tests: 16/16 (account scope4, real runtime factories5,
   existing account exit/reset7).
 - Owned Swiftformat6.2.3 and git diff checks pass.
 
 These are suite executions, not full PR qualification. A default-off affected run
 failed before tests because unchanged FakeMarmotRuntime omits e6 draftVersion.
-The feature branch does not enable enrollment or add UI. Scene background currently
+A subsequent canonical published0.12/flag0 affected run passed11/11 after retiring
+only diagnostic-named stale FFI PCM files. The e6 mixed-cohort failure is not a
+published-default failure. The feature branch does not enable enrollment or add UI. Scene background currently
 reports analytics rather than closing Core, so scene suspension is not qualified.
 
 The first Green build passed3 then crashed in ordinary Workspace bootstrap. Its
@@ -41,3 +43,12 @@ compact Git stashes. Parent build/results contains exact415-source recovery proo
 restrictive generated overrides archive and full raw logs. Four existing generated
 SDK overrides remain outside this commit. No production apps/accounts or SDK
 artifacts were changed. Full PR qualification is required before push/merge.
+
+## Detached cleanup retry follow-up
+
+An actual repeated sign-out initially bypassed retained failed cleanup after the
+first exit detached the account scope (RED0/1). The current selector distinguishes
+a different actual current account from absent scope; absent scope still retries
+the retained negative original cleanup before Core exit. The exact test source is
+preserved in named stash caf4105c and a compact verified blob. No new SDK session or
+permission is reconstructed. Final full PR gates remain pending.

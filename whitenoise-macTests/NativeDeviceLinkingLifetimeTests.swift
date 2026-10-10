@@ -308,5 +308,34 @@ import Testing
             #expect(original.cancelCount == 2)
             original.stream.deliverDelayedSnapshot()
         }
+        @Test func repeatedAccountExitCannotBypassDetachedFailedCleanup() async throws {
+            let fixture = AccountItem.samples[0]
+            let summary = AccountSummaryFfi(
+                label: fixture.accountRef, accountIdHex: fixture.accountIdHex, localSigning: true,
+                externalSigning: false, signedOut: false, running: true)
+            let runtime = FakeMarmotRuntime(accounts: [summary])
+            let workspace = WorkspaceState(clientFactory: { runtime })
+            await workspace.bootstrap()
+            let account = try #require(workspace.activeAccount)
+            let session = SessionState()
+            await session.activate(account: account, runtime: runtime, connectivityAvailable: false)
+            let original = LifetimeSession(noPointer: .init())
+            let owner = try await session.adoptDeviceLinkingFactory { _, _ in original }
+            original.setCancellationFailure(true)
+            let teardown = { try await session.prepareForAccountExit(accountID: account.id) }
+            await workspace.signOutAccount(account, beforeAccountExit: teardown)
+            #expect(runtime.signedOutAccountRefs.isEmpty)
+            #expect(session.accountScope == nil)
+            await workspace.signOutAccount(account, beforeAccountExit: teardown)
+            #expect(runtime.signedOutAccountRefs.isEmpty)
+            #expect(workspace.activeAccount?.id == account.id)
+            #expect(original.cancelCount == 2)
+            #expect(original.stream.closeCount == 1)
+            #expect(session.retiringDeviceLinkingScope === owner)
+            original.setCancellationFailure(false)
+            try await session.retryDeviceLinkingCleanup()
+            #expect(original.cancelCount == 3)
+            original.stream.deliverDelayedSnapshot()
+        }
     }
 #endif

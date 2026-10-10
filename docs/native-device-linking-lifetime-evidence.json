@@ -189,6 +189,87 @@
       "exit_code": 65,
       "seconds": 16.69,
       "log_sha256": "8d9e90d83bb4aa532c0397928b113c05aaba55bbb3a307fc100d751052abb5cf"
+    },
+    "mac-native-linking-published-default-focused-v13": {
+      "source_base": "2f8c5bf52bb77141402e0498439a65bbe475d0ca",
+      "source_inputs": 417,
+      "input_manifest_sha256": "85083e7b56f0b9d233eeeb0401a98cc2ea83cec1b99ab0bfc96356723f5d6a80",
+      "profile": "published0.12/experimentalflag0",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 0,
+      "seconds": 44.21,
+      "log_sha256": "ef16d67bd02d5fc140e5717fa23b935f9ae54e9d69ad5bdbad23d6df3ade0d4f",
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 11,
+        "passedTests": 11,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "test_failures": []
+    },
+    "mac-native-linking-repeated-exit-red-focused-v16": {
+      "source_base": "2f8c5bf52bb77141402e0498439a65bbe475d0ca",
+      "source_inputs": 417,
+      "input_manifest_sha256": "e9100ce905c333f2272099774c09a38baf7c23d2e071644c46a7b748f5c240a8",
+      "profile": "local-e6/experimentalflag1",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 65,
+      "seconds": 78.05,
+      "log_sha256": "48a20c4333d53333a9338225d911d7b4d3371ac3790a538c7a86bdc4a704b0ca",
+      "tests": {
+        "result": "Failed",
+        "totalTestCount": 1,
+        "passedTests": 0,
+        "failedTests": 1,
+        "skippedTests": 0
+      },
+      "test_failures": [
+        {
+          "failureText": "Expectation failed: runtime.signedOutAccountRefs.isEmpty\nruntime.signedOutAccountRefs \u2192 [\"jeff\"]\nisEmpty \u2192 false",
+          "targetName": "whitenoise-macTests",
+          "testIdentifier": 1,
+          "testIdentifierString": "NativeDeviceLinkingLifetimeTests/repeatedAccountExitCannotBypassDetachedFailedCleanup()",
+          "testIdentifierURL": "test://com.apple.xcode/whitenoise-mac/whitenoise-macTests/NativeDeviceLinkingLifetimeTests/repeatedAccountExitCannotBypassDetachedFailedCleanup()",
+          "testName": "repeatedAccountExitCannotBypassDetachedFailedCleanup()"
+        }
+      ]
+    },
+    "mac-native-linking-lifetime-green-focused-v17": {
+      "source_base": "2f8c5bf52bb77141402e0498439a65bbe475d0ca",
+      "source_inputs": 417,
+      "input_manifest_sha256": "538508a7228becc78f9219de635cade29f706b1a6bd9dee982496653eec25058",
+      "profile": "local-e6/experimentalflag1",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 0,
+      "seconds": 15.3,
+      "log_sha256": "1bf5dcb44e86a8b0bcd670f257ee4c932cc1d281f4f0a25a6cbc5ff879193845",
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 9,
+        "passedTests": 9,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "test_failures": []
+    },
+    "mac-native-linking-lifetime-affected-focused-v17": {
+      "source_base": "2f8c5bf52bb77141402e0498439a65bbe475d0ca",
+      "source_inputs": 417,
+      "input_manifest_sha256": "538508a7228becc78f9219de635cade29f706b1a6bd9dee982496653eec25058",
+      "profile": "local-e6/experimentalflag1",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 0,
+      "seconds": 4.42,
+      "log_sha256": "f2509a3e561e1bf1bdde91d9e83d5fa406cf2a0428bc410b820066c9644eb20d",
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 16,
+        "passedTests": 16,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "test_failures": []
     }
   },
   "limits": [
@@ -203,5 +284,6 @@
     "29507b10c6ea743abbb9e572eb8f3446ceb901fa",
     "f375d5ac90824430d733cedc33e3197c238b5fe6"
   ],
-  "crash_source": "ac186a0f16860ae25f145f071a4dd25956345ae0"
+  "crash_source": "ac186a0f16860ae25f145f071a4dd25956345ae0",
+  "repeated_exit_red_source": "caf4105cb287de55af314ac8e52a18cb540d1900"
 }
