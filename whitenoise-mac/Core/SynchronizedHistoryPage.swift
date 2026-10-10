@@ -1,6 +1,8 @@
 import Foundation
 import MarmotKit
 
+nonisolated enum SynchronizedHistoryReadError: Error { case unavailable }
+
 /// Source-attested logical history, separate from authenticated live timeline rows.
 nonisolated struct SynchronizedHistoryRecord: Sendable, Identifiable, CustomDebugStringConvertible {
     let id: String
@@ -23,3 +25,18 @@ nonisolated struct SynchronizedHistoryPage: Sendable {
     let records: [SynchronizedHistoryRecord]
     let nextMessageId: String?
 }
+
+#if WN_EXPERIMENTAL_DEVICE_SYNC
+    extension SynchronizedHistoryPage {
+        init(_ page: ArchivedHistoryPageFfi) {
+            records = page.records.map { record in
+                SynchronizedHistoryRecord(
+                    id: record.messageIdHex, authorPubkey: record.authorPubkey, createdAt: record.createdAt,
+                    expiresAt: record.expiresAt, deleted: record.deleted, content: record.content,
+                    tags: record.tags, mediaAttachments: record.mediaAttachments, transferId: record.transferId,
+                    sourceDevice: record.sourceDevice, manifestDigest: record.manifestDigest)
+            }
+            nextMessageId = page.nextMessageIdHex
+        }
+    }
+#endif

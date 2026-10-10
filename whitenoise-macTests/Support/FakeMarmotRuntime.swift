@@ -520,6 +520,23 @@ nonisolated final class FakeMarmotRuntime: MarmotRuntime, @unchecked Sendable {
     private var syncCallThreads: [String: [Bool]] = [:]
     /// Guards recorded-call state mutated by concurrent runtime calls while tests poll it mid-flight.
     private let recordedStateLock = NSLock()
+    private var historyPageHandler: (@Sendable (String, String, String?, UInt32) throws -> SynchronizedHistoryPage)?
+
+    func installSynchronizedHistoryPageHandler(
+        _ handler: @escaping @Sendable (String, String, String?, UInt32) throws -> SynchronizedHistoryPage
+    ) {
+        recordedStateLock.withLock { historyPageHandler = handler }
+    }
+
+    func synchronizedHistoryPage(
+        accountRef: String, groupIdHex: String, afterMessageIdHex: String?, limit: UInt32
+    ) throws -> SynchronizedHistoryPage {
+        recordSyncCall("synchronizedHistoryPage")
+        guard let handler = recordedStateLock.withLock({ historyPageHandler }) else {
+            throw SynchronizedHistoryReadError.unavailable
+        }
+        return try handler(accountRef, groupIdHex, afterMessageIdHex, limit)
+    }
     /// When set, `subscribeNotifications()` throws this error, simulating a background
     /// notification-listener failure for routing tests.
     var subscribeNotificationsError: Error?
