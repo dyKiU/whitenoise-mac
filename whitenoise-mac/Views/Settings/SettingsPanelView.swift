@@ -12,6 +12,9 @@ import SwiftUI
 struct SettingsPanelView: View {
     @Environment(WorkspaceState.self) private var workspace
     let model: SettingsViewModel
+    #if WN_EXPERIMENTAL_DEVICE_SYNC
+        var deviceVerificationModel: DeviceVerificationViewModel? = nil
+    #endif
 
     private var page: SettingsPage {
         if case .settings(let page) = workspace.selection { return page }
@@ -32,7 +35,11 @@ struct SettingsPanelView: View {
             case .profile:
                 ProfileSettingsView()
             case .identityKeys:
-                ProfileKeysSettingsView()
+                #if WN_EXPERIMENTAL_DEVICE_SYNC
+                    ProfileKeysSettingsView(deviceVerificationModel: deviceVerificationModel)
+                #else
+                    ProfileKeysSettingsView()
+                #endif
             case .relays:
                 RelaySettingsView(model: model.relays)
             case .keyPackages:

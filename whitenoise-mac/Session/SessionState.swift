@@ -200,7 +200,20 @@ final class SessionState {
                             throw MarmotKitError.DeviceLinkingClosed
                         }
                         try await self.cancelDeviceLinking()
-                    }
+                    },
+                    approve: { [weak self, weak scope] request, target in
+                        guard let self, let scope, self.accountScope === scope, !scope.isCancelled else {
+                            throw MarmotKitError.DeviceLinkingClosed
+                        }
+                        return try await self.approveDeviceLinkingSession(request: request, target: target)
+                    },
+                    targets: { [weak self, weak scope] in
+                        guard let self, let scope, self.accountScope === scope, !scope.isCancelled else {
+                            throw MarmotKitError.DeviceLinkingClosed
+                        }
+                        return try await scope.runtime.deviceLinkingTargets(accountRef: scope.account.accountRef)
+                    },
+                    verificationSupported: runtime.deviceLinkingCapabilities().verificationSupported
                 ))
         #endif
         scope.start(connectivityAvailable: connectivityAvailable)

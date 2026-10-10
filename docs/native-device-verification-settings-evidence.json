@@ -1,0 +1,204 @@
+{
+  "source_base": "550768143025e58a95dcc3cc44df92854e447e2c",
+  "red": {
+    "source_base": "550768143025e58a95dcc3cc44df92854e447e2c",
+    "source_inputs": 423,
+    "input_manifest_sha256": "b6610acad30d714fe23c14166f873d8a23376b9b2484ab94524c1ef56932561b",
+    "profile": "local-e6/experimentalflag1",
+    "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+    "exit_code": 65,
+    "seconds": 25.12,
+    "log_sha256": "7d908fb0a1179f291ceb4a37a9dd15e8e138c69e4ec1b43385330b3088a116fe",
+    "tests": {
+      "result": "Failed",
+      "totalTestCount": 1,
+      "passedTests": 0,
+      "failedTests": 1,
+      "skippedTests": 0
+    },
+    "test_failures": [
+      {
+        "failureText": "Caught error: .DeviceLinkingClosed",
+        "targetName": "whitenoise-macTests",
+        "testIdentifier": 1,
+        "testIdentifierString": "DeviceVerificationViewModelTests/approvalAndTransportUseOnlyOriginalOpaqueInputs()",
+        "testIdentifierURL": "test://com.apple.xcode/whitenoise-mac/whitenoise-macTests/DeviceVerificationViewModelTests/approvalAndTransportUseOnlyOriginalOpaqueInputs()",
+        "testName": "approvalAndTransportUseOnlyOriginalOpaqueInputs()"
+      }
+    ]
+  },
+  "red_source_stash": "f44cc17f9ae7541de2bb58d3e09f4d72c8d22dff",
+  "focused": {
+    "source_base": "550768143025e58a95dcc3cc44df92854e447e2c",
+    "source_inputs": 424,
+    "input_manifest_sha256": "34b71e574bcefb7be4fc3b5b4f7fd37b9ce2d259c08c746760b255fa44130748",
+    "profile": "local-e6/experimentalflag1",
+    "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+    "exit_code": 0,
+    "seconds": 29.14,
+    "log_sha256": "d736b898a74a3e95d670ca20d7f06c329b48e93115fa23ff871aafde0b7210a9",
+    "tests": {
+      "result": "Passed",
+      "totalTestCount": 27,
+      "passedTests": 27,
+      "failedTests": 0,
+      "skippedTests": 0
+    },
+    "test_failures": []
+  },
+  "experimental_full": {
+    "source_base": "550768143025e58a95dcc3cc44df92854e447e2c",
+    "source_inputs": 424,
+    "input_manifest_sha256": "7363c40f679ef7950aca23acd7ce5ddb1c0aca54835be834e6d29847d92eec2a",
+    "profile": "local-e6/experimentalflag1",
+    "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+    "exit_code": 0,
+    "seconds": 93.63,
+    "log_sha256": "894895bf6fdd139e201d4a64ad817b1993ec4e2647c1dc384f1791d91997e518",
+    "tests": {
+      "result": "Passed",
+      "totalTestCount": 1672,
+      "passedTests": 1672,
+      "failedTests": 0,
+      "skippedTests": 0
+    },
+    "test_failures": []
+  },
+  "published_full": {
+    "source_base": "550768143025e58a95dcc3cc44df92854e447e2c",
+    "source_inputs": 424,
+    "input_manifest_sha256": "0e42191f3ceac9bda92b0abef2f603c75d535bf34b32175a0488f49eb885a23f",
+    "profile": "published0.12/experimentalflag0",
+    "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+    "exit_code": 0,
+    "seconds": 91.0,
+    "log_sha256": "5848440e689cc9bd115769b6f1a3efa7348f11fa68e5ba2ecaa9255d1106237b",
+    "tests": {
+      "result": "Passed",
+      "totalTestCount": 1649,
+      "passedTests": 1649,
+      "failedTests": 0,
+      "skippedTests": 0
+    },
+    "test_failures": []
+  },
+  "zero_test_published_cache_failures": [
+    {
+      "source_base": "550768143025e58a95dcc3cc44df92854e447e2c",
+      "source_inputs": 424,
+      "input_manifest_sha256": "0e42191f3ceac9bda92b0abef2f603c75d535bf34b32175a0488f49eb885a23f",
+      "profile": "published0.12/experimentalflag0",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 65,
+      "seconds": 3.98,
+      "log_sha256": "b52b71d94e198aa29444dc0371b11f9d3798ce66fd0949b2fd8d36ff267d7cec"
+    },
+    {
+      "source_base": "550768143025e58a95dcc3cc44df92854e447e2c",
+      "source_inputs": 424,
+      "input_manifest_sha256": "0e42191f3ceac9bda92b0abef2f603c75d535bf34b32175a0488f49eb885a23f",
+      "profile": "published0.12/experimentalflag0",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 65,
+      "seconds": 9.26,
+      "log_sha256": "7ccf594a12d4a1492fe2a5d2a6ad9d44ee00e67b2f5c6eb4e6bb294c14021a59"
+    }
+  ],
+  "owned_sha256": {
+    "whitenoise-mac/Features/DeviceVerification/DeviceVerificationViewModel.swift": "3c720eb96550051b9844303d706b6c8186c35aeba2229dcbfe7503b052dd0b1a",
+    "whitenoise-mac/Session/SessionState.swift": "d0a29bef8b2374176039ac83c3718bba1c573b4238e164cbf11c9f5cf4f32718",
+    "whitenoise-mac/Views/MessengerShellView.swift": "96de246b355742654e8a18ce766d35ab555afaa3bcf432d50c47099984c1e214",
+    "whitenoise-mac/Views/Settings/ProfileKeysSettingsView.swift": "0be5c4926d75867b4f34a0c955f2c60cd90123d847abf45cb9fcd53ed067a819",
+    "whitenoise-mac/Views/Settings/SettingsPanelView.swift": "d94a5f43e93e80fd16cfecf35f66ac22515ea85b9701b1da027b440e2710d3fd",
+    "whitenoise-mac/Views/Settings/DeviceVerificationView.swift": "efad68be9d899816942f0cddc8440307bdd163478926a1769c49522802bd56fa",
+    "whitenoise-macTests/DeviceVerificationViewModelTests.swift": "174410d1b89776041704fd5c47b0154bcd6d9804123a60c19c8ba37ca79df763",
+    "whitenoise-mac/Localizable.xcstrings": "667981d24eef710464416ae2026721c6f0223d13dd56e95cef45260071126122"
+  },
+  "catalog": {
+    "original_entries_preserved": 1220,
+    "new_entries": 18,
+    "new_translations": 162,
+    "unrelated_Apple_extraction_changes_discarded": 13,
+    "final_catalog_sha256": "667981d24eef710464416ae2026721c6f0223d13dd56e95cef45260071126122",
+    "Apple_import_catalog_sha256": "90fdf24c7e40a2db71437c800d2cf1495db847bcad66e38316efc0af44f2d8fa"
+  },
+  "catalog_tool_inputs_sha256": {
+    "DeviceVerificationView-final.stringsdata": "aecf46597e4480a2401f909505ebacb7d561ea685379fda9381d7188757baf00",
+    "mac-verification-de-v2.xliff": "a1a41e3655b6b40c6b4dbd49da843da3f1758d3cf81bcee25b18aa51a01bb9bd",
+    "mac-verification-translation-imports/de.xliff": "1ae9d577761ed9cf81fb5b00d47c1e7575e37e0e6099c22fbcfcf0914991a1d7",
+    "mac-verification-translation-imports/es.xliff": "25ab91443e6f5edc581b8ebf3959e086a6485cbd6f826815f366b67f14591e8b",
+    "mac-verification-translation-imports/fr.xliff": "d072873afb173ae3ed299bfb940f0724e2947b34aaf98ac3f8c3c878871c8dbb",
+    "mac-verification-translation-imports/it.xliff": "5d9733e6e6672130b58175d908daef64d0a3011d4851672688a5170bcf20145c",
+    "mac-verification-translation-imports/pt.xliff": "94d05e0393a5ff8ee2703923364c4640c377e3db70d003be20caedba5d19b3bf",
+    "mac-verification-translation-imports/ru.xliff": "dd76ee46f317a81640546bcfc3aa1d58dfe2810fdebbffa40de5a724d0fae816",
+    "mac-verification-translation-imports/tr.xliff": "dd5551cc097798abb1fc79529b10fed644dd2c0a9489117b1e05423eee3ccd6d",
+    "mac-verification-translation-imports/zh-Hans.xliff": "41586cdb62a2da98c6fc3d1fbedda6c28b60779a3c5215ce0c202c7fd452b3b9",
+    "mac-verification-translation-imports/zh-Hant.xliff": "f8dd236032bdd1ade800725cba2ecd43f2a279054f83e9bd1b96177a412de681"
+  },
+  "catalog_imports": {
+    "imports": [
+      {
+        "language": "de",
+        "exit_code": 0,
+        "xliff_sha256": "1ae9d577761ed9cf81fb5b00d47c1e7575e37e0e6099c22fbcfcf0914991a1d7",
+        "log_sha256": "efd30df28cef917d61c73c7dc1003c68a0159313393e7c2c76ed7716d688b2c1"
+      },
+      {
+        "language": "es",
+        "exit_code": 0,
+        "xliff_sha256": "25ab91443e6f5edc581b8ebf3959e086a6485cbd6f826815f366b67f14591e8b",
+        "log_sha256": "ae5605679fa9f883d7d491f463ee03395aa9e33d2d24d57fca1ce2b6927a5d9c"
+      },
+      {
+        "language": "fr",
+        "exit_code": 0,
+        "xliff_sha256": "d072873afb173ae3ed299bfb940f0724e2947b34aaf98ac3f8c3c878871c8dbb",
+        "log_sha256": "e562656a9db17d6311293da1b5aef3ab66e5426e8474303aaec3887be0873262"
+      },
+      {
+        "language": "it",
+        "exit_code": 0,
+        "xliff_sha256": "5d9733e6e6672130b58175d908daef64d0a3011d4851672688a5170bcf20145c",
+        "log_sha256": "9cb10c196c47463cfeb210863fcf6db9a939b4f4e89a6301ffc6ab5cb0b56a12"
+      },
+      {
+        "language": "pt",
+        "exit_code": 0,
+        "xliff_sha256": "94d05e0393a5ff8ee2703923364c4640c377e3db70d003be20caedba5d19b3bf",
+        "log_sha256": "98479e3de260a37a1066a6d4eeabf1497f20bde6d141b18ff4ec00d1054f2889"
+      },
+      {
+        "language": "ru",
+        "exit_code": 0,
+        "xliff_sha256": "dd76ee46f317a81640546bcfc3aa1d58dfe2810fdebbffa40de5a724d0fae816",
+        "log_sha256": "378cfe56b0716249d8dc7a776c5331aab1524d1ae34801d40c43a6e929b6161f"
+      },
+      {
+        "language": "tr",
+        "exit_code": 0,
+        "xliff_sha256": "dd5551cc097798abb1fc79529b10fed644dd2c0a9489117b1e05423eee3ccd6d",
+        "log_sha256": "072a61f918053738f4b3c1ba60a7b2de15738207402d355f8982cbdd9fd7c885"
+      },
+      {
+        "language": "zh-Hans",
+        "exit_code": 0,
+        "xliff_sha256": "41586cdb62a2da98c6fc3d1fbedda6c28b60779a3c5215ce0c202c7fd452b3b9",
+        "log_sha256": "1b9d869e48eaedf14444c7e7a8b94641fe22ce2e9595b36ef473f2e4333c8b3e"
+      },
+      {
+        "language": "zh-Hant",
+        "exit_code": 0,
+        "xliff_sha256": "f8dd236032bdd1ade800725cba2ecd43f2a279054f83e9bd1b96177a412de681",
+        "log_sha256": "83f004abc3349a65c28b9304b0671760b686e29ccef01a6191744c40782e5b83"
+      }
+    ],
+    "sdk_unchanged": {
+      "Vendored/MarmotKit/MARMOT_VERSION": "179b63bbb9853dd405e0c954a6efbe173b951e4430425694711ffd048dd9a5c8",
+      "Vendored/MarmotKit/Package.swift": "22dded4be195c4b13136c2fd47ef9a84f38652d83ef2192960805dc4bf8ecdd4",
+      "Vendored/MarmotKit/Sources/MarmotKit/MarmotKit.swift": "75227a7993a0fb374f63160a829d19767bdd617ee6881e3af638af9bf4754169",
+      "Vendored/MarmotKit/Sources/MarmotKit/MarmotKitVersion.swift": "0cb3690131e69a448171d101638daa6a7be0772412a51d5050efeb19135da915",
+      "Vendored/MarmotKit/LOCAL_BUILD.json": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172"
+    }
+  },
+  "scope": "Verification-only Settings UI and original-owner forwarding. Generated-protocol controls prove native lifetime/revision/opaque-input handling, not actual user pairing. Enrollment, SDK continuation, selected-chat admission and scene suspension remain unqualified. Four generated SDK overrides excluded. Documentation added after tested424 inputs; runtime and catalog bytes equal tested cohort."
+}

@@ -31,6 +31,38 @@ import Testing
             #expect(original.revisions == [7])
         }
 
+        @Test func approvalAndTransportUseOnlyOriginalOpaqueInputs() async throws {
+            let original = VerificationSessionDouble()
+            var approvals: [(Data, Data?)] = []
+            let target = DeviceLinkingTargetFfi(selector: Data([9]), deviceCount: 2)
+            let model = DeviceVerificationViewModel(
+                begin: { original }, cancel: {},
+                approve: { request, selected in
+                    approvals.append((request, selected))
+                    return original
+                },
+                targets: { [target] }, verificationSupported: true)
+            try await model.loadTargets()
+            #expect(model.targets == [target])
+            await #expect(throws: MarmotKitError.DeviceLinkingClosed) {
+                try await model.approve(request: Data([8]), target: Data([99]))
+            }
+            #expect(approvals.isEmpty)
+            #expect(model.owner == nil)
+            try await model.approve(request: Data([8]), target: target.selector)
+            #expect(approvals.count == 1)
+            #expect(approvals.first?.0 == Data([8]))
+            #expect(approvals.first?.1 == Data([9]))
+            #expect(try model.setupPacket() == Data([1]))
+            try await model.receiveSetupPacket(Data([2]))
+            try await model.receivePacket(Data([3]))
+            try await model.acknowledgePacket("original")
+            #expect(try await model.outgoingPackets().isEmpty)
+            model.invalidate()
+            #expect(model.targets.isEmpty)
+            await #expect(throws: MarmotKitError.DeviceLinkingClosed) { try await model.receivePacket(Data([4])) }
+        }
+
         @Test func actualAccountReplacementRetiresInstalledFeatureAndItsFactoryCallbacks() async throws {
             let state = SessionState()
             let runtime = FakeMarmotRuntime(accounts: [])
