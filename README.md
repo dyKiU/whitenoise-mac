@@ -183,5 +183,5 @@ implementations intentionally provide no preservation identity.
 This adds lifetime wiring, not pairing UI or enrollment capability. Scene background
 currently reports analytics and does not close the runtime; no scene suspension claim
 is made. The local e6 SDK overrides remain uncommitted development inputs. Focused
-qualification is recorded in `docs/native-device-linking-lifetime.md`; full PR
-qualification is required before pushing or merging this slice.
+qualification is recorded in `docs/native-device-linking-lifetime.md`; the full PR suite passed on signed9b245 in both the published0.12 and
+experimental e6 cohorts. Fresh pairing UI/enrollment remains separate.

@@ -270,11 +270,46 @@
         "skippedTests": 0
       },
       "test_failures": []
+    },
+    "mac-native-linking-final-experimental-full-v18": {
+      "source_base": "9b2452f12611b024efe23ee43d011f04ec5294bd",
+      "source_inputs": 417,
+      "input_manifest_sha256": "44cd8744d2b7a2eeb42fcb94cf2e8582a24711add653384bc665d462b4c6bd46",
+      "profile": "local-e6/experimentalflag1",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 0,
+      "seconds": 62.36,
+      "log_sha256": "1d226f6f9ad07cdbba9e4cbbc614844e59e0d701694f878ac95810b427cacbf5",
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 1663,
+        "passedTests": 1663,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "test_failures": []
+    },
+    "mac-native-linking-published-default-full-v20": {
+      "source_base": "9b2452f12611b024efe23ee43d011f04ec5294bd",
+      "source_inputs": 417,
+      "input_manifest_sha256": "bbb0a7f348682f866b6db652323793032de6df4839ec3d9ff717dfddb64b841a",
+      "profile": "published0.12/experimentalflag0",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 0,
+      "seconds": 86.61,
+      "log_sha256": "f0a4f6545c2430ca8f128d0553350eee46ae5aeb32af7f2d17feb277391ac439",
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 1649,
+        "passedTests": 1649,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "test_failures": []
     }
   },
   "limits": [
     "No native pairing UI/enrollment capability or full sync claim",
-    "Full PR rerun required before push/merge",
     "Scene background does not close runtime; suspension coverage limited to explicit deactivation/replacement/reset",
     "Default-off test build fails in unchanged FakeMarmotRuntime draftVersion fixture; zero tests",
     "GreenV6 crash cause unproven; protocol revert and owned Swift rebuild preceded V7 pass"
@@ -285,5 +320,8 @@
     "f375d5ac90824430d733cedc33e3197c238b5fe6"
   ],
   "crash_source": "ac186a0f16860ae25f145f071a4dd25956345ae0",
-  "repeated_exit_red_source": "caf4105cb287de55af314ac8e52a18cb540d1900"
+  "repeated_exit_red_source": "caf4105cb287de55af314ac8e52a18cb540d1900",
+  "qualified_product_commit": "9b2452f12611b024efe23ee43d011f04ec5294bd",
+  "published_sdk_checksum": "344251a65ec7afcdcce8b7bb0cbf26bfcf398983a99a11bfc93181a0069621a5",
+  "cohort_note": "published runs restore exact HEAD four bindings files; ignored e6 LOCAL_BUILD hash is diagnostic only, not selected binary provenance"
 }

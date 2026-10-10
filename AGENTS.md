@@ -280,5 +280,5 @@ The generic `beforeAccountExit`/`beforeRuntimeReset` callbacks wire existing app
 exit paths without adding feature state to `WorkspaceState`. Runtime identity is
 only positive for class implementations, tested with actual `MarmotClient`.
 Keep generated development SDK overrides out of commits. Use the dedicated
-`MacTestIsolationM5` cache and isolated host for focused tests. Current lifetime
-qualification does not cover pairing UI, scene suspension, or a full PR rerun.
+`MacTestIsolationM5` cache and isolated host for focused tests. Lifetime qualification on signed9b245 passed the full PR suite with published0.12
+and experimental e6. It does not cover pairing UI or scene suspension.

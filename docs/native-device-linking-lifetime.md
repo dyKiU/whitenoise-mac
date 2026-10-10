@@ -26,7 +26,9 @@ On M5 with the installed e6 SDK and dedicated MacTestIsolationM5 isolated host:
   existing account exit/reset7).
 - Owned Swiftformat6.2.3 and git diff checks pass.
 
-These are suite executions, not full PR qualification. A default-off affected run
+Final signed9b245 product passed the full PR suite in both cohorts: experimental
+e6/flag1 1663/1663 (62.36s), published0.12/flag0 1649/1649 (86.61s).
+These are suite executions, not unique test counts across repeated selections. A default-off affected run
 failed before tests because unchanged FakeMarmotRuntime omits e6 draftVersion.
 A subsequent canonical published0.12/flag0 affected run passed11/11 after retiring
 only diagnostic-named stale FFI PCM files. The e6 mixed-cohort failure is not a
@@ -42,7 +44,7 @@ The accompanying evidence JSON records exact result/input/log hashes and named
 compact Git stashes. Parent build/results contains exact415-source recovery proofs,
 restrictive generated overrides archive and full raw logs. Four existing generated
 SDK overrides remain outside this commit. No production apps/accounts or SDK
-artifacts were changed. Full PR qualification is required before push/merge.
+artifacts were changed. The full published/experimental PR gates passed before fork publication.
 
 ## Detached cleanup retry follow-up
 
@@ -51,4 +53,4 @@ first exit detached the account scope (RED0/1). The current selector distinguish
 a different actual current account from absent scope; absent scope still retries
 the retained negative original cleanup before Core exit. The exact test source is
 preserved in named stash caf4105c and a compact verified blob. No new SDK session or
-permission is reconstructed. Final full PR gates remain pending.
+permission is reconstructed. Both final full PR gates passed on that signed product.
