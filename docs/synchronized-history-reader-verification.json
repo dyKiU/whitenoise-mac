@@ -1,0 +1,46 @@
+{
+  "scope": "Native source-attested reader model only; no runtime adapter, SDK import or installed UI claim",
+  "base": "5325d1c423d49dc3264383bf22a48ade34069bc4",
+  "sdk": "Published MarmotKit0.12.0 value types",
+  "original_red_stash": "e59920aa8edd0c8fad576efcef00387a82c704fa",
+  "m5_red_stash": "9d7b9ff6966c5b0058cad3eccd3d9d53f463bbab",
+  "green_stash": "f1ca07680f069870329c2df8b58ba7e8aba1a87e",
+  "m5_green_stash": "f6e46adb63cd2c53ec3a73d7c317cfdac07a4bfb",
+  "inputs_verified": 454,
+  "manifest_sha256": "40c17901bf67fc0be42c5d24e7444782d5c7d4bf729d5525cb37cf983c124a96",
+  "unchanged_original_test_sha256": "6fa9baf9f178ed3ee33e6e3916e9ea033660389bad301c63d758a986ebe96bb6",
+  "actual_red": {
+    "exit": 65,
+    "seconds": 51.62793207168579,
+    "log": "/Users/pj/project/build/mac-history-reader-red-v3.log",
+    "log_sha256": "f06621432e29e20aa3fcf2825bc5d15978516858be6ef78a1a8a60e3c6d0e0ad"
+  },
+  "actual_green": {
+    "exit": 0,
+    "seconds": 17.835848331451416,
+    "log": "/Users/pj/project/build/mac-history-reader-green-v1.log",
+    "log_sha256": "f56b9b263470f0847190350f5fd9e48b9d9de8bbd455308c204156c0a0abdec5"
+  },
+  "counts": {
+    "red_pass": 0,
+    "red_fail": 1,
+    "green_pass": 8,
+    "green_fail": 0,
+    "green_skip": 0
+  },
+  "earlier_attempts": "REDv1/v2 are compile-only stale FFI PCM failures, zero tests. Retired only two exact compiler-named cached FFI modules after verified target idle; source fixture unchanged. Both raw results retained.",
+  "controls": [
+    "Exact cursor and one bounded page",
+    "Account invalidation/caller cancellation refuse non-cooperative late reply",
+    "Reload replacement cannot be overwritten by older operation",
+    "Failure clears stale page and retry starts from first page",
+    "Oversized/duplicate/out-of-order/wrong cursor results refuse",
+    "Tombstones/logical tags/rejected media slots preserved; Debug redacted"
+  ],
+  "remaining": [
+    "Full published PR suite before merge",
+    "Actual native SDK reader adapter and AccountScope composition",
+    "History controls/UI/localization and matched SDK adoption",
+    "Actual cross-host/simulator history acceptance"
+  ]
+}

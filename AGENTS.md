@@ -292,3 +292,12 @@ for this pane used Apple stringsdata/XLIFF export-import, preserving all prior
 catalog entries; retain that tool provenance when extending it. Final source passed
 full published0.12 and experimental e6 PR gates; actual native pairing remains a
 separate acceptance gate.
+
+## Synchronized logical history reader
+
+`Features/SynchronizedHistory` owns one bounded source-attested page; Core value
+records preserve logical tags, ordered media outcomes and provenance. Invalidate
+before account teardown and refuse late cancelled/superseded reads. Keep this
+projection separate from live authenticated timeline rows and original consent.
+Use `docs/synchronized-history-reader.md`; native adapter/UI acceptance is a
+separate gate, and no record or cursor supplies transfer/download permission.
