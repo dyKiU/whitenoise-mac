@@ -1,0 +1,93 @@
+{
+  "classification": "New original-handle feature baseline refuses unavailable bridge; actual semanticRED0/1\u2192GREEN7/7. Not presented as a preexisting production bug.",
+  "cohorts": [
+    {
+      "gate": "mac-history-original-owner-red-v1",
+      "exact_source_stash": "7ac302c7b37a8aedf5e34e133aaee42e5ef37170",
+      "inputs": 465,
+      "input_manifest_sha256": "10c36ae11272640872791627fc0493b91c499f9908a1af0cb6a0d950ddd40ad6",
+      "result": {
+        "exit": 65,
+        "seconds": 2.6269707679748535,
+        "log": "/Users/pj/project/build/mac-history-original-owner-red-v1.log",
+        "log_sha256": "9d24b4ab0150057adf09e3085803f58cdbf51c2486eb83dd3f179f1fcfe4882a"
+      },
+      "all_inputs_and_raw_log_verified": true
+    },
+    {
+      "gate": "mac-history-original-owner-red-v2",
+      "exact_source_stash": "7ac302c7b37a8aedf5e34e133aaee42e5ef37170",
+      "inputs": 465,
+      "input_manifest_sha256": "10c36ae11272640872791627fc0493b91c499f9908a1af0cb6a0d950ddd40ad6",
+      "result": {
+        "exit": 65,
+        "seconds": 41.09213471412659,
+        "log": "/Users/pj/project/build/mac-history-original-owner-red-v2.log",
+        "log_sha256": "cac2735a5adca1bbc83b0efd6b289f54080b28c3be0a0ac87f479893c4198c1e"
+      },
+      "all_inputs_and_raw_log_verified": true
+    },
+    {
+      "gate": "mac-history-original-owner-green-v1",
+      "exact_source_stash": "8b1a18cb99e24d661e0f4caefb671f4dfc9aafed",
+      "inputs": 465,
+      "input_manifest_sha256": "a34b0d403e1ab4c4c98454dce2b71c0f3f45d0c4ec17206ec8ff26a3f9f4fca6",
+      "result": {
+        "exit": 0,
+        "seconds": 19.450057983398438,
+        "log": "/Users/pj/project/build/mac-history-original-owner-green-v1.log",
+        "log_sha256": "adcf111d80495cba74ed7c45568f594bceef39197430da8380a02566d24641b1"
+      },
+      "all_inputs_and_raw_log_verified": true
+    }
+  ],
+  "unchanged_original_regression_sha256": "a71f32908d252a0f80b1aa8f9d5a7c7bce2d1bd3dc9910dcb534391f64aa161f",
+  "tests": {
+    "red": {
+      "passed": 0,
+      "failed": 1
+    },
+    "green": {
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "cache_failure": {
+    "entries": [
+      {
+        "file": "/Users/pj/project/build/MacTestIsolationM5/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules/marmot_uniffiFFI-A20JJFUQCYLNKGTL1DVGGO6BE.pcm",
+        "bytes": 555400,
+        "sha256": "e696a9dc6991028365ad63f6667416b745aea5f08aebcda83b8311fe7088b5ee"
+      },
+      {
+        "file": "/Users/pj/project/build/MacTestIsolationM5/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules/marmot_uniffiFFI-ANJFQSPITBY9ONMYZP4O7TT7H.pcm",
+        "bytes": 500208,
+        "sha256": "e25a6f54278760b343a2f7b65f97e4c1e3bb269872a0c78497c3aaeb7132c9a7"
+      },
+      {
+        "file": "/Users/pj/project/build/MacTestIsolationM5/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules/marmot_uniffiFFI-3MNQQ1C4FIRFFZVVHA7V4JYIE.pcm",
+        "bytes": 509080,
+        "sha256": "b6dcb866ac00c93f8224a0b961f707e1fcfaf3f2b5faaf2f596abe039cd6f3a9"
+      },
+      {
+        "file": "/Users/pj/project/build/MacTestIsolationM5/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules/marmot_uniffiFFI-1KNRUIXGJEZQJRMJL82Z0FTCM.pcm",
+        "bytes": 500160,
+        "sha256": "be1f42dad2775c1b1e674a3ad10fe95a8cbcc7d68e439055f1d454d6e91e56ba"
+      },
+      {
+        "file": "/Users/pj/project/build/MacTestIsolationM5/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules/marmot_uniffiFFI-79KSNOGYLK9ZGEQGOLIJELZ7K.pcm",
+        "bytes": 555448,
+        "sha256": "46a0ced61e37af5d0d0bd9117dad109d54c5ec6af9154aad5b87bfa7081eda02"
+      }
+    ],
+    "reason": "Published\u2192experimental cohort change names stale FFI PCM; target idle, only five FFI-named modules retired; other caches retained. Initial guard allowed at most4 and stopped before deletion; actual inventory5 verified."
+  },
+  "scope": "Exact owned source/recipient SDK protocols, displayed reviewed revision, stable original selection, no snapshot reconstruction, cancellation and late/noncooperative result denial, caller-loss cancellation and serialized operations. Tests use isolated original-protocol probes; actual cryptographic SDK aliases are separately qualified by native history acceptance.",
+  "pending": [
+    "AccountScope and SessionState factory/runtime capture and retirement fencing",
+    "Thin MarmotRuntime begin/pending-original bridges",
+    "Original history consent/transfer UI",
+    "Full published/experimental PR and installed native original acceptance"
+  ]
+}
