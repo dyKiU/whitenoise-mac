@@ -56,6 +56,178 @@
     }
 
     @MainActor struct NativeHistoryActionScopeTests {
+        @Test func accountFactoryCapturesExactRuntimeAndExitCancelsOriginal() async throws {
+            let state = SessionState()
+            let runtime = FakeMarmotRuntime(accounts: [])
+            let account = AccountItem.samples[0]
+            await state.activate(account: account, runtime: runtime, connectivityAvailable: false)
+            let original = OriginalHistoryProbe()
+            let held = try await state.adoptHistoryTransferFactory(groupIdHex: "exact-chat") { actual, ref in
+                #expect(nativeRuntimeObjectIdentity(actual) == nativeRuntimeObjectIdentity(runtime))
+                #expect(ref == account.accountRef)
+                return original
+            }
+            try await held.refresh()
+            try await state.prepareForAccountExit()
+            #expect(!held.isActive)
+            #expect(held.snapshot == nil)
+            #expect(original.cancellation.value == 1)
+            #expect(await original.advanced.isEmpty)
+        }
+
+        @Test func lateHistoryFactoryCannotAttachAcrossAccountReplacementAndReturn() async throws {
+            let state = SessionState()
+            let runtime = FakeMarmotRuntime(accounts: [])
+            let account = AccountItem.samples[0]
+            await state.activate(account: account, runtime: runtime, connectivityAvailable: false)
+            let gate = HistorySnapshotGate()
+            let original = OriginalHistoryProbe()
+            let pending = Task {
+                try await state.adoptHistoryTransferFactory(groupIdHex: "exact-chat") { _, _ in
+                    await gate.pause()
+                    return original
+                }
+            }
+            await gate.waitUntilEntered()
+            await state.activate(account: AccountItem.samples[1], runtime: runtime, connectivityAvailable: false)
+            await state.activate(account: account, runtime: runtime, connectivityAvailable: false)
+            var invoked = false
+            await #expect(throws: MarmotKitError.HistoryTransferNotReady) {
+                _ = try await state.adoptHistoryTransferFactory(groupIdHex: "exact-chat") { _, _ in
+                    invoked = true
+                    return OriginalHistoryProbe()
+                }
+            }
+            #expect(!invoked)
+            await gate.resume()
+            await #expect(throws: MarmotKitError.HistoryTransferClosed) { _ = try await pending.value }
+            #expect(original.cancellation.value == 1)
+            let fresh = try await state.adoptHistoryTransferFactory(groupIdHex: "exact-chat") { _, _ in
+                OriginalHistoryProbe()
+            }
+            #expect(fresh.isActive)
+            await state.deactivate()
+            #expect(!fresh.isActive)
+        }
+
+        @Test func pendingConsentOriginalsFenceCoreExitAndRetireLateUnselectedResults() async throws {
+            let state = SessionState()
+            let runtime = FakeMarmotRuntime(accounts: [])
+            await state.activate(account: AccountItem.samples[0], runtime: runtime, connectivityAvailable: false)
+            let gate = HistorySnapshotGate()
+            let first = OriginalHistoryProbe()
+            let second = OriginalHistoryProbe()
+            let pending = Task {
+                try await state.adoptHistoryConsentFactory { _, _ in
+                    await gate.pause()
+                    return [first, second]
+                }
+            }
+            await gate.waitUntilEntered()
+            await #expect(throws: MarmotKitError.HistoryTransferNotReady) {
+                try await state.prepareForAccountExit()
+            }
+            #expect(state.accountScope == nil)
+            await gate.resume()
+            await #expect(throws: MarmotKitError.HistoryTransferClosed) { _ = try await pending.value }
+            #expect(first.cancellation.value == 1)
+            #expect(second.cancellation.value == 1)
+            #expect(await first.advanced.isEmpty)
+            #expect(await second.advanced.isEmpty)
+            try await state.prepareForAccountExit()
+        }
+
+        @Test func cancelledCallerRetiresItsIgnoredFactoryResult() async throws {
+            let state = SessionState()
+            let runtime = FakeMarmotRuntime(accounts: [])
+            await state.activate(account: AccountItem.samples[0], runtime: runtime, connectivityAvailable: false)
+            let gate = HistorySnapshotGate()
+            let original = OriginalHistoryProbe()
+            let pending = Task {
+                try await state.adoptHistoryTransferFactory(groupIdHex: "exact-chat") { _, _ in
+                    await gate.pause()
+                    return original
+                }
+            }
+            await gate.waitUntilEntered()
+            pending.cancel()
+            await gate.resume()
+            await #expect(throws: MarmotKitError.HistoryTransferClosed) { _ = try await pending.value }
+            #expect(original.cancellation.value == 1)
+            await state.deactivate()
+        }
+
+        @Test func repeatedPendingReadRetainsOriginalsWithoutImplicitApproval() async throws {
+            let owner = NativeHistoryAccountOwner(accountRef: "a", runtime: FakeMarmotRuntime(accounts: []))
+            let original = OriginalHistoryProbe()
+            var reads = 0
+            let first = try await owner.adoptConsents { _, _ in
+                reads += 1
+                return [original]
+            }
+            let second = try await owner.adoptConsents { _, _ in
+                reads += 1
+                return [OriginalHistoryProbe()]
+            }
+            #expect(reads == 1)
+            #expect(first.count == 1 && second.count == 1)
+            #expect(first[0] === second[0])
+            #expect(await original.observed == 0)
+            #expect(await original.advanced.isEmpty)
+            owner.invalidate()
+            #expect(original.cancellation.value == 1)
+        }
+
+        @Test func oldViewReleaseCannotCancelReplacementOriginal() async throws {
+            let owner = NativeHistoryAccountOwner(accountRef: "a", runtime: FakeMarmotRuntime(accounts: []))
+            let first = OriginalHistoryProbe()
+            let old = try await owner.adoptTransfer(groupIdHex: "exact-chat") { _, _ in first }
+            owner.release(old)
+            let second = OriginalHistoryProbe()
+            let replacement = try await owner.adoptTransfer(groupIdHex: "exact-chat") { _, _ in second }
+            owner.release(old)
+            #expect(owner.transfer === replacement)
+            #expect(replacement.isActive)
+            #expect(second.cancellation.value == 0)
+            owner.invalidate()
+            #expect(first.cancellation.value == 1)
+            #expect(second.cancellation.value == 1)
+        }
+
+        @Test func runtimeReplacementRetiresEveryHeldConsentWithoutApproval() async throws {
+            let state = SessionState()
+            let account = AccountItem.samples[0]
+            let runtime = FakeMarmotRuntime(accounts: [])
+            await state.activate(account: account, runtime: runtime, connectivityAvailable: false)
+            let first = OriginalHistoryProbe()
+            let second = OriginalHistoryProbe()
+            let held = try await state.adoptHistoryConsentFactory { actual, ref in
+                #expect(nativeRuntimeObjectIdentity(actual) == nativeRuntimeObjectIdentity(runtime))
+                #expect(ref == account.accountRef)
+                return [first, second]
+            }
+            await state.activate(
+                account: account, runtime: FakeMarmotRuntime(accounts: []), connectivityAvailable: false)
+            #expect(held.count == 2)
+            #expect(held.allSatisfy { !$0.isActive })
+            #expect(first.cancellation.value == 1)
+            #expect(second.cancellation.value == 1)
+            #expect(await first.advanced.isEmpty)
+            #expect(await second.advanced.isEmpty)
+            await state.deactivate()
+        }
+
+        @Test func oversizedOriginalCollectionIsExplicitlyCancelledAndRefused() async throws {
+            let owner = NativeHistoryAccountOwner(accountRef: "a", runtime: FakeMarmotRuntime(accounts: []))
+            let originals = (0..<129).map { _ in OriginalHistoryProbe() }
+            await #expect(throws: MarmotKitError.HistoryTransferNotReady) {
+                _ = try await owner.adoptConsents { _, _ in originals }
+            }
+            #expect(owner.consents.isEmpty)
+            #expect(originals.allSatisfy { $0.cancellation.value == 1 })
+            owner.invalidate()
+        }
+
         @Test func refreshReviewsExactOwnedSourceAndRecipientOriginals() async throws {
             let source = OriginalHistoryProbe()
             let recipient = OriginalHistoryProbe()

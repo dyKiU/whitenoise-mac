@@ -22,6 +22,7 @@ final class SessionState {
     @ObservationIgnored private var activationToken = UUID()
 
     #if WN_EXPERIMENTAL_DEVICE_SYNC
+        private var retiringHistoryOwners: [NativeHistoryAccountOwner] = []
         private var retiringSelectedChatOwners: [NativeSelectedChatAccountOwner] = []
 
         private(set) var deviceLinkingScope: DeviceLinkingScope?
@@ -271,6 +272,50 @@ final class SessionState {
                     isCurrent: current))
         }
 
+        func adoptHistoryTransferFactory(
+            groupIdHex: String,
+            _ factory: @escaping @MainActor (any MarmotRuntime, String) async throws -> any HistoryTransferProtocol
+        ) async throws -> NativeHistoryActionScope {
+            guard let account = accountScope, !account.isCancelled else { throw MarmotKitError.HistoryTransferClosed }
+            try retryHistoryCleanup()
+            guard accountScope === account, !account.isCancelled else { throw MarmotKitError.HistoryTransferClosed }
+            return try await account.history.adoptTransfer(groupIdHex: groupIdHex, factory)
+        }
+        func adoptHistoryConsentFactory(
+            _ factory: @escaping @MainActor (any MarmotRuntime, String) async throws -> [any HistoryConsentProtocol]
+        ) async throws -> [NativeHistoryActionScope] {
+            guard let account = accountScope, !account.isCancelled else { throw MarmotKitError.HistoryTransferClosed }
+            try retryHistoryCleanup()
+            guard accountScope === account, !account.isCancelled else { throw MarmotKitError.HistoryTransferClosed }
+            return try await account.history.adoptConsents(factory)
+        }
+        func beginHistoryTransfer(groupIdHex: String, recipientDevice: Data) async throws -> NativeHistoryActionScope {
+            try await adoptHistoryTransferFactory(groupIdHex: groupIdHex) { runtime, accountRef in
+                try await runtime.beginHistoryTransfer(
+                    accountRef: accountRef, groupIdHex: groupIdHex, recipientDevice: recipientDevice)
+            }
+        }
+        func pendingHistoryRequests() async throws -> [NativeHistoryActionScope] {
+            try await adoptHistoryConsentFactory { runtime, accountRef in
+                try await runtime.pendingHistoryRequests(accountRef: accountRef)
+            }
+        }
+        private func invalidateHistory() {
+            guard let owner = accountScope?.history else { return }
+            owner.invalidate()
+            if !retiringHistoryOwners.contains(where: { $0 === owner }) { retiringHistoryOwners.append(owner) }
+        }
+        func retryHistoryCleanup() throws {
+            var firstError: Error?
+            for owner in retiringHistoryOwners {
+                do {
+                    try owner.retryCleanup()
+                    retiringHistoryOwners.removeAll { $0 === owner }
+                } catch { if firstError == nil { firstError = error } }
+            }
+            if let firstError { throw firstError }
+        }
+
         func beginSelectedChatCopy(groupIdHex: String, linkedRosterSelector: Data) async throws
             -> NativeSelectedChatCopyScope
         {
@@ -321,6 +366,7 @@ final class SessionState {
             var firstError: Error?
             do { try await retryDeviceLinkingCleanup() } catch { firstError = error }
             do { try await retrySelectedChatCleanup() } catch { if firstError == nil { firstError = error } }
+            do { try retryHistoryCleanup() } catch { if firstError == nil { firstError = error } }
             if let firstError { throw firstError }
         }
 
@@ -434,6 +480,7 @@ final class SessionState {
             activationToken = UUID()
             invalidateDeviceLinking()
             invalidateSelectedChat()
+            invalidateHistory()
             let previous = accountScope
             accountScope = nil
             await previous?.cancelAll()
@@ -473,6 +520,7 @@ final class SessionState {
         #if WN_EXPERIMENTAL_DEVICE_SYNC
             invalidateDeviceLinking()
             invalidateSelectedChat()
+            invalidateHistory()
         #endif
         let previous = accountScope
         accountScope = nil
@@ -557,6 +605,7 @@ final class SessionState {
         #if WN_EXPERIMENTAL_DEVICE_SYNC
             invalidateDeviceLinking()
             invalidateSelectedChat()
+            invalidateHistory()
         #endif
         let previous = accountScope
         accountScope = nil
