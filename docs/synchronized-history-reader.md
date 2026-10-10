@@ -37,3 +37,18 @@ runtime dispatch regression and focused controls now qualify account/runtime
 capture and off-main reads against an isolated fake. Matching experimental SDK
 typechecking, actual native execution and the visible pane remain separate;
 these source tests do not prove history delivery or installed app presentation.
+
+## Conversation pane
+
+Experimental conversations open a separate synchronized-history sheet through
+`SynchronizedHistoryEntryView`, with the exact account/chat reader passed by the
+shell. The sheet reloads on opening, retains one bounded page, and provides
+explicit refresh/next controls. Source device, transfer and manifest provenance
+remain visible separately from live authorship. Deletion/expiry suppress content
+and media; ordered descriptors report availability without opening locators,
+automatic downloads or grants. Views take explicit dependencies and have previews.
+
+Fresh pane compilation and all12 reader/runtime/lifetime controls pass. Apple
+stringsdata/XLIFF sync and nine imports add eight keys while preserving all1,259
+existing catalog entries. Full PR and installed populated UI acceptance remain
+separate gates; this slice adds no original history consent or transport action.

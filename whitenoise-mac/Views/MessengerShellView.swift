@@ -156,6 +156,10 @@ private struct DetailPaneView: View {
                             )
                             #if WN_EXPERIMENTAL_DEVICE_SYNC
                                 .safeAreaInset(edge: .top, spacing: 0) {
+                                    SynchronizedHistoryEntryView(
+                                        model: scope.synchronizedHistoryModel(groupIdHex: chat.id)
+                                    )
+                                    .id(chat.id)
                                     if let transfer = scope.selectedChatTransfer {
                                         SelectedChatCopyEntryView(model: transfer, groupIdHex: chat.id)
                                         .id(chat.id)
