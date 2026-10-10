@@ -107,11 +107,12 @@
     }
   ],
   "static": [
-    "strict scoped swift-format passed",
+    "all source roots strict swift-format passed",
+    "all9 catalog languages1270/1270 translated; catalog unchanged",
     "git diff --check passed"
   ],
   "limits": [
-    "Full published/experimental integration gates pending at this commit.",
+    "Both final full integration cohorts pass; installed Add Profile journey follows qualified rebuild.",
     "No credentials/account state accessed. Hosted runtime is FakeMarmotRuntime; installed app reproduction separately confirmed by user.",
     "No SDK authority, account persistence or original linking scope changed."
   ],
@@ -126,5 +127,42 @@
     "green_stash": "72fb3bdc3ba3525e328af4b1974d4f0a20b51793",
     "unchanged_regression": true,
     "scope": "Restore absent Core checkpoint as nil and clear only its presentation flag; do not retain a cancelled setup snapshot."
+  },
+  "final_runtime_commit": "dd9baa50dc0ead4acf86aceb1abe335139dfb7e6",
+  "final_full": {
+    "full-final-experimental-v3": {
+      "exit": 0,
+      "seconds": 90.71111917495728,
+      "log": "/Users/pj/project/build/mac-add-profile-full-final-experimental-v3.log",
+      "log_sha256": "4f706ebfe09deaabf1489325921753194cf322d6febae6be2783a58eab3e0062",
+      "passed": 1808,
+      "failed": 0,
+      "skipped": 5,
+      "total": 1813,
+      "inputs": "build/results/mac-add-profile-full-final-experimental-v3-inputs.json"
+    },
+    "full-full-final-published-v1": {
+      "exit": 0,
+      "seconds": 50.62026000022888,
+      "log": "/Users/pj/project/build/mac-add-profile-full-full-final-published-v1.log",
+      "log_sha256": "f702c69a12792536ada11f7d58e3883923e90f656009af127733d3cf98ebe11f",
+      "passed": 1664,
+      "failed": 0,
+      "skipped": 0,
+      "total": 1664,
+      "inputs": "build/results/mac-add-profile-full-full-final-published-v1-inputs.json"
+    }
+  },
+  "sdk987_overlay_stash_m5": "9669967b3a24b87aa6162f76b34bf02368d321be",
+  "cache_failures": {
+    "published": [
+      "full-published-v1",
+      "full-published-v2"
+    ],
+    "final_experimental": [
+      "full-final-experimental-v1",
+      "full-final-experimental-v2"
+    ],
+    "scope": "Zero tests, exact diagnosed FFI header/PCM mismatches; only each named idle PCM retired. Repair JSONs/raw logs retained."
   }
 }
