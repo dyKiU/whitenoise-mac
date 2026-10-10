@@ -195,3 +195,22 @@ These are original-handle model/lifecycle controls, not actual SDK enrollment or
 full PR suite. No view, capability, SDK/artifact, profile, installation or production
 state changed. The e6 B snapshot contains revision/phase only; authenticated review
 identity metadata and nativeABC acceptance are required before general approval UI.
+
+## Explicit first-device setup attempt
+
+The verification pane offers a separate first-device setup attempt only after a
+successful empty target read under its exact account/runtime owner. Failed,
+in-flight and retired reads cannot offer it; existing-target approval still
+requires the exact current selector. Nil reaches the original factory only from
+that explicit action. Empty target metadata does not grant eligibility: actual
+Core genesis policy and SelectionBusy remain authoritative.
+
+Default-denying RED ran9 (7passed/2failed), unchanged GREEN9/9, actual SessionState
+owner-retirement controls10/10, final affected48/48. Scoped strict formatting,
+diff and nine-language100% coverage pass. Apple stringsdata/XLIFF import added
+one key with nine translations; all1238 previous entries/order are preserved.
+See native-first-device-setup-evidence.json for exact source and terminal hashes.
+
+This is a scoped model/factory check, not full native enrollment or full PR
+qualification. SDK capability, verification protocol and original owners remain
+unchanged. No application installation or production state action occurred.

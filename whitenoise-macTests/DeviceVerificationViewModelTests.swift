@@ -79,6 +79,151 @@ import Testing
             await state.deactivate()
         }
 
+        @Test func firstDeviceSetupRequiresSuccessfulEmptyReadAndPreservesNilFactoryInput() async throws {
+            let session = VerificationSessionDouble()
+            var inputs: [(Data, Data?)] = []
+            let model = DeviceVerificationViewModel(
+                begin: { session }, cancel: {},
+                approve: { bytes, selector in
+                    inputs.append((bytes, selector))
+                    return session
+                }, targets: { [] }, verificationSupported: true)
+            #expect(!model.offersFirstDeviceSetupAttempt)
+            try await model.loadTargets()
+            #expect(model.offersFirstDeviceSetupAttempt)
+            let bytes = Data([1, 2, 3])
+            try await model.approveFirstDeviceSetup(request: bytes)
+            #expect(inputs.count == 1 && inputs[0].0 == bytes && inputs[0].1 == nil)
+            try await model.confirm(displayedRevision: 4)
+            #expect(session.revisions == [4])
+            try await model.cancel()
+        }
+
+        @Test func failedOrInflightReadNeverFallsBackToFirstDeviceSetup() async throws {
+            var failRead = false
+            var delayed: CheckedContinuation<[DeviceLinkingTargetFfi], Never>?
+            var blockRead = false
+            var calls = 0
+            let model = DeviceVerificationViewModel(
+                begin: { VerificationSessionDouble() }, cancel: {},
+                approve: { _, _ in
+                    calls += 1
+                    throw MarmotKitError.DeviceLinkingRuntimeUnavailable
+                },
+                targets: {
+                    if failRead { throw MarmotKitError.DeviceLinkingRuntimeUnavailable }
+                    if blockRead { return await withCheckedContinuation { delayed = $0 } }
+                    return []
+                }, verificationSupported: true)
+            try await model.loadTargets()
+            failRead = true
+            await #expect(throws: MarmotKitError.DeviceLinkingRuntimeUnavailable) { try await model.loadTargets() }
+            #expect(!model.offersFirstDeviceSetupAttempt)
+            await #expect(throws: (any Error).self) { try await model.approveFirstDeviceSetup(request: Data([1])) }
+            failRead = false
+            blockRead = true
+            let read = Task { try await model.loadTargets() }
+            for _ in 0..<200 {
+                if delayed != nil { break }
+                await Task.yield()
+            }
+            try #require(delayed != nil)
+            #expect(!model.offersFirstDeviceSetupAttempt)
+            await #expect(throws: (any Error).self) { try await model.approveFirstDeviceSetup(request: Data([1])) }
+            delayed?.resume(returning: [])
+            try await read.value
+            #expect(calls == 0)
+        }
+
+        @Test func selectedTargetAndAuthoritativeFactoryDenialNeverBecomeBootstrapFallback() async throws {
+            var calls: [Data?] = []
+            let target = Data([9])
+            let model = DeviceVerificationViewModel(
+                begin: { VerificationSessionDouble() }, cancel: {},
+                approve: { _, selected in
+                    calls.append(selected)
+                    throw MarmotKitError.DeviceLinkingNotReady
+                },
+                targets: { [.init(selector: target, deviceCount: 2)] }, verificationSupported: true)
+            try await model.loadTargets()
+            #expect(!model.offersFirstDeviceSetupAttempt)
+            await #expect(throws: (any Error).self) { try await model.approveFirstDeviceSetup(request: Data([1])) }
+            await #expect(throws: MarmotKitError.DeviceLinkingClosed) {
+                try await model.approve(request: Data([1]), target: Data([8]))
+            }
+            await #expect(throws: MarmotKitError.DeviceLinkingNotReady) {
+                try await model.approve(request: Data([1]), target: target)
+            }
+            #expect(calls.count == 1 && calls[0] == target && model.owner == nil)
+        }
+
+        @Test func firstDeviceAttemptPreservesActualSdkMissingAccountRefusal() async throws {
+            let root = FileManager.default.temporaryDirectory.appendingPathComponent("FirstSetup-\(UUID())")
+            defer { try? FileManager.default.removeItem(at: root) }
+            let client = try MarmotClient(
+                rootPath: root.path, relayUrls: ["wss://relay.example.invalid"],
+                storageProfile: .testHost)
+            let model = DeviceVerificationViewModel(
+                begin: { VerificationSessionDouble() }, cancel: {},
+                approve: { bytes, selector in
+                    _ = try await client.approveDeviceLinkingSession(
+                        accountRef: "missing", request: bytes,
+                        target: selector)
+                    throw MarmotKitError.DeviceLinkingNotReady
+                }, targets: { [] }, verificationSupported: true)
+            do {
+                try await model.loadTargets()
+                await #expect(throws: MarmotKitError.DeviceLinkingRuntimeUnavailable) {
+                    try await model.approveFirstDeviceSetup(request: Data([1]))
+                }
+                #expect(model.owner == nil)
+                #expect(try client.listAccounts().isEmpty)
+                try await client.marmot.shutdownAndClose()
+            } catch {
+                try? await client.marmot.shutdownAndClose()
+                throw error
+            }
+        }
+
+        @Test(arguments: [false, true]) func lateTargetReadCannotOfferSetupAfterActualOwnerRetirement(
+            exit: Bool
+        ) async throws {
+            let state = SessionState()
+            let runtime = FakeMarmotRuntime(accounts: [])
+            await state.activate(account: AccountItem.samples[0], runtime: runtime, connectivityAvailable: false)
+            let scope = try #require(state.accountScope)
+            var delayed: CheckedContinuation<[DeviceLinkingTargetFfi], Never>?
+            var calls = 0
+            let model = DeviceVerificationViewModel(
+                begin: { VerificationSessionDouble() }, cancel: {},
+                approve: { _, _ in
+                    calls += 1
+                    throw MarmotKitError.DeviceLinkingRuntimeUnavailable
+                },
+                targets: { await withCheckedContinuation { delayed = $0 } }, verificationSupported: true)
+            // Same account-owned cancellation boundary as the production installed model.
+            scope.addCancellation { model.invalidate() }
+            let read = Task { try? await model.loadTargets() }
+            for _ in 0..<200 {
+                if delayed != nil { break }
+                await Task.yield()
+            }
+            try #require(delayed != nil)
+            if exit {
+                try await state.prepareForAccountExit()
+            } else {
+                await state.activate(account: AccountItem.samples[1], runtime: runtime, connectivityAvailable: false)
+                await state.activate(account: AccountItem.samples[0], runtime: runtime, connectivityAvailable: false)
+            }
+            delayed?.resume(returning: [])
+            #expect(await read.value == nil && !model.offersFirstDeviceSetupAttempt)
+            await #expect(throws: MarmotKitError.DeviceLinkingClosed) {
+                try await model.approveFirstDeviceSetup(request: Data([1]))
+            }
+            #expect(calls == 0 && model.targets.isEmpty)
+            await state.deactivate()
+        }
+
         @Test func cancellationDuringFactoryWaitRejectsItsLateResult() async throws {
             let original = VerificationSessionDouble()
             var delayed: CheckedContinuation<any DeviceVerificationSession, Never>?

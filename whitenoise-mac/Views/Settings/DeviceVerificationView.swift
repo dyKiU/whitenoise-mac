@@ -48,15 +48,30 @@
                         .lineLimit(2...4)
                         .disabled(!model.isActive || model.isStarting)
                     if model.owner == nil {
-                        Button("Approve setup") {
-                            perform {
-                                guard let selectedTarget else { throw VerificationInputError.invalidPacket }
-                                try await model.approve(request: decodedPacket(), target: selectedTarget)
-                                setup = try model.setupPacket().base64EncodedString()
-                                incoming = ""
+                        if model.offersFirstDeviceSetupAttempt {
+                            Button("Approve first-device setup") {
+                                perform {
+                                    try await model.approveFirstDeviceSetup(request: decodedPacket())
+                                    setup = try model.setupPacket().base64EncodedString()
+                                    incoming = ""
+                                }
                             }
+                            .disabled(model.isStarting || !model.isActive)
+                        } else if !model.targets.isEmpty {
+                            Button("Approve setup") {
+                                perform {
+                                    guard let selectedTarget else { throw VerificationInputError.invalidPacket }
+                                    try await model.approve(request: decodedPacket(), target: selectedTarget)
+                                    setup = try model.setupPacket().base64EncodedString()
+                                    incoming = ""
+                                }
+                            }
+                            .disabled(selectedTarget == nil || model.isStarting || !model.isActive)
                         }
-                        .disabled(selectedTarget == nil || model.isStarting || !model.isActive)
+                        if !model.hasLoadedTargets && !model.isReadingTargets && actionFailed {
+                            Button("Try again") { perform { try await model.loadTargets() } }
+                                .disabled(model.isStarting || !model.isActive)
+                        }
                     } else {
                         HStack {
                             Button("Receive setup") {
