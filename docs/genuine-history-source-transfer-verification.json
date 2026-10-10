@@ -1,0 +1,73 @@
+{
+  "source_base": "6b84c3a4f631ea80388991aef0596d78bb2d94a0",
+  "controller_source": "6ac3e18c04bedb856aab70be47ba31b7a8153c46",
+  "sdk_source": "98707713a2cc02828c2d66ed858588991896b9b0",
+  "m5_frozen_inputs_verified": 498,
+  "m1_matching_non_sdk_inputs": 494,
+  "app_test": {
+    "result": "Passed",
+    "totalTestCount": 1,
+    "passedTests": 1,
+    "failedTests": 0,
+    "skippedTests": 0
+  },
+  "native_controller": {
+    "gate": "native-original-history",
+    "passed": 1,
+    "failed": 0,
+    "seconds": 58.33,
+    "sdk_source": "98707713a2cc02828c2d66ed858588991896b9b0",
+    "binary_sha256": "295a7c514d90c9aad6a388322db79816b7b4eaf4e17b8c3b6031d9ad2f8e52cb",
+    "scope": "Actual Mac source model with native recipient originals and M1/M5 relay delivery; not UI buttons or installed navigation",
+    "history_counts": {
+      "native_three_device_phases": {
+        "coordinator": "enrollmentComplete",
+        "joining": "enrollmentComplete",
+        "sibling": "settled"
+      },
+      "eligible_recipients": 2,
+      "query_created_requests": 0,
+      "source_records": 2,
+      "imported_records": 1,
+      "archive_page_records": 1,
+      "verified_prejoin_records": 1,
+      "postjoin_live_record_present": true,
+      "source_complete": true,
+      "recipient_complete": true,
+      "app_source_model_complete": true
+    }
+  },
+  "input_manifest_sha256": "5afc9175b1c5c40e71f3e6343379dabc30fe5e9af7f7f7036dae3877857ee132",
+  "raw_artifacts_sha256": {
+    "mac-source-transfer-v1-results.json": "e94de6528f091640556ebd77b9f3adcb0aad7097377855d605059fc4f3d48dfe",
+    "mac-source-transfer-v1.log": "83cd1b0d3a1a306e1ecc659e7f2870268ced960a03e69df0fb9a4ac8a146e445",
+    "mac-source-transfer-v2-results.json": "5a945c411a059acde54c42c4a71e2ea6953fb41ad3ad2f8ecbb3874f1e736bf0",
+    "mac-source-transfer-v2.log": "d1ecc45747542e2db31559c2bd5ee34bc6f091720c72b0655b4f2902334319a6",
+    "native-mac-source-transfer-v1.json": "debebc801db2d0662260993b4aa300f84b1af74e423417082dc10285f6df75f9",
+    "native-mac-source-transfer-v1.log": "3b028d7c991a4ae4f470a394c53a3cf135ce4ed4a1d7a0a95430a0e2567f70d5",
+    "native-mac-source-transfer-v2.json": "67605e5b63f46c814c55aa4ef978a791805a49ed79882d2985a3619e38f3cd32",
+    "native-mac-source-transfer-v2.log": "4c6b161a4d7fd1b0bf199145f65f5ccec308c99bd9cc3cae909390ab06fefd54"
+  },
+  "controller_controls": {
+    "passed": 35,
+    "failed": 0
+  },
+  "first_attempt": {
+    "app_test": {
+      "result": "Failed",
+      "totalTestCount": 1,
+      "passedTests": 0,
+      "failedTests": 1,
+      "skippedTests": 0
+    },
+    "cause": "Descriptor target visible before scp completed; app correctly rejected truncated JSON. Controller notified and original peers positively closed. Fixed descriptor and app/controller phase publication to use exclusive atomic hardlinks after complete private writes."
+  },
+  "scope": "Actual SessionState/AccountScope/MarmotClient source query, explicit native listed device selection, fresh original review, same original refreshed and continued with current displayed revision after original native recipient approval; source completion, original retirement and successful runtime close. Controller verifies exact missing prejoin record, tags/author/content/provenance, live-row precedence and nonrecipient empty archive. No MLS/account database copies or authority reconstruction.",
+  "static_checks": "New Swift test passes strict format/lint and diff check; prior unchanged product/model/catalog static checks and affected controls retained.",
+  "remaining": [
+    "Source Continue UI-button acceptance",
+    "Full transfer using both source and recipient app UI",
+    "Installed navigation and phone cross-device journey",
+    "Final SDK987 integration matrix"
+  ]
+}

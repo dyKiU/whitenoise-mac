@@ -19,6 +19,8 @@ nonisolated protocol MarmotRuntime: Sendable {
         func deviceLinkingTargets(accountRef: String) async throws -> [DeviceLinkingTargetFfi]
         func pendingDeviceLinkingApprovals(accountRef: String) async throws -> [DeviceLinkingApproval]
         func beginDeviceLinkingSession(accountRef: String) async throws -> DeviceLinkingSession
+        func historyTransferRecipients(accountRef: String, groupIdHex: String) async throws
+            -> [HistoryTransferRecipientFfi]
         func beginHistoryTransfer(accountRef: String, groupIdHex: String, recipientDevice: Data) async throws
             -> HistoryTransfer
         func pendingHistoryRequests(accountRef: String) async throws -> [HistoryConsent]
@@ -450,6 +452,12 @@ nonisolated final class MarmotClient: MarmotRuntime, @unchecked Sendable {
 
         func pendingDeviceLinkingApprovals(accountRef: String) async throws -> [DeviceLinkingApproval] {
             try await marmot.pendingDeviceLinkingApprovals(accountRef: accountRef)
+        }
+
+        func historyTransferRecipients(accountRef: String, groupIdHex: String) async throws
+            -> [HistoryTransferRecipientFfi]
+        {
+            try await marmot.historyTransferRecipients(accountRef: accountRef, groupIdHex: groupIdHex)
         }
 
         func beginHistoryTransfer(accountRef: String, groupIdHex: String, recipientDevice: Data) async throws

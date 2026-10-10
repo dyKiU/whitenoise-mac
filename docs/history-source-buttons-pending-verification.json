@@ -1,0 +1,121 @@
+{
+  "source_base": "5c38b91",
+  "sdk_source": "98707713a2cc02828c2d66ed858588991896b9b0",
+  "status": "Opt-in UI harness committed; actual UI qualification pending",
+  "native_control": {
+    "source_inputs": 496,
+    "input_manifest_sha256": "fcc8e53955a045e643722f3dbe06cf5c8d39ff88957655044a9794f5fa252f56",
+    "log_sha256": "2244decf67a7eee56605a539d4c7f5ad1d6ef6c29a0b1d4f543c19281b7801de",
+    "exit_code": 0,
+    "seconds": 4.714814875042066,
+    "sdk_source": "98707713a2cc02828c2d66ed858588991896b9b0",
+    "scope": "Genuine same-root SDK987 source reopen; actual SessionState account-owned query, explicit model selection, fresh original review, retained refresh/cancel and teardown. Not UI-button or completed app transfer acceptance.",
+    "tests": {
+      "result": "Passed",
+      "totalTestCount": 1,
+      "passedTests": 1,
+      "failedTests": 0,
+      "skippedTests": 0
+    },
+    "test_failures": []
+  },
+  "button_attempts": {
+    "v1": {
+      "seconds": 17.87,
+      "results": {
+        "PR": {
+          "exit_code": 70,
+          "log_sha256": "e68190c63fa2f2178e2d82cd41bca6add851de1d06fc872f1f04ca8239cd05e1",
+          "tests": {
+            "result": "unknown",
+            "passedTests": 0,
+            "failedTests": 0,
+            "skippedTests": 0
+          },
+          "failures": []
+        },
+        "UIPerformance": {
+          "exit_code": -15,
+          "log_sha256": "53740b28580cbf6351013d56ba091f5fd83055f8fc630f86b10a42692bacb65b"
+        }
+      },
+      "report_sha256": "c6e6d3a8313800d653e6029a378957b158ad91d4741f322c12e138a15bb65c0e"
+    },
+    "v2": {
+      "seconds": 117.31,
+      "results": {
+        "PR": {
+          "exit_code": 65,
+          "log_sha256": "2a11009e2cf5a765f0eab77dcdcbfa5bd5f95a33fb56f540f7df0af44859999a",
+          "tests": {
+            "result": "Failed",
+            "passedTests": 0,
+            "failedTests": 1,
+            "skippedTests": 0
+          },
+          "failures": [
+            {
+              "failureText": "XCTUnwrap failed: expected non-nil value of type \"HistorySourceTransferring\"",
+              "targetName": "whitenoise-macTests",
+              "testIdentifier": 1,
+              "testIdentifierString": "GenuineHistorySourcePickerTests/testHostedNativePickerButtonsWithExternalDriver()",
+              "testIdentifierURL": "test://com.apple.xcode/whitenoise-mac/whitenoise-macTests/GenuineHistorySourcePickerTests/testHostedNativePickerButtonsWithExternalDriver",
+              "testName": "testHostedNativePickerButtonsWithExternalDriver()"
+            }
+          ]
+        },
+        "UIPerformance": {
+          "exit_code": -15,
+          "log_sha256": "242c3e2786a2904a19f57faa9b5ea87916ca45f19c992ae40d9a710b420f894e"
+        }
+      },
+      "report_sha256": "7977fb0cf44a913ccee4232e1495e45b1385adaf3db3a6aebfd3f8db86570f13"
+    },
+    "v3": {
+      "seconds": 155.85,
+      "results": {
+        "PR": {
+          "exit_code": 65,
+          "log_sha256": "57a7d00375dfeaf11673d34cb8d53d67cd3cabc569a09bcc154d9b77125de8f4",
+          "tests": {
+            "result": "Failed",
+            "passedTests": 0,
+            "failedTests": 1,
+            "skippedTests": 0
+          },
+          "failures": [
+            {
+              "failureText": "XCTUnwrap failed: expected non-nil value of type \"HistorySourceTransferring\"",
+              "targetName": "whitenoise-macTests",
+              "testIdentifier": 1,
+              "testIdentifierString": "GenuineHistorySourcePickerTests/testHostedNativePickerButtonsWithExternalDriver()",
+              "testIdentifierURL": "test://com.apple.xcode/whitenoise-mac/whitenoise-macTests/GenuineHistorySourcePickerTests/testHostedNativePickerButtonsWithExternalDriver",
+              "testName": "testHostedNativePickerButtonsWithExternalDriver()"
+            }
+          ]
+        },
+        "UIPerformance": {
+          "exit_code": -15,
+          "log_sha256": "91113c19f05490241a8e4cf3355c630980e8fdfe4fd37f7ebd16b028c781c7bd"
+        }
+      },
+      "report_sha256": "b35d767af4b9393e8e45243bc54f477ff8b25010ad2e6fc3b05c8783390f182a"
+    }
+  },
+  "diagnosis": [
+    "UI build v1 rejected a unit-only TEST_HOST setting; corrected UI build succeeds without it.",
+    "Building UI plan after PR removed embedded unit bundle; re-embedding PR bundle restored unit execution.",
+    "Copied UI runner strict signature failed with missing resources; ad-hoc signed isolated runner/test bundle and strict verification then passed.",
+    "UI driver still did not execute tests. Hosted unit timed out waiting for a button-created original (0 passed/1 failed); this is not a passing UI acceptance or a demonstrated production behavior regression.",
+    "M5 DevToolsSecurity reports disabled; sudo -n enable refuses without administrator password. This is an observed setup gate, not proof of the sole startup cause.",
+    "Stopped only exact owned stalled UI invocations/runners; subsequent native control genuinely reopened, created/refreshed/cancelled and positively closed successfully."
+  ],
+  "static_checks": "Changed unit/UI Swift files pass strict format lint. Prior unchanged production/model/catalog published sanity and 37 affected controls retained; no SDK or product source promotion.",
+  "remaining": [
+    "Enable standard macOS Developer Tools access when administrator authentication is available, then recheck UI runner startup",
+    "Actual source row/request/cancel button qualification",
+    "Continue/recipient approval/complete import through app actions",
+    "Installed navigation and full final SDK987 matrix"
+  ],
+  "raw_location": "/Users/pj/project/build/results/mac-source-buttons-*"
+}
