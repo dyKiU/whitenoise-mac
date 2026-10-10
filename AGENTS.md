@@ -336,3 +336,9 @@ Cancel presentation tasks on dismissal or account retirement. Apple catalog
 provenance and focused gates are in
 `docs/history-recipient-review-pane-verification.json`; full PR and genuine
 installed approval/reader acceptance remain separate requirements.
+
+Full recipient-pane PR qualification at signed `ed16012` passes experimental
+1,787/0 and published 1,661/0, with no skips. Two prior published attempts
+executed no tests because of individually diagnosed stale FFI PCMs; both are
+preserved separately. See `docs/history-recipient-review-full-pr-verification.json`.
+Genuine installed original approval and imported reader acceptance remain open.

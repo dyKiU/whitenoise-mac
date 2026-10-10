@@ -21,7 +21,11 @@ import in all nine target languages; prior raw entry blocks and order are retain
 Focused compile/model checks and exact provenance are recorded in
 `history-recipient-review-pane-verification.json`.
 
-Full PR suites, installed presentation/approval of a genuine pending original,
+Full PR qualification passes at signed pane `ed16012`: experimental 1,787/0
+and published 1,661/0, both without skips. Exact frozen inputs, raw logs and
+actual Xcode summaries are in `history-recipient-review-full-pr-verification.json`.
+
+Installed presentation/approval of a genuine pending original,
 actual imported-history reader acceptance and combined-source SDK adoption remain
 required. This slice does not provide the source-device picker or prove a complete
 installed transfer workflow.
