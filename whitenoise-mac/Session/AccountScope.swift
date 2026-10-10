@@ -24,6 +24,49 @@ final class AccountScope {
         }
 
         let history: NativeHistoryAccountOwner
+        @ObservationIgnored private var historySources: [String: (model: HistorySourceViewModel, cancellation: UUID)] =
+            [:]
+
+        func historySourceModel(
+            groupIdHex: String,
+            query:
+                @escaping @MainActor (any MarmotRuntime, String, String) async throws -> [HistoryTransferRecipientFfi] =
+                {
+                    runtime, account, group in
+                    try await runtime.historyTransferRecipients(accountRef: account, groupIdHex: group)
+                },
+            begin:
+                @escaping @MainActor (any MarmotRuntime, String, String, Data) async throws ->
+                any HistoryTransferProtocol = {
+                    runtime, account, group, device in
+                    try await runtime.beginHistoryTransfer(
+                        accountRef: account, groupIdHex: group, recipientDevice: device)
+                }
+        ) -> HistorySourceViewModel {
+            if let existing = historySources[groupIdHex] { return existing.model }
+            let model = HistorySourceViewModel(
+                groupIdHex: groupIdHex,
+                query: { [weak self] in
+                    guard let self, !self.isCancelled else { throw MarmotKitError.HistoryTransferClosed }
+                    let values = try await query(self.runtime, self.account.accountRef, groupIdHex)
+                    guard !self.isCancelled else { throw MarmotKitError.HistoryTransferClosed }
+                    return values
+                },
+                begin: { [weak self] device in
+                    guard let self, !self.isCancelled else { throw MarmotKitError.HistoryTransferClosed }
+                    return try await self.history.adoptTransfer(groupIdHex: groupIdHex) { runtime, account in
+                        try await begin(runtime, account, groupIdHex, device)
+                    }
+                })
+            guard !isCancelled else {
+                model.invalidate()
+                return model
+            }
+            let cancellation = addCancellation { model.invalidate() }
+            historySources[groupIdHex] = (model, cancellation)
+            return model
+        }
+
         let selectedChat: NativeSelectedChatAccountOwner
         private(set) var selectedChatTransfer: SelectedChatTransferViewModel?
 
@@ -250,6 +293,12 @@ final class AccountScope {
     }
 
     func releaseConversation(groupIdHex: String) {
+        #if WN_EXPERIMENTAL_DEVICE_SYNC
+            if let source = historySources.removeValue(forKey: groupIdHex) {
+                releaseCancellation(source.cancellation)
+                source.model.invalidate()
+            }
+        #endif
         if let history = synchronizedHistoryReaders.removeValue(forKey: groupIdHex) {
             releaseCancellation(history.cancellation)
             history.model.invalidate()
@@ -301,6 +350,9 @@ final class AccountScope {
         selectedConversationModel = nil
         conversations.removeAll()
         synchronizedHistoryReaders.removeAll()
+        #if WN_EXPERIMENTAL_DEVICE_SYNC
+            historySources.removeAll()
+        #endif
         attachments.removeAll()
         groupSafety.removeAll()
         for cancel in pending {

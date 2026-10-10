@@ -56,6 +56,23 @@
     }
 
     @MainActor struct NativeHistoryActionScopeTests {
+        @Test func sourceInterfaceContinuesOnlyTheHeldSourceOriginal() async throws {
+            let original = OriginalHistoryProbe()
+            let source = NativeHistoryActionScope(accountRef: "account", groupIdHex: "exact-chat", transfer: original)
+            try await source.refresh()
+            try await source.continueSource(displayedRevision: 7)
+            #expect(await original.advanced == [7])
+            let consent = OriginalHistoryProbe()
+            let recipient = NativeHistoryActionScope(accountRef: "account", consent: consent)
+            try await recipient.refresh()
+            await #expect(throws: MarmotKitError.HistoryTransferNotReady) {
+                try await recipient.continueSource(displayedRevision: 7)
+            }
+            #expect(await consent.advanced.isEmpty)
+            source.cancel()
+            recipient.cancel()
+        }
+
         @Test func accountFactoryCapturesExactRuntimeAndExitCancelsOriginal() async throws {
             let state = SessionState()
             let runtime = FakeMarmotRuntime(accounts: [])
