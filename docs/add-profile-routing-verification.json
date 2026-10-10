@@ -70,10 +70,13 @@
       "seconds": 66.94717216491699,
       "log": "/Users/pj/project/build/mac-add-profile-full-experimental-v1.log",
       "log_sha256": "a05bd3cbe873a77c5ce76b3798ff578bd0d984de22ae24c7727a26fb62f9c60c",
-      "executed": 1812,
+      "executed": 1807,
       "failures": 0,
       "inputs": "build/results/mac-add-profile-full-experimental-v1-inputs.json",
-      "scope": "historical4049 full cohort; superseded by nil correction"
+      "scope": "historical4049 full cohort; superseded by nil correction",
+      "passed": 1807,
+      "skipped": 5,
+      "total": 1812
     },
     {
       "exit": 65,
@@ -164,5 +167,19 @@
       "full-final-experimental-v2"
     ],
     "scope": "Zero tests, exact diagnosed FFI header/PCM mismatches; only each named idle PCM retired. Repair JSONs/raw logs retained."
+  },
+  "development_delivery": {
+    "integration": "0cacb85a865c72d7a303a80b75eb8460a951ea88",
+    "builds": {
+      "M1": {
+        "exit": 0,
+        "executable_sha256": "84cf8a8d066d7e44b0102e02db52b3db1d63830d2e094923a68e2ee902c84ed9"
+      },
+      "M5": {
+        "exit": 0,
+        "executable_sha256": "6e4ee17f23dec15601ce8519444e238e8bb640fd6b9e03914b518b1e66786ab3"
+      }
+    },
+    "installed_check": "Root installed/relaunched isolated development apps; Add Profile interaction pending Mac unlock. Production unchanged; previous c299 rollback retained."
   }
 }
