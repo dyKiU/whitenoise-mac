@@ -8,6 +8,10 @@ import Observation
 @Observable
 final class OnboardingCoordinator {
     private(set) var snapshot: OnboardingSnapshotFfi?
+    /// A completed checkpoint restored for an existing account is not a new sign-in flow.
+    /// Retain only whether this scope actually observed unfinished setup, so its eventual
+    /// ready projection can finish that flow without dismissing explicit Add Profile entry.
+    private(set) var hasUnfinishedSetup = false
     private(set) var recoveryRequired = false
     private(set) var isBusy = false
     private(set) var isObserving = false
@@ -39,6 +43,11 @@ final class OnboardingCoordinator {
 
     var isDurablyReady: Bool {
         snapshot?.ready == true && snapshot?.cancellationPending == false
+    }
+
+    func finishSetupPresentation() {
+        guard isDurablyReady else { return }
+        hasUnfinishedSetup = false
     }
 
     var currentStep: OnboardingStepStateFfi? {
@@ -132,7 +141,7 @@ final class OnboardingCoordinator {
                 )
             }
             try Task.checkCancellation()
-            snapshot = restored.0
+            if let restoredSnapshot = restored.0 { install(restoredSnapshot) }
             recoveryRequired = restored.1
             guard restored.0 != nil else { return }
 
@@ -173,6 +182,7 @@ final class OnboardingCoordinator {
 
     private func install(_ replacement: OnboardingSnapshotFfi) {
         guard snapshot == nil || replacement.revision >= snapshot!.revision else { return }
+        if !replacement.ready || replacement.cancellationPending { hasUnfinishedSetup = true }
         snapshot = replacement
         recoveryRequired = replacement.recoveryEpoch != nil
         error = nil

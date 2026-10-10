@@ -1,0 +1,64 @@
+{
+  "base": "87a3ce59830c61961b1d3e35b10471eecbd94693",
+  "scope": "Add Profile preserves existing signed-in account and scope; restored completed setup does not replace welcome/sign-in. Observed unfinished setup still completes, and another Add Profile attempt remains open. Installed journey pending.",
+  "red_compile_fixture_stash": "345905cf38fa8b375f4d1e485d2f458badda8e60",
+  "red_behavior_stash": "17e804e580bb4e138aef3fe4e2292145412eecb9",
+  "green_stash": "7146c58168f1ac8c19f057515130b97ef67c98c4",
+  "cohorts": [
+    {
+      "exit": 65,
+      "seconds": 19.222894191741943,
+      "log": "/Users/pj/project/build/mac-add-profile-red-v1.log",
+      "log_sha256": "aa6c411ca2fe8f6b3cc21842c6835a8a2ce597f76dc4e3a28f27b7098a40276b",
+      "executed": 0,
+      "failures": 0,
+      "classification": "zero-test fixture compile",
+      "inputs": "build/results/mac-add-profile-red-v1-inputs.json"
+    },
+    {
+      "exit": 65,
+      "seconds": 34.9325487613678,
+      "log": "/Users/pj/project/build/mac-add-profile-red-v2.log",
+      "log_sha256": "85be6d5954b33070151a0592d447935cf1f0313a1b140bef2f2f9a99b0260eda",
+      "executed": 1,
+      "failures": 1,
+      "classification": "behavioral regression",
+      "inputs": "build/results/mac-add-profile-red-v2-inputs.json"
+    },
+    {
+      "exit": 0,
+      "seconds": 21.029048919677734,
+      "log": "/Users/pj/project/build/mac-add-profile-green-v1.log",
+      "log_sha256": "fc9c1c9cae18484a395a2b7f23682cce9a12aefcf9c5fbd08ae2569705a88e0b",
+      "executed": 2,
+      "failures": 0,
+      "classification": "passing focused/affected",
+      "inputs": "build/results/mac-add-profile-green-v1-inputs.json"
+    },
+    {
+      "exit": 0,
+      "seconds": 11.907163143157959,
+      "log": "/Users/pj/project/build/mac-add-profile-affected-v1.log",
+      "log_sha256": "e7259478f17c14b42fbafcbb8a91c60e387965c012545aee847b2112af9800c6",
+      "executed": 176,
+      "failures": 0,
+      "classification": "passing focused/affected",
+      "inputs": "build/results/mac-add-profile-affected-v1-inputs.json"
+    }
+  ],
+  "static": [
+    "strict scoped swift-format passed",
+    "git diff --check passed"
+  ],
+  "limits": [
+    "Full published/experimental integration gates pending at this commit.",
+    "No credentials/account state accessed. Hosted runtime is FakeMarmotRuntime; installed app reproduction separately confirmed by user.",
+    "No SDK authority, account persistence or original linking scope changed."
+  ],
+  "tested_paths": {
+    "whitenoise-mac/Features/Onboarding/OnboardingCoordinator.swift": "d3a1d5cde52153a1e2cf13041296705a76108890597c80f66c93361b2b8fe9b2",
+    "whitenoise-mac/Views/MessengerShellView.swift": "6d353d2f6ae7f0ff92ae118a27a779c166b8303b0e6a549f0e10fc44fba79c4d",
+    "whitenoise-mac/Views/Onboarding/OnboardingView.swift": "b76ebd9d5c47c297dbeb09372cd1b8305a9e6ea9c99826b0a1d3e9749750069c",
+    "whitenoise-macTests/AddProfileRoutingTests.swift": "039e1ebf3d0b33841dc67cc86a19639e605a68b8ccab7c903baf02e980a6e579"
+  }
+}
