@@ -29,6 +29,10 @@
                                 .lineLimit(2...4)
                             Button("Receive packet") { perform(.receivePacket, revision: snapshot.revision) }
                                 .disabled(model.isWorking)
+                        } else if model.isActive, model.snapshot?.phase == .awaitingSettlement {
+                            Text("Waiting")
+                        } else if model.isActive, model.snapshot?.phase == .settled {
+                            Text("Done")
                         } else if model.isActive {
                             Button("Try again") { refreshReview() }.disabled(model.isWorking)
                         }
@@ -59,7 +63,7 @@
             readFailed = false
             task?.cancel()
             task = Task {
-                do { try await model.refreshReview() } catch {
+                do { try await model.refreshForDisplay() } catch {
                     if !Task.isCancelled, model.isActive { readFailed = true }
                 }
             }

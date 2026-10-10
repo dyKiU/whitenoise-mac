@@ -265,3 +265,17 @@ coverage and scoped formatting pass. See native-enrollment-approval-pane-evidenc
 This is scoped native action/lifetime qualification, not visual acceptance or
 actual native A/B/C enrollment. Full native PR and final integrated SDK gates
 remain required before development application adoption.
+
+## Resumed original enrollment approval display
+
+An already-owned approval can resume in approvedAwaitingPacket,
+awaitingSettlement or settled. The pane refresh reads the original snapshot and
+requests authenticated review metadata only while awaitingApproval. Waiting/Done
+use existing catalogue keys; displaying resumed state never approves again.
+New terminal approvals remain ineligible for factory adoption.
+
+A genuine three-phase control first adopts the pending original, then advances
+that same handle: RED11/12 precedes unchanged GREEN12/12, affected53/53 passes,
+zero skips, with the isolated Mac host and matching experimental3fab SDK.
+Parent independently verifies all445 inputs per cohort and every complete log.
+Full native PR, final SDK and installed cryptographic flow remain open.

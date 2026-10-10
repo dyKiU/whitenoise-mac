@@ -82,6 +82,11 @@
                 throw error
             }
         }
+        func refreshForDisplay() async throws {
+            try await refresh()
+            guard snapshot?.phase == .awaitingApproval else { return }
+            try await refreshReview()
+        }
         func refreshReview() async throws {
             try checkActive()
             currentReview = nil

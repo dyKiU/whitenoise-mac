@@ -27,6 +27,7 @@ import Testing
                 self.reject = reject
             }
         }
+        func setPhase(_ value: DeviceLinkingApprovalPhaseFfi) { lock.withLock { phase = value } }
         func advancePhase() { lock.withLock { phase = .approvedAwaitingPacket } }
         func failCleanup(_ value: Bool) { lock.withLock { failedCleanup = value } }
         func finishReview() {
@@ -86,6 +87,19 @@ import Testing
                 await Task.yield()
             }
             try #require(original.isWaiting)
+        }
+        @Test(arguments: [DeviceLinkingApprovalPhaseFfi.approvedAwaitingPacket, .awaitingSettlement, .settled])
+        func resumedOriginalPhaseDisplaysWithoutReReviewOrApproval(phase: DeviceLinkingApprovalPhaseFfi) async throws {
+            let original = ReviewApproval(noPointer: .init())
+            let (state, _, model) = try await heldModel(original)
+            // The original is adopted while pending; terminal snapshots cannot acquire a new owner.
+            original.setPhase(phase)
+            try await model.refreshForDisplay()
+            #expect(model.snapshot?.phase == phase)
+            #expect(model.reviewDisplay == nil)
+            #expect(original.reviewedRevisions.isEmpty)
+            #expect(original.approvedRevisions.isEmpty)
+            await state.deactivate()
         }
         @Test func staleDisplayedRevisionAndSdkFailureNeverApprove() async throws {
             let original = ReviewApproval(noPointer: .init())
