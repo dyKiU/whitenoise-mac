@@ -146,6 +146,87 @@ import Testing
             try #require(scope.latestSnapshot != nil)
             return try state.makeDeviceEnrollmentModel()
         }
+        @Test func transportActionsUseOriginalRevisionAndBoundedOpaqueBytes() async throws {
+            let (state, _) = await state()
+            let original = EnrollmentSession(noPointer: .init())
+            let held = try await state.adoptDeviceLinkingFactory { _, _ in original }
+            let model = DeviceEnrollmentViewModel(
+                original: held, isCurrent: { state.deviceLinkingScope === held },
+                cancel: {
+                    try await state.cancelDeviceLinking()
+                }, enrollmentSupported: true)
+            try await model.performTransportAction(.continueLinking, displayedRevision: 7)
+            try await model.performTransportAction(.exportPacket, displayedRevision: 8)
+            #expect(model.outgoingPacket == Data([1, 2, 3]).base64EncodedString())
+            try await model.performTransportAction(
+                .receivePacket, displayedRevision: 9, input: Data([4, 5]).base64EncodedString())
+            try await model.performTransportAction(.finalizeLinking, displayedRevision: 10)
+            #expect(original.actions == ["continue:7", "export:8", "receive:9", "finalize:10"])
+            #expect(original.packets == [Data([4, 5])])
+            original.rejectRevision()
+            await #expect(throws: MarmotKitError.DeviceLinkingStaleRevision) {
+                try await model.performTransportAction(.continueLinking, displayedRevision: 7)
+            }
+            try await model.cancel()
+            #expect(model.outgoingPacket == nil)
+            await state.deactivate()
+        }
+        @Test func unsupportedTransportNeverInvokesOriginal() async throws {
+            let (state, _) = await state()
+            let original = EnrollmentSession(noPointer: .init())
+            let model = try await sessionModel(state, original: original)
+            await #expect(throws: MarmotKitError.DeviceLinkingNotReady) {
+                try await model.performTransportAction(.continueLinking, displayedRevision: 7)
+            }
+            #expect(original.actions.isEmpty)
+            await state.deactivate()
+        }
+        @Test func lateTransportExportCannotPopulateReplacementAndCleanupRemainsRetryable() async throws {
+            let (state, runtime) = await state()
+            let original = EnrollmentSession(noPointer: .init())
+            let held = try await state.adoptDeviceLinkingFactory { _, _ in original }
+            let model = DeviceEnrollmentViewModel(
+                original: held, isCurrent: { state.deviceLinkingScope === held },
+                cancel: {
+                    try await state.cancelDeviceLinking()
+                }, enrollmentSupported: true)
+            original.pauseExport()
+            let operation = Task { try? await model.performTransportAction(.exportPacket, displayedRevision: 7) }
+            await waitFor { original.isWaiting }
+            try #require(original.isWaiting)
+            await state.activate(account: AccountItem.samples[1], runtime: runtime, connectivityAvailable: false)
+            await state.activate(account: AccountItem.samples[0], runtime: runtime, connectivityAvailable: false)
+            original.finishExport()
+            await operation.value
+            #expect(model.outgoingPacket == nil)
+            #expect(!model.isActive)
+            await state.deactivate()
+        }
+
+        @Test func malformedTransportInputAndCancellationNeverReuseDisplayedPacket() async throws {
+            let (state, _) = await state()
+            let original = EnrollmentSession(noPointer: .init())
+            let held = try await state.adoptDeviceLinkingFactory { _, _ in original }
+            let model = DeviceEnrollmentViewModel(
+                original: held, isCurrent: { state.deviceLinkingScope === held },
+                cancel: {
+                    try await state.cancelDeviceLinking()
+                }, enrollmentSupported: true)
+            await #expect(throws: DeviceEnrollmentPacketInput.Error.invalidPacket) {
+                try await model.performTransportAction(.receivePacket, displayedRevision: 7, input: "!")
+            }
+            #expect(original.actions.isEmpty)
+            try await model.performTransportAction(.exportPacket, displayedRevision: 7)
+            original.failCancellation(true)
+            await #expect(throws: MarmotKitError.DeviceLinkingRuntimeUnavailable) { try await model.cancel() }
+            #expect(model.outgoingPacket == nil && model.cleanupError != nil && !model.isActive)
+            original.failCancellation(false)
+            try await model.cancel()
+            #expect(model.cleanupError == nil)
+            #expect(original.cancelCount == 2)
+            await state.deactivate()
+        }
+
         @Test func sessionModelRequiresAlreadyHeldOriginal() async throws {
             let (state, _) = await state()
             #expect(throws: MarmotKitError.DeviceLinkingNotReady) { try state.makeDeviceEnrollmentModel() }

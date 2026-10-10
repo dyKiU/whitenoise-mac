@@ -6,6 +6,7 @@
     /// Opaque packet transport and explicit comparison only; enrollment is not exposed.
     struct DeviceVerificationView: View {
         let model: DeviceVerificationViewModel
+        @State private var enrollment: DeviceEnrollmentViewModel?
         @State private var incoming = ""
         @State private var setup = ""
         @State private var outgoing: [DeviceLinkingOutgoingPacketFfi] = []
@@ -18,8 +19,10 @@
                 if !model.verificationSupported {
                     Text("Device verification is unavailable in this build.")
                 } else {
-                    Text("Verification only. Device enrollment is not available in this build.")
-                        .foregroundStyle(.secondary)
+                    if !model.enrollmentSupported {
+                        Text("Verification only. Device enrollment is not available in this build.")
+                            .foregroundStyle(.secondary)
+                    }
                     if model.owner == nil {
                         Button("Start verification") {
                             perform {
@@ -103,7 +106,11 @@
                             .disabled(snapshot.phase != .comparisonAvailable)
                         }
                         if model.snapshot?.phase == .verificationCompleteEnrollmentPending {
-                            Text("Verification complete. Enrollment remains unavailable.")
+                            if model.enrollmentSupported {
+                                Button("Device enrollment") { perform { enrollment = try model.enrollmentTransport() } }
+                            } else {
+                                Text("Verification complete. Enrollment remains unavailable.")
+                            }
                         }
                         ForEach(Array(outgoing.enumerated()), id: \.offset) { _, packet in
                             HStack {
@@ -131,6 +138,9 @@
                     if actionFailed { Text("Verification action failed. Retry or cancel.").foregroundStyle(.red) }
                 }
             }
+            .sheet(isPresented: Binding(get: { enrollment != nil }, set: { if !$0 { enrollment = nil } })) {
+                if let enrollment { DeviceEnrollmentTransportView(model: enrollment) }
+            }
             .task {
                 guard model.verificationSupported, model.isActive else { return }
                 do { try await model.loadTargets() } catch { if model.isActive { actionFailed = true } }
@@ -138,6 +148,7 @@
             .onDisappear { actionTask?.cancel() }
             .onChange(of: model.isActive) { _, active in
                 if !active {
+                    enrollment = nil
                     setup = ""
                     incoming = ""
                     outgoing = []

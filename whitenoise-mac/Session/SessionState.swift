@@ -56,15 +56,20 @@ final class SessionState {
                 return self.accountScope === account && !account.isCancelled && self.deviceLinkingScope === original
                     && self.deviceLinkingEpoch == epoch && self.activationToken == selection
             }
-            let model = DeviceEnrollmentViewModel(original: original, isCurrent: current) { [weak self] in
-                guard let self else { throw MarmotKitError.DeviceLinkingClosed }
-                if current() {
-                    try await self.cancelDeviceLinking()
-                } else {
-                    guard self.retiringDeviceLinkingScope === original else { throw MarmotKitError.DeviceLinkingClosed }
-                    try await self.retryDeviceLinkingCleanup()
-                }
-            }
+            let model = DeviceEnrollmentViewModel(
+                original: original, isCurrent: current,
+                cancel: { [weak self] in
+                    guard let self else { throw MarmotKitError.DeviceLinkingClosed }
+                    if current() {
+                        try await self.cancelDeviceLinking()
+                    } else {
+                        guard self.retiringDeviceLinkingScope === original else {
+                            throw MarmotKitError.DeviceLinkingClosed
+                        }
+                        try await self.retryDeviceLinkingCleanup()
+                    }
+                }, enrollmentSupported: account.runtime.deviceLinkingCapabilities().enrollmentSupported
+            )
             account.installDeviceEnrollment(model)
             return model
         }
@@ -410,7 +415,14 @@ final class SessionState {
                         }
                         return try await scope.runtime.deviceLinkingTargets(accountRef: scope.account.accountRef)
                     },
-                    verificationSupported: runtime.deviceLinkingCapabilities().verificationSupported
+                    verificationSupported: runtime.deviceLinkingCapabilities().verificationSupported,
+                    enrollmentSupported: runtime.deviceLinkingCapabilities().enrollmentSupported,
+                    enrollment: { [weak self, weak scope] in
+                        guard let self, let scope, self.accountScope === scope, !scope.isCancelled else {
+                            throw MarmotKitError.DeviceLinkingClosed
+                        }
+                        return try self.makeDeviceEnrollmentModel()
+                    }
                 ))
         #endif
         scope.start(connectivityAvailable: connectivityAvailable)

@@ -17,6 +17,32 @@ import Testing
     }
 
     @MainActor @Suite struct DeviceVerificationViewModelTests {
+        @Test func enrollmentTransportCannotBypassActualCapabilityOrVerificationPhase() async throws {
+            let original = VerificationSessionDouble()
+            var factoryCalls = 0
+            let unsupported = DeviceVerificationViewModel(
+                begin: { original }, cancel: {},
+                enrollment: {
+                    factoryCalls += 1
+                    throw MarmotKitError.DeviceLinkingClosed
+                })
+            try await unsupported.begin()
+            original.latestSnapshot = .init(revision: 7, phase: .verificationCompleteEnrollmentPending, decimals: nil)
+            #expect(throws: MarmotKitError.DeviceLinkingNotReady) { try unsupported.enrollmentTransport() }
+            let supportedControl = DeviceVerificationViewModel(
+                begin: { original }, cancel: {}, enrollmentSupported: true,
+                enrollment: {
+                    factoryCalls += 1
+                    throw MarmotKitError.DeviceLinkingClosed
+                })
+            original.latestSnapshot = .init(revision: 7, phase: .comparisonAvailable, decimals: nil)
+            try await supportedControl.begin()
+            #expect(throws: MarmotKitError.DeviceLinkingNotReady) { try supportedControl.enrollmentTransport() }
+            supportedControl.invalidate()
+            #expect(throws: MarmotKitError.DeviceLinkingNotReady) { try supportedControl.enrollmentTransport() }
+            #expect(factoryCalls == 0)
+        }
+
         @Test func confirmsCapturedDisplayRevisionAndClearsRetiredDisplay() async throws {
             let original = VerificationSessionDouble()
             let model = DeviceVerificationViewModel(begin: { original }, cancel: {})

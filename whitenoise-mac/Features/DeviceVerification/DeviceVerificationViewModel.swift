@@ -10,6 +10,8 @@
             @MainActor (Data, Data?) async throws -> any DeviceVerificationSession
         @ObservationIgnored private let readTargets: @MainActor () async throws -> [DeviceLinkingTargetFfi]
         let verificationSupported: Bool
+        let enrollmentSupported: Bool
+        @ObservationIgnored private let enrollmentOriginal: @MainActor () throws -> DeviceEnrollmentViewModel
         private var successfulTargetRead = false
         // Cancellation alone cannot distinguish overlapping finite read completions.
         @ObservationIgnored private var targetReadID: UUID?
@@ -30,13 +32,27 @@
                 throw MarmotKitError.DeviceLinkingClosed
             },
             targets: @escaping @MainActor () async throws -> [DeviceLinkingTargetFfi] = { [] },
-            verificationSupported: Bool = false
+            verificationSupported: Bool = false, enrollmentSupported: Bool = false,
+            enrollment: @escaping @MainActor () throws -> DeviceEnrollmentViewModel = {
+                throw MarmotKitError.DeviceLinkingNotReady
+            }
         ) {
             beginOriginal = begin
             cancelOriginal = cancel
             approveOriginal = approve
             readTargets = targets
             self.verificationSupported = verificationSupported
+            self.enrollmentSupported = enrollmentSupported
+            enrollmentOriginal = enrollment
+        }
+
+        func enrollmentTransport() throws -> DeviceEnrollmentViewModel {
+            guard isActive, enrollmentSupported, owner != nil,
+                snapshot?.phase == .verificationCompleteEnrollmentPending
+            else { throw MarmotKitError.DeviceLinkingNotReady }
+            let model = try enrollmentOriginal()
+            guard isActive, model.isActive, model.enrollmentSupported else { throw MarmotKitError.DeviceLinkingClosed }
+            return model
         }
 
         func begin() async throws { try await start(beginOriginal) }

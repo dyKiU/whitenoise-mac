@@ -214,3 +214,22 @@ See native-first-device-setup-evidence.json for exact source and terminal hashes
 This is a scoped model/factory check, not full native enrollment or full PR
 qualification. SDK capability, verification protocol and original owners remain
 unchanged. No application installation or production state action occurred.
+
+## A/C opaque enrollment transport (capability gated)
+
+A separate Settings pane composes the already-held original enrollment model.
+Continue, opaque export/receive and finalize forward the rendered revision to
+that owner. Input is canonical base64 and bounded16KiB; no protocol is parsed.
+The original SDK decides permission/phase. Late results cannot populate replaced
+account state; cancellation clears displayed bytes and preserves cleanup retry.
+
+Actual runtime enrollmentSupported is captured into original-owner composition.
+It remainsfalse with e6, so this pane is unavailable; no advertised capability
+is enabled. B approval review and native A/B/C acceptance remain separate.
+
+Observable defaultdenyRED9 ran8pass/1fail; unchangedGREEN9/9, focused11/11 and
+final affected53/53 pass. Scoped strict formatting/diff and localization coverage
+pass. Three Apple sync/import-generated keys×9translations preserve all1239
+previous entries/order. Exact source/runs, compile-only fixture failure and
+comment-format correction are in native-enrollment-transport-evidence.json.
+No full PR, visual acceptance, new SDK, install or publication is claimed.
