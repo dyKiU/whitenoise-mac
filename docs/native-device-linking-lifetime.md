@@ -139,3 +139,32 @@ unchanged. Approval custody and enrollment UI are separate future slices. This
 is generated-handle native lifetime qualification, not genuine SDK enrollment,
 ABC settlement, selected-chat consent or native application acceptance. No full
 PR rerun, push/merge, SDK rebuild or sidecar adoption is claimed.
+
+
+## Original approval custody (development only)
+
+SessionState now owns one original DeviceLinkingApproval separately from its
+verification session. Finite snapshot, explicit approval and enrollment packet
+receipt forward exact displayed revisions/opaque bytes and check native ownership
+before and after awaits. The original SDK object remains the permission authority;
+no cached snapshot recreates an action. A held original is returned only while its
+current SDK phase remains nonterminal.
+
+Account/runtime replacement, deactivation and prepareForAccountExit invalidate
+pending factories and retained originals synchronously. Late original results are
+never adopted. Failed exact cleanup is retained for retry; session and approval
+cleanup are attempted independently, and either failure blocks either factory.
+The SDK's bounded multiple-pending batch (e6 limit128) is retained on refusal,
+without selecting an original or implicitly cancelling it by dropping the list.
+
+Default-deny RED ran eight tests and failed eight. Initial implementation passed
+8/8; final source avoids an empty-batch cancellation callback and passes8/8 plus
+31/31 affected session/action/lifetime/runtime tests. Repository strict swift-format
+and diff checks pass. Exact RED/initial GREEN sources remain in compact Git stashes;
+all429 input paths and terminal log hashes are recorded in
+native-device-linking-approval-scope-evidence.json.
+
+This is native custody/lifecycle qualification with generated original-handle test
+doubles and actual SessionState paths. It is not actual SDK enrollment or a full PR
+suite. Verification UI/protocol and advertised capability are unchanged. No merge,
+push, installation, production app or account data action occurred.

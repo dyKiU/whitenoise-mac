@@ -34,6 +34,139 @@ final class SessionState {
                 id: UUID, task: Task<any DeviceLinkingSessionProtocol, Error>
             )?
 
+        private(set) var deviceLinkingApprovalScope: NativeDeviceLinkingApprovalScope?
+        private var retiringApprovalScopes: [NativeDeviceLinkingApprovalScope] = []
+        var retiringDeviceLinkingApprovalScope: NativeDeviceLinkingApprovalScope? { retiringApprovalScopes.first }
+        // SDK e6 bounds its returned originals to128; refusal must not implicitly Drop them.
+        private var unselectedApprovalScopes: [NativeDeviceLinkingApprovalScope] = []
+        @ObservationIgnored private var pendingApprovalFactory:
+            (id: UUID, task: Task<[any DeviceLinkingApprovalProtocol], Error>)?
+        @ObservationIgnored private var approvalCleanup: Task<Void, Error>?
+        @ObservationIgnored private var approvalCancellation: (scope: AccountScope, id: UUID)?
+
+        func pendingOwnedDeviceLinkingApproval() async throws -> NativeDeviceLinkingApprovalScope {
+            try await adoptDeviceLinkingApprovalBatch { runtime, accountRef in
+                try await runtime.pendingDeviceLinkingApprovals(accountRef: accountRef)
+            }
+        }
+
+        func adoptDeviceLinkingApprovalBatch(
+            _ factory:
+                @escaping @MainActor (any MarmotRuntime, String) async throws -> [any DeviceLinkingApprovalProtocol]
+        ) async throws -> NativeDeviceLinkingApprovalScope {
+            guard let scope = accountScope, !scope.isCancelled, pendingApprovalFactory == nil else {
+                throw CancellationError()
+            }
+            let epoch = deviceLinkingEpoch
+            let selection = activationToken
+            try await retryDeviceLinkingCleanup()
+            guard !Task.isCancelled, accountScope === scope, !scope.isCancelled,
+                epoch == deviceLinkingEpoch, selection == activationToken, pendingApprovalFactory == nil
+            else { throw CancellationError() }
+            if let held = deviceLinkingApprovalScope {
+                let snapshot = try await held.snapshot()
+                guard accountScope === scope, !scope.isCancelled, epoch == deviceLinkingEpoch,
+                    selection == activationToken, deviceLinkingApprovalScope === held
+                else { throw CancellationError() }
+                switch snapshot.phase {
+                case .awaitingApproval, .approvedAwaitingPacket, .awaitingSettlement: return held
+                case .settled, .cancelled, .expired: throw MarmotKitError.DeviceLinkingClosed
+                }
+            }
+            guard unselectedApprovalScopes.isEmpty else { throw MarmotKitError.DeviceLinkingNotReady }
+            return try await acquireDeviceLinkingApproval(factory, scope: scope, epoch: epoch, selection: selection)
+        }
+
+        private func acquireDeviceLinkingApproval(
+            _ factory:
+                @escaping @MainActor (any MarmotRuntime, String) async throws -> [any DeviceLinkingApprovalProtocol],
+            scope: AccountScope, epoch: UUID, selection: UUID
+        ) async throws -> NativeDeviceLinkingApprovalScope {
+            let id = UUID()
+            let task = Task {
+                try Task.checkCancellation()
+                return try await factory(scope.runtime, scope.account.accountRef)
+            }
+            pendingApprovalFactory = (id, task)
+            let cancellation = scope.addCancellation { task.cancel() }
+            defer {
+                scope.releaseCancellation(cancellation)
+                if pendingApprovalFactory?.id == id { pendingApprovalFactory = nil }
+            }
+            let originals = try await withTaskCancellationHandler {
+                try await task.value
+            } onCancel: {
+                task.cancel()
+            }
+            let owners = originals.map {
+                NativeDeviceLinkingApprovalScope(accountRef: scope.account.accountRef, approval: $0)
+            }
+            guard !Task.isCancelled, accountScope === scope, !scope.isCancelled,
+                selection == activationToken, epoch == deviceLinkingEpoch
+            else {
+                for owner in owners { owner.invalidate() }
+                retiringApprovalScopes.append(contentsOf: owners)
+                try await cancelRetiringApprovalScopes()
+                throw CancellationError()
+            }
+            guard owners.count == 1, let owner = owners.first else {
+                unselectedApprovalScopes = owners
+                // Unselected originals still belong to this actual account lifetime.
+                if !owners.isEmpty {
+                    let token = scope.addCancellation { [weak self] in self?.invalidateDeviceLinking() }
+                    approvalCancellation = (scope, token)
+                }
+                throw MarmotKitError.DeviceLinkingNotReady
+            }
+            deviceLinkingApprovalScope = owner
+            let token = scope.addCancellation { [weak self] in
+                guard let self, self.deviceLinkingApprovalScope === owner else { return }
+                self.invalidateDeviceLinking()
+            }
+            approvalCancellation = (scope, token)
+            return owner
+        }
+
+        private func invalidateDeviceLinkingApprovals() {
+            pendingApprovalFactory?.task.cancel()
+            if let cancellation = approvalCancellation {
+                cancellation.scope.releaseCancellation(cancellation.id)
+                approvalCancellation = nil
+            }
+            var owners = unselectedApprovalScopes
+            unselectedApprovalScopes = []
+            if let owner = deviceLinkingApprovalScope { owners.append(owner) }
+            deviceLinkingApprovalScope = nil
+            for owner in owners { owner.invalidate() }
+            retiringApprovalScopes.append(contentsOf: owners)
+            if !owners.isEmpty { approvalCleanup = Task { try await self.cancelRetiringApprovalScopes() } }
+        }
+
+        private func retryApprovalCleanup() async throws {
+            do {
+                if let cleanup = approvalCleanup {
+                    try await cleanup.value
+                } else {
+                    try await cancelRetiringApprovalScopes()
+                }
+                approvalCleanup = nil
+            } catch {
+                approvalCleanup = nil
+                throw error
+            }
+        }
+
+        private func cancelRetiringApprovalScopes() async throws {
+            var firstError: Error?
+            for owner in retiringApprovalScopes {
+                do {
+                    try await owner.cancel()
+                    retiringApprovalScopes.removeAll { $0 === owner }
+                } catch { if firstError == nil { firstError = error } }
+            }
+            if let firstError { throw firstError }
+        }
+
         func beginDeviceLinkingSession() async throws -> DeviceLinkingScope {
             try await adoptDeviceLinkingFactory { runtime, accountRef in
                 try await runtime.beginDeviceLinkingSession(accountRef: accountRef)
@@ -97,6 +230,7 @@ final class SessionState {
         private func invalidateDeviceLinking() {
             deviceLinkingEpoch = UUID()
             pendingDeviceLinkingFactory?.task.cancel()
+            invalidateDeviceLinkingApprovals()
             if let cancellation = deviceLinkingCancellation {
                 cancellation.scope.releaseCancellation(cancellation.id)
                 deviceLinkingCancellation = nil
@@ -114,6 +248,14 @@ final class SessionState {
         }
 
         func retryDeviceLinkingCleanup() async throws {
+            // Attempt every retained original independently; either failure fences both factories.
+            var firstError: Error?
+            do { try await retrySessionCleanup() } catch { firstError = error }
+            do { try await retryApprovalCleanup() } catch { if firstError == nil { firstError = error } }
+            if let firstError { throw firstError }
+        }
+
+        private func retrySessionCleanup() async throws {
             guard let owner = retiringDeviceLinkingScope else { return }
             do {
                 if let cleanup = deviceLinkingCleanup { try await cleanup.value } else { try await owner.cancel() }
