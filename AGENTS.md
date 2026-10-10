@@ -314,3 +314,16 @@ history storage calls run through the model's detached task. Update protocol,
 matching history-capable SDK; the older SDK83 cohort cannot compile the new
 bridge with `WN_EXPERIMENTAL_DEVICE_SYNC` enabled. Published builds refuse the
 unavailable query. Mapping preserves source attestation, not live authorship.
+
+## Incoming history review
+
+`AccountScope` owns the experimental `HistoryConsentReviewViewModel`. Its loader
+captures the exact account scope across awaits and retains original SDK consent
+handles through `NativeHistoryAccountOwner`. Features depend on the Core
+`HistoryConsentReviewing` interface, never Session. Row UUIDs select already-held
+originals; snapshot fields and device fingerprints never create approval authority.
+Listing and selection only refresh. Approval forwards the displayed revision to
+the exact recipient original; account replacement invalidates the model before
+teardown. One malformed original must not block review of another. Focused model
+and related lifetime evidence is in `docs/history-recipient-review-model-verification.json`;
+installed UI, real transfer acceptance and full PR qualification remain separate.

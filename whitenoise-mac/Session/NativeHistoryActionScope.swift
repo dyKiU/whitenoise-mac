@@ -4,7 +4,8 @@
     import Observation
 
     /// One original SDK action; display snapshots never create authority.
-    @MainActor @Observable final class NativeHistoryActionScope {
+    @MainActor @Observable final class NativeHistoryActionScope: HistoryConsentReviewing {
+        let id = UUID()
         enum Role { case source, recipient }
         let accountRef: String
         let role: Role
@@ -95,6 +96,11 @@
                 if Task.isCancelled { cancel() }
                 throw error
             }
+        }
+
+        func approveReview(displayedRevision: UInt64) async throws {
+            guard role == .recipient else { throw MarmotKitError.HistoryTransferNotReady }
+            try await perform(displayedRevision: displayedRevision)
         }
 
         func cancel() {

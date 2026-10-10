@@ -1,0 +1,75 @@
+{
+  "base": "f329fb4a58c4f3365a5e36376183e40ebbdcfb3e",
+  "sdk_source": "84113c20771a0092cb0e52ca094836375f9dd406",
+  "cohorts": [
+    {
+      "cohort": "red-v5",
+      "immutable_source": "c61c291d1897c74a90538e626e0e9ac5864bd751",
+      "source_inputs_verified": 473,
+      "manifest_sha256": "531605abfe943404d1268e4c114fc4cbfd53dbfed562e99ec36bc03a246ea002",
+      "log_sha256": "774917972849cca243615499d1f6eb1481acb6494ff0d931cb05de07cdcc665f",
+      "exit_code": 65,
+      "actual_xcresult": {
+        "result": "Failed",
+        "totalTestCount": 3,
+        "passedTests": 0,
+        "failedTests": 3,
+        "skippedTests": 0
+      },
+      "scope": "Isolated Mac original-recipient review presentation model; not live SDK import or installed UI"
+    },
+    {
+      "cohort": "green-v1",
+      "immutable_source": "cc6821652b4e47bd208196894ce263e52afe791a",
+      "source_inputs_verified": 473,
+      "manifest_sha256": "150b635f4ba25729ccfc5f5805d03e5489d233d5d87f4e94a07434f1eb8c118d",
+      "log_sha256": "3cb94189cef1c3c613ad6da0f8dc7a7faf61aed36b14734b6cb839f739f9e895",
+      "exit_code": 0,
+      "actual_xcresult": {
+        "result": "Passed",
+        "totalTestCount": 3,
+        "passedTests": 3,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "scope": "Isolated Mac original-recipient review presentation model; not live SDK import or installed UI"
+    },
+    {
+      "cohort": "green-v2",
+      "immutable_source": "3d91b83b6163234f9029e23e588fd399dcd82285",
+      "source_inputs_verified": 473,
+      "manifest_sha256": "9aac2cfb65dec3a910da0db081a9a1d227278a7e4eb73653612b33894fe9b17d",
+      "log_sha256": "db6e6d6f0112185641e78b3e5c9fcaa8031f4a488735650dfb8eea57a1a2d66a",
+      "exit_code": 0,
+      "actual_xcresult": {
+        "result": "Passed",
+        "totalTestCount": 8,
+        "passedTests": 8,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "scope": "Isolated Mac original-recipient review presentation model; not live SDK import or installed UI"
+    },
+    {
+      "cohort": "affected-v1",
+      "immutable_source": "3d91b83b6163234f9029e23e588fd399dcd82285",
+      "source_inputs_verified": 473,
+      "manifest_sha256": "9aac2cfb65dec3a910da0db081a9a1d227278a7e4eb73653612b33894fe9b17d",
+      "log_sha256": "e9db8e11cab370ff4475a71d1dea5d61be98dbf496480eb594b138c08f4fc500",
+      "exit_code": 0,
+      "actual_xcresult": {
+        "result": "Passed",
+        "totalTestCount": 24,
+        "passedTests": 24,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "scope": "Isolated Mac original-recipient review presentation model; not live SDK import or installed UI"
+    }
+  ],
+  "limits": [
+    "Synthetic original SDK protocol probes; not live relay import or installed recipient UI.",
+    "Full experimental and published PR suites remain required before integration.",
+    "Earlier preflight, named stale FFI PCM and compile failures preserved separately; they are not semantic RED."
+  ]
+}

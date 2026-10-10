@@ -295,6 +295,27 @@ final class SessionState {
                     accountRef: accountRef, groupIdHex: groupIdHex, recipientDevice: recipientDevice)
             }
         }
+        func historyConsentReviewModel(
+            factory: @escaping @MainActor (any MarmotRuntime, String) async throws -> [any HistoryConsentProtocol] = {
+                runtime, accountRef in try await runtime.pendingHistoryRequests(accountRef: accountRef)
+            }
+        ) throws -> HistoryConsentReviewViewModel {
+            guard let account = accountScope, !account.isCancelled else { throw MarmotKitError.HistoryTransferClosed }
+            if let existing = account.historyConsentReview { return existing }
+            let model = HistoryConsentReviewViewModel { [weak self, weak account] in
+                guard let self, let account, self.accountScope === account, !account.isCancelled else {
+                    throw MarmotKitError.HistoryTransferClosed
+                }
+                let held = try await self.adoptHistoryConsentFactory(factory)
+                guard self.accountScope === account, !account.isCancelled else {
+                    throw MarmotKitError.HistoryTransferClosed
+                }
+                return held
+            }
+            account.installHistoryConsentReview(model)
+            return model
+        }
+
         func pendingHistoryRequests() async throws -> [NativeHistoryActionScope] {
             try await adoptHistoryConsentFactory { runtime, accountRef in
                 try await runtime.pendingHistoryRequests(accountRef: accountRef)
