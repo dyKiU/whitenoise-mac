@@ -17,3 +17,13 @@ checks all441 frozen inputs and complete logs for each cohort.
 This checkpoint does not include account-owned factory adoption, lifecycle
 qualification, chat consent UI, full PR qualification or installed delivery.
 Generated local SDK overrides and framework binaries are not committed.
+
+## Original-handle lifecycle controls
+
+The next scoped control suite passes11 focused and40 affected tests with zero
+skips, on the same isolated target/SDK. It checks retirement blocks all new
+actions; paused original packet replies cannot escape retirement/cancellation;
+failed cleanup stays observable and retries the same original, with successful
+cleanup idempotent; stale displayed revisions pass through as SDK errors.
+These are passing controls of existing scope behavior, not invented regressions
+or new runtime fixes. Account-owned factories and full PR remain pending.

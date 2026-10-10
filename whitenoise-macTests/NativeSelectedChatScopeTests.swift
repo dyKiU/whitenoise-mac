@@ -5,12 +5,41 @@ import Testing
 @testable import whitenoise_mac
 
 #if WN_EXPERIMENTAL_DEVICE_SYNC
+    private actor SelectedChatPause {
+        private var entered = false
+        private var enteredWaiter: CheckedContinuation<Void, Never>?
+        private var releaseWaiter: CheckedContinuation<Void, Never>?
+        func pause() async {
+            await withCheckedContinuation { continuation in
+                releaseWaiter = continuation
+                entered = true
+                enteredWaiter?.resume()
+                enteredWaiter = nil
+            }
+        }
+        func waitUntilEntered() async {
+            if entered { return }
+            await withCheckedContinuation { enteredWaiter = $0 }
+        }
+        func release() {
+            releaseWaiter?.resume()
+            releaseWaiter = nil
+        }
+    }
     // These original-handle controls use a lock because SDK protocols cross actor boundaries.
     nonisolated private final class CopyOriginal: SelectedChatCopyProtocol, @unchecked Sendable {
         private let lock = NSLock()
         private var revisions: [UInt64] = []
         private var packets: [Data] = []
         private var cancellations = 0
+        private let pause: SelectedChatPause?
+        private let failFirstCancel: Bool
+        private let staleAction: Bool
+        init(pause: SelectedChatPause? = nil, failFirstCancel: Bool = false, staleAction: Bool = false) {
+            self.pause = pause
+            self.failFirstCancel = failFirstCancel
+            self.staleAction = staleAction
+        }
         var captured: ([UInt64], [Data], Int) { lock.withLock { (revisions, packets, cancellations) } }
         func snapshot() async throws -> SelectedChatCopySnapshotFfi {
             .init(
@@ -19,6 +48,8 @@ import Testing
         }
         func requestPacket(revision: UInt64) async throws -> Data {
             lock.withLock { revisions.append(revision) }
+            if staleAction { throw MarmotKitError.SelectedChatCopyStaleRevision }
+            if let pause { await pause.pause() }
             return Data([7, 8, 9])
         }
         func receiveConsentPacket(revision: UInt64, packet: Data) async throws {
@@ -34,13 +65,27 @@ import Testing
             }
         }
         func continueCopy(revision: UInt64) async throws { lock.withLock { revisions.append(revision) } }
-        func cancel() async throws { lock.withLock { cancellations += 1 } }
+        func cancel() async throws {
+            let attempt = lock.withLock {
+                cancellations += 1
+                return cancellations
+            }
+            if failFirstCancel && attempt == 1 { throw MarmotKitError.SelectedChatCopyBusy }
+        }
     }
     nonisolated private final class ConsentOriginal: SelectedChatConsentProtocol, @unchecked Sendable {
         private let lock = NSLock()
         private var revisions: [UInt64] = []
         private var approvals = 0
         private var cancellations = 0
+        private let pause: SelectedChatPause?
+        private let failFirstCancel: Bool
+        private let staleAction: Bool
+        init(pause: SelectedChatPause? = nil, failFirstCancel: Bool = false, staleAction: Bool = false) {
+            self.pause = pause
+            self.failFirstCancel = failFirstCancel
+            self.staleAction = staleAction
+        }
         var captured: ([UInt64], Int, Int) { lock.withLock { (revisions, approvals, cancellations) } }
         func snapshot() async throws -> SelectedChatConsentSnapshotFfi {
             .init(revision: 23, phase: .awaitingApproval, chatSelector: Data(repeating: 4, count: 32))
@@ -50,16 +95,24 @@ import Testing
                 revisions.append(revision)
                 approvals += 1
             }
+            if staleAction { throw MarmotKitError.SelectedChatCopyStaleRevision }
         }
         func responsePacket(revision: UInt64) async throws -> Data {
             lock.withLock { revisions.append(revision) }
+            if let pause { await pause.pause() }
             return Data([11, 12])
         }
         func offerPacket(revision: UInt64) async throws -> Data {
             lock.withLock { revisions.append(revision) }
             return Data([13, 14])
         }
-        func cancel() async throws { lock.withLock { cancellations += 1 } }
+        func cancel() async throws {
+            let attempt = lock.withLock {
+                cancellations += 1
+                return cancellations
+            }
+            if failFirstCancel && attempt == 1 { throw MarmotKitError.SelectedChatCopyBusy }
+        }
     }
     @MainActor @Suite struct NativeSelectedChatScopeTests {
         @Test func requestForwardsExactOriginalRevisionAndOpaquePackets() async throws {
@@ -88,6 +141,105 @@ import Testing
             #expect(original.captured.1 == 1)
             try await held.cancel()
             #expect(original.captured.2 == 1)
+        }
+        @Test func invalidatedRequestBlocksAllNewActions() async throws {
+            let original = CopyOriginal()
+            let scope = NativeSelectedChatCopyScope(accountRef: "isolated", original: original)
+            scope.invalidate()
+            await #expect(throws: MarmotKitError.SelectedChatCopyClosed) { _ = try await scope.snapshot() }
+            await #expect(throws: MarmotKitError.SelectedChatCopyClosed) {
+                _ = try await scope.requestPacket(displayedRevision: 19)
+            }
+            await #expect(throws: MarmotKitError.SelectedChatCopyClosed) {
+                try await scope.receiveConsentPacket(displayedRevision: 19, packet: Data([1]))
+            }
+            await #expect(throws: MarmotKitError.SelectedChatCopyClosed) {
+                try await scope.receiveOfferPacket(displayedRevision: 19, packet: Data([2]))
+            }
+            await #expect(throws: MarmotKitError.SelectedChatCopyClosed) {
+                try await scope.continueCopy(displayedRevision: 19)
+            }
+            #expect(original.captured.0.isEmpty)
+            #expect(original.captured.1.isEmpty)
+        }
+        @Test func invalidatedConsentBlocksAllNewActions() async throws {
+            let original = ConsentOriginal()
+            let scope = NativeSelectedChatConsentScope(accountRef: "isolated", original: original)
+            scope.invalidate()
+            await #expect(throws: MarmotKitError.SelectedChatCopyClosed) { _ = try await scope.snapshot() }
+            await #expect(throws: MarmotKitError.SelectedChatCopyClosed) {
+                try await scope.approve(displayedRevision: 23)
+            }
+            await #expect(throws: MarmotKitError.SelectedChatCopyClosed) {
+                _ = try await scope.responsePacket(displayedRevision: 23)
+            }
+            await #expect(throws: MarmotKitError.SelectedChatCopyClosed) {
+                _ = try await scope.offerPacket(displayedRevision: 23)
+            }
+            #expect(original.captured.0.isEmpty)
+            #expect(original.captured.1 == 0)
+        }
+        @Test func delayedRequestPacketCannotEscapeRetirement() async throws {
+            let pause = SelectedChatPause()
+            let original = CopyOriginal(pause: pause)
+            let scope = NativeSelectedChatCopyScope(accountRef: "isolated", original: original)
+            let action = Task { try await scope.requestPacket(displayedRevision: 19) }
+            await pause.waitUntilEntered()
+            scope.invalidate()
+            await pause.release()
+            await #expect(throws: MarmotKitError.SelectedChatCopyClosed) { _ = try await action.value }
+            #expect(original.captured.0 == [19])
+        }
+        @Test func delayedConsentPacketCannotEscapeCancellation() async throws {
+            let pause = SelectedChatPause()
+            let original = ConsentOriginal(pause: pause)
+            let scope = NativeSelectedChatConsentScope(accountRef: "isolated", original: original)
+            let action = Task { try await scope.responsePacket(displayedRevision: 23) }
+            await pause.waitUntilEntered()
+            try await scope.cancel()
+            await pause.release()
+            await #expect(throws: MarmotKitError.SelectedChatCopyClosed) { _ = try await action.value }
+            #expect(original.captured.0 == [23])
+            #expect(original.captured.2 == 1)
+        }
+        @Test func requestFailedCleanupRetriesSameOriginalOnce() async throws {
+            let original = CopyOriginal(failFirstCancel: true)
+            let scope = NativeSelectedChatCopyScope(accountRef: "isolated", original: original)
+            await #expect(throws: MarmotKitError.SelectedChatCopyBusy) { try await scope.cancel() }
+            #expect(!scope.isActive)
+            #expect(scope.cleanupError != nil)
+            #expect(original.captured.2 == 1)
+            try await scope.cancel()
+            try await scope.cancel()
+            #expect(scope.cleanupError == nil)
+            #expect(original.captured.2 == 2)
+        }
+        @Test func consentFailedCleanupRetriesSameOriginalOnce() async throws {
+            let original = ConsentOriginal(failFirstCancel: true)
+            let scope = NativeSelectedChatConsentScope(accountRef: "isolated", original: original)
+            await #expect(throws: MarmotKitError.SelectedChatCopyBusy) { try await scope.cancel() }
+            #expect(!scope.isActive)
+            #expect(scope.cleanupError != nil)
+            #expect(original.captured.2 == 1)
+            try await scope.cancel()
+            try await scope.cancel()
+            #expect(scope.cleanupError == nil)
+            #expect(original.captured.2 == 2)
+        }
+        @Test func staleDisplayedRevisionPassesThroughWithoutImplicitRefreshOrApproval() async throws {
+            let request = CopyOriginal(staleAction: true)
+            let copy = NativeSelectedChatCopyScope(accountRef: "isolated", original: request)
+            await #expect(throws: MarmotKitError.SelectedChatCopyStaleRevision) {
+                _ = try await copy.requestPacket(displayedRevision: 17)
+            }
+            #expect(request.captured.0 == [17])
+            let recipient = ConsentOriginal(staleAction: true)
+            let consent = NativeSelectedChatConsentScope(accountRef: "isolated", original: recipient)
+            await #expect(throws: MarmotKitError.SelectedChatCopyStaleRevision) {
+                try await consent.approve(displayedRevision: 21)
+            }
+            #expect(recipient.captured.0 == [21])
+            #expect(recipient.captured.1 == 1)
         }
         private func withRuntime(_ body: (any MarmotRuntime) async throws -> Void) async throws {
             let root = FileManager.default.temporaryDirectory.appendingPathComponent(
