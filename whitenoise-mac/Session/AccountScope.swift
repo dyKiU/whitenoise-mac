@@ -12,6 +12,8 @@ import Observation
 final class AccountScope {
     private(set) var isCancelled = false
     #if WN_EXPERIMENTAL_DEVICE_SYNC
+        let selectedChat: NativeSelectedChatAccountOwner
+
         private(set) var deviceVerification: DeviceVerificationViewModel?
 
         private(set) var deviceEnrollment: DeviceEnrollmentViewModel?
@@ -70,6 +72,9 @@ final class AccountScope {
         let attachmentPolicy = AttachmentPolicyController(accountRef: account.accountRef, runtime: runtime)
         let blockedUsers = BlockedUsersViewModel(accountRef: account.accountRef, runtime: runtime)
         let productAnalytics = ProductAnalyticsRecorder()
+        #if WN_EXPERIMENTAL_DEVICE_SYNC
+            self.selectedChat = NativeSelectedChatAccountOwner(accountRef: account.accountRef, runtime: runtime)
+        #endif
         self.account = account
         self.runtime = runtime
         self.settingsModel = SettingsViewModel(
@@ -96,6 +101,9 @@ final class AccountScope {
             runtime: runtime
         )
         self.productAnalytics = productAnalytics
+        #if WN_EXPERIMENTAL_DEVICE_SYNC
+            addCancellation { [selectedChat] in selectedChat.invalidate() }
+        #endif
     }
 
     func start(connectivityAvailable: Bool) {

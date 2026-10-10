@@ -22,6 +22,8 @@ final class SessionState {
     @ObservationIgnored private var activationToken = UUID()
 
     #if WN_EXPERIMENTAL_DEVICE_SYNC
+        private var retiringSelectedChatOwners: [NativeSelectedChatAccountOwner] = []
+
         private(set) var deviceLinkingScope: DeviceLinkingScope?
         private(set) var retiringDeviceLinkingScope: DeviceLinkingScope?
         // SDK factories may ignore Swift task cancellation and return after A→B→A.
@@ -227,6 +229,59 @@ final class SessionState {
             if let firstError { throw firstError }
         }
 
+        func beginSelectedChatCopy(groupIdHex: String, linkedRosterSelector: Data) async throws
+            -> NativeSelectedChatCopyScope
+        {
+            try await adoptSelectedChatCopyFactory { runtime, accountRef in
+                try await runtime.beginSelectedChatCopy(
+                    accountRef: accountRef, groupIdHex: groupIdHex, linkedRosterSelector: linkedRosterSelector)
+            }
+        }
+        func receiveSelectedChatCopyRequest(packet: Data) async throws -> NativeSelectedChatConsentScope {
+            try await adoptSelectedChatConsentFactory { runtime, accountRef in
+                try await runtime.receiveSelectedChatCopyRequest(accountRef: accountRef, packet: packet)
+            }
+        }
+        func adoptSelectedChatCopyFactory(
+            _ factory: @escaping @MainActor (any MarmotRuntime, String) async throws -> any SelectedChatCopyProtocol
+        ) async throws -> NativeSelectedChatCopyScope {
+            guard let account = accountScope, !account.isCancelled else { throw MarmotKitError.SelectedChatCopyClosed }
+            try await retrySelectedChatCleanup()
+            guard accountScope === account, !account.isCancelled else { throw MarmotKitError.SelectedChatCopyClosed }
+            return try await account.selectedChat.adoptCopy(factory)
+        }
+        func adoptSelectedChatConsentFactory(
+            _ factory: @escaping @MainActor (any MarmotRuntime, String) async throws -> any SelectedChatConsentProtocol
+        ) async throws -> NativeSelectedChatConsentScope {
+            guard let account = accountScope, !account.isCancelled else { throw MarmotKitError.SelectedChatCopyClosed }
+            try await retrySelectedChatCleanup()
+            guard accountScope === account, !account.isCancelled else { throw MarmotKitError.SelectedChatCopyClosed }
+            return try await account.selectedChat.adoptConsent(factory)
+        }
+        private func invalidateSelectedChat() {
+            guard let owner = accountScope?.selectedChat else { return }
+            owner.invalidate()
+            if !retiringSelectedChatOwners.contains(where: { $0 === owner }) {
+                retiringSelectedChatOwners.append(owner)
+            }
+        }
+        func retrySelectedChatCleanup() async throws {
+            var firstError: Error?
+            for owner in retiringSelectedChatOwners {
+                do {
+                    try await owner.retryCleanup()
+                    retiringSelectedChatOwners.removeAll { $0 === owner }
+                } catch { if firstError == nil { firstError = error } }
+            }
+            if let firstError { throw firstError }
+        }
+        private func retryNativeCleanup() async throws {
+            var firstError: Error?
+            do { try await retryDeviceLinkingCleanup() } catch { firstError = error }
+            do { try await retrySelectedChatCleanup() } catch { if firstError == nil { firstError = error } }
+            if let firstError { throw firstError }
+        }
+
         func beginDeviceLinkingSession() async throws -> DeviceLinkingScope {
             try await adoptDeviceLinkingFactory { runtime, accountRef in
                 try await runtime.beginDeviceLinkingSession(accountRef: accountRef)
@@ -336,16 +391,17 @@ final class SessionState {
             // cleanup must still finish before a repeat exit can reach Core.
             activationToken = UUID()
             invalidateDeviceLinking()
+            invalidateSelectedChat()
             let previous = accountScope
             accountScope = nil
             await previous?.cancelAll()
             // Explicit exits expose this one cleanup failure. Projection teardown's
             // best-effort path must not trigger an implicit second cancellation.
-            try await retryDeviceLinkingCleanup()
+            try await retryNativeCleanup()
         }
 
         private func finishDeviceLinkingTeardown() async {
-            do { try await retryDeviceLinkingCleanup() } catch {
+            do { try await retryNativeCleanup() } catch {
                 // Ordinary projection teardown may continue. Exact owner/error stay retained;
                 // explicit exits and future factories must retry this same cleanup successfully.
             }
@@ -374,6 +430,7 @@ final class SessionState {
         activationToken = ticket
         #if WN_EXPERIMENTAL_DEVICE_SYNC
             invalidateDeviceLinking()
+            invalidateSelectedChat()
         #endif
         let previous = accountScope
         accountScope = nil
@@ -456,6 +513,7 @@ final class SessionState {
         activationToken = UUID()
         #if WN_EXPERIMENTAL_DEVICE_SYNC
             invalidateDeviceLinking()
+            invalidateSelectedChat()
         #endif
         let previous = accountScope
         accountScope = nil

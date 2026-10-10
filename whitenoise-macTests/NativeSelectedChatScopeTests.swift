@@ -241,6 +241,193 @@ import Testing
             #expect(recipient.captured.0 == [21])
             #expect(recipient.captured.1 == 1)
         }
+        @Test func currentAccountOwnsExactRequestAndExitCancelsIt() async throws {
+            let state = SessionState()
+            let runtime = FakeMarmotRuntime(accounts: [])
+            let account = AccountItem.samples[0]
+            await state.activate(account: account, runtime: runtime, connectivityAvailable: false)
+            let original = CopyOriginal()
+            let held = try await state.adoptSelectedChatCopyFactory { actual, ref in
+                #expect(nativeRuntimeObjectIdentity(actual) == nativeRuntimeObjectIdentity(runtime))
+                #expect(ref == account.accountRef)
+                return original
+            }
+            #expect(held.accountRef == account.accountRef)
+            #expect(try await held.requestPacket(displayedRevision: 19) == Data([7, 8, 9]))
+            try await state.prepareForAccountExit()
+            #expect(!held.isActive)
+            #expect(original.captured.2 == 1)
+            #expect(state.accountScope == nil)
+        }
+        @Test func currentAccountOwnsExactConsentAndRuntimeReplacementRetiresIt() async throws {
+            let state = SessionState()
+            let runtime = FakeMarmotRuntime(accounts: [])
+            let account = AccountItem.samples[0]
+            await state.activate(account: account, runtime: runtime, connectivityAvailable: false)
+            let original = ConsentOriginal()
+            let held = try await state.adoptSelectedChatConsentFactory { actual, ref in
+                #expect(nativeRuntimeObjectIdentity(actual) == nativeRuntimeObjectIdentity(runtime))
+                #expect(ref == account.accountRef)
+                return original
+            }
+            #expect(held.accountRef == account.accountRef)
+            try await held.approve(displayedRevision: 23)
+            let replacement = FakeMarmotRuntime(accounts: [])
+            await state.activate(account: account, runtime: replacement, connectivityAvailable: false)
+            #expect(!held.isActive)
+            #expect(original.captured.2 == 1)
+            #expect(original.captured.0 == [23])
+            await state.deactivate()
+        }
+        @Test func lateRequestCannotAttachAcrossAccountReplacementAndReturn() async throws {
+            let state = SessionState()
+            let runtime = FakeMarmotRuntime(accounts: [])
+            let account = AccountItem.samples[0]
+            await state.activate(account: account, runtime: runtime, connectivityAvailable: false)
+            let pause = SelectedChatPause()
+            let original = CopyOriginal()
+            let pending = Task {
+                try await state.adoptSelectedChatCopyFactory { _, ref in
+                    #expect(ref == account.accountRef)
+                    await pause.pause()
+                    return original
+                }
+            }
+            await pause.waitUntilEntered()
+            await state.activate(account: AccountItem.samples[1], runtime: runtime, connectivityAvailable: false)
+            await state.activate(account: account, runtime: runtime, connectivityAvailable: false)
+            var invoked = false
+            await #expect(throws: MarmotKitError.SelectedChatCopyBusy) {
+                _ = try await state.adoptSelectedChatCopyFactory { _, _ in
+                    invoked = true
+                    return CopyOriginal()
+                }
+            }
+            #expect(!invoked)
+            await pause.release()
+            await #expect(throws: MarmotKitError.SelectedChatCopyClosed) { _ = try await pending.value }
+            #expect(original.captured.2 == 1)
+            try await state.retrySelectedChatCleanup()
+            let fresh = CopyOriginal()
+            let held = try await state.adoptSelectedChatCopyFactory { _, _ in fresh }
+            #expect(held.isActive)
+            await state.deactivate()
+            #expect(fresh.captured.2 == 1)
+        }
+        @Test func lateConsentCannotAttachAcrossDeactivationAndNewAccountLifetime() async throws {
+            let state = SessionState()
+            let runtime = FakeMarmotRuntime(accounts: [])
+            let account = AccountItem.samples[0]
+            await state.activate(account: account, runtime: runtime, connectivityAvailable: false)
+            let pause = SelectedChatPause()
+            let original = ConsentOriginal()
+            let pending = Task {
+                try await state.adoptSelectedChatConsentFactory { _, _ in
+                    await pause.pause()
+                    return original
+                }
+            }
+            await pause.waitUntilEntered()
+            await state.deactivate()
+            await state.activate(account: account, runtime: runtime, connectivityAvailable: false)
+            await pause.release()
+            await #expect(throws: MarmotKitError.SelectedChatCopyClosed) { _ = try await pending.value }
+            #expect(original.captured.2 == 1)
+            #expect(original.captured.1 == 0)
+            try await state.retrySelectedChatCleanup()
+            await state.deactivate()
+        }
+        @Test func callerCancellationRetiresIgnoredLateFactoryResult() async throws {
+            let state = SessionState()
+            let runtime = FakeMarmotRuntime(accounts: [])
+            await state.activate(account: AccountItem.samples[0], runtime: runtime, connectivityAvailable: false)
+            let pause = SelectedChatPause()
+            let original = CopyOriginal()
+            let pending = Task {
+                try await state.adoptSelectedChatCopyFactory { _, _ in
+                    await pause.pause()
+                    return original
+                }
+            }
+            await pause.waitUntilEntered()
+            pending.cancel()
+            await pause.release()
+            await #expect(throws: MarmotKitError.SelectedChatCopyClosed) { _ = try await pending.value }
+            #expect(original.captured.2 == 1)
+            let held = try await state.adoptSelectedChatCopyFactory { _, _ in CopyOriginal() }
+            #expect(held.isActive)
+            await state.deactivate()
+        }
+        @Test func exactFailedChatCleanupBlocksCoreResetAndRetriesSameOriginal() async throws {
+            let fixture = AccountItem.samples[0]
+            let summary = AccountSummaryFfi(
+                label: fixture.accountRef, accountIdHex: fixture.accountIdHex, localSigning: true,
+                externalSigning: false, signedOut: false, running: true)
+            let runtime = FakeMarmotRuntime(accounts: [summary])
+            let workspace = WorkspaceState(clientFactory: { runtime })
+            await workspace.bootstrap()
+            let state = SessionState()
+            await state.activate(account: workspace.activeAccount, runtime: runtime, connectivityAvailable: false)
+            let original = CopyOriginal(failFirstCancel: true)
+            let held = try await state.adoptSelectedChatCopyFactory { _, _ in original }
+            await workspace.deleteAllData(beforeRuntimeReset: { try await state.prepareForAccountExit() })
+            #expect(!runtime.didDeleteAllLocalData)
+            #expect(!held.isActive)
+            #expect(held.cleanupError != nil)
+            #expect(original.captured.2 == 1)
+            runtime.onDeleteAllLocalDataMidFlight = { #expect(original.captured.2 == 2) }
+            await workspace.deleteAllData(beforeRuntimeReset: { try await state.prepareForAccountExit() })
+            #expect(runtime.didDeleteAllLocalData)
+            #expect(held.cleanupError == nil)
+            #expect(original.captured.2 == 2)
+        }
+        @Test func pendingOriginalFactoryBlocksCoreExitWithoutDroppingItsResult() async throws {
+            let state = SessionState()
+            let runtime = FakeMarmotRuntime(accounts: [])
+            await state.activate(account: AccountItem.samples[0], runtime: runtime, connectivityAvailable: false)
+            let pause = SelectedChatPause()
+            let original = ConsentOriginal()
+            let pending = Task {
+                try await state.adoptSelectedChatConsentFactory { _, _ in
+                    await pause.pause()
+                    return original
+                }
+            }
+            await pause.waitUntilEntered()
+            await #expect(throws: MarmotKitError.SelectedChatCopyBusy) { try await state.prepareForAccountExit() }
+            #expect(state.accountScope == nil)
+            await pause.release()
+            await #expect(throws: MarmotKitError.SelectedChatCopyClosed) { _ = try await pending.value }
+            try await state.prepareForAccountExit()
+            #expect(original.captured.2 == 1)
+        }
+        @Test func cancelledLateFactoryCleanupFinishesBeforeNextOriginalFactory() async throws {
+            let state = SessionState()
+            let runtime = FakeMarmotRuntime(accounts: [])
+            await state.activate(account: AccountItem.samples[0], runtime: runtime, connectivityAvailable: false)
+            let pause = SelectedChatPause()
+            let original = CopyOriginal(failFirstCancel: true)
+            let pending = Task {
+                try await state.adoptSelectedChatCopyFactory { _, _ in
+                    await pause.pause()
+                    return original
+                }
+            }
+            await pause.waitUntilEntered()
+            pending.cancel()
+            await pause.release()
+            await #expect(throws: MarmotKitError.SelectedChatCopyBusy) { _ = try await pending.value }
+            #expect(original.captured.2 == 1)
+            let fresh = CopyOriginal()
+            let held = try await state.adoptSelectedChatCopyFactory { _, _ in
+                #expect(original.captured.2 == 2)
+                return fresh
+            }
+            #expect(held.isActive)
+            await state.deactivate()
+            #expect(original.captured.2 == 2)
+            #expect(fresh.captured.2 == 1)
+        }
         private func withRuntime(_ body: (any MarmotRuntime) async throws -> Void) async throws {
             let root = FileManager.default.temporaryDirectory.appendingPathComponent(
                 "wn-selected-runtime-\(UUID().uuidString)")

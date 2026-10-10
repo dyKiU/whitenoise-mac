@@ -27,3 +27,23 @@ failed cleanup stays observable and retries the same original, with successful
 cleanup idempotent; stale displayed revisions pass through as SDK errors.
 These are passing controls of existing scope behavior, not invented regressions
 or new runtime fixes. Account-owned factories and full PR remain pending.
+
+## Account and Core-teardown ownership
+
+`AccountScope` owns one immutable account/runtime selected-chat coordinator.
+`SessionState` uses it for actual SDK factories, retires it before account/runtime
+teardown, and retains late results or failed cleanup. Pending factories that ignore
+cancellation fence explicit Core exit until their exact original is cleaned up.
+An A→B→A transition never reactivates an old owner. Caller cancellation also
+retains late originals and finishes failed cleanup before another factory runs.
+
+Actual missing ownership RED11/13 precedes unchanged minimal GREEN13/13 and
+18 passing lifetime controls. An additional genuine failed-cleanup regression
+runs18/19 before the minimal cleanup-before-next-factory fix; unchanged final
+focused19/19 and affected52/52 pass, zero skips. This uses the same3fab SDK and
+MacTestIsolationM5 cache. Parent evidence verifies every frozen source input and
+complete raw log in all six cohorts. The Core-reset regression uses isolated
+WorkspaceState/FakeMarmotRuntime exit callbacks and synthetic account storage.
+
+Explicit consent UI, final matched SDK, full published/experimental PR suites,
+installed multi-host delivery, history and offline/revocation remain pending.
