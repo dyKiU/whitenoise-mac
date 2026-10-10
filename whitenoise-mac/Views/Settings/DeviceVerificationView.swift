@@ -48,9 +48,7 @@
                     if !setup.isEmpty {
                         Text("Setup packet")
                         Text(setup).font(.system(.caption, design: .monospaced)).textSelection(.enabled)
-                        CopyToClipboardButton(value: setup, actionDescription: L10n.string("Copy")) { _ in
-                            Text("Copy")
-                        }
+                        Self.packetCopyButton(setup)
                     }
                     TextField("Opaque packet from the other device", text: $incoming, axis: .vertical)
                         .lineLimit(2...4)
@@ -119,9 +117,7 @@
                         }
                         ForEach(Array(outgoing.enumerated()), id: \.offset) { _, packet in
                             HStack {
-                                CopyToClipboardButton(
-                                    value: packet.bytes.base64EncodedString(), actionDescription: L10n.string("Copy")
-                                ) { _ in Text("Copy") }
+                                Self.packetCopyButton(packet.bytes.base64EncodedString())
                                 Button("Delivered to the other device") {
                                     perform {
                                         try await model.acknowledgePacket(packet.acknowledgementId)
@@ -165,6 +161,16 @@
                     actionFailed = false
                 }
             }
+        }
+
+        static func packetCopyButton(_ packet: String) -> CopyToClipboardButton<Text> {
+            CopyToClipboardButton(value: packet, actionDescription: L10n.string("Copy"), concealed: false) {
+                confirming in
+                Text(packetCopyLabel(confirming: confirming))
+            }
+        }
+        static func packetCopyLabel(confirming: Bool) -> String {
+            L10n.string(confirming ? "Copied" : "Copy")
         }
 
         private func decodedPacket() throws -> Data {
