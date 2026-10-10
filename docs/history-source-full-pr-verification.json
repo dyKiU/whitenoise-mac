@@ -1,0 +1,97 @@
+{
+  "source_commit": "3b2fbee112684627c7cc061e7d80f92b99d27dc2",
+  "sdk_source": "98707713a2cc02828c2d66ed858588991896b9b0",
+  "command": "scripts/test-isolated.sh -jobs 2; experimental flag1 with matched local SDK987 and flag0 with canonical published0.12 generated package",
+  "qualification": {
+    "mac-source-3b2fbee-full-experimental-v1": {
+      "source_inputs": 499,
+      "input_manifest_sha256": "5b036a223dd19b20380dec4b403a636eff498aababa9c78c661f5cb61fa7e808",
+      "log_sha256": "37a1578f773e68d05510058d266e0a78802f59a45979a52feee48373bf892ef1",
+      "exit_code": 0,
+      "seconds": 58.157697291113436,
+      "sdk_source": "98707713a2cc02828c2d66ed858588991896b9b0",
+      "scope": "Unfiltered Mac PR suite, experimental SDK987, signed source-transfer3b2fbee; opt-in genuine native gates separately qualified, installed UI remains separate",
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 1809,
+        "passedTests": 1805,
+        "failedTests": 0,
+        "skippedTests": 4
+      },
+      "test_failures": []
+    },
+    "mac-source-3b2fbee-full-published-v1": {
+      "source_commit": "3b2fbee112684627c7cc061e7d80f92b99d27dc2",
+      "experimental_sdk_git_stash": "0bd362a4a61e671e760be20f0a81568a269d05e5",
+      "scope": "Unfiltered published SDK Mac PR suite; no installed genuine approval claim",
+      "source_inputs": 499,
+      "input_manifest_sha256": "fe65ca5be84e81ff0a103b147d2f20c4803a49ee3f3cddb3977bd3497cee7595",
+      "log_sha256": "bd9ae79e992038c1861217cb5ecef15f961a420b7ee22172869754bf8042f5dc",
+      "exit_code": 65,
+      "seconds": 3.7041978328488767,
+      "experimental_sdk_restored_byte_exact": true
+    },
+    "mac-source-3b2fbee-full-published-v2": {
+      "source_commit": "3b2fbee112684627c7cc061e7d80f92b99d27dc2",
+      "experimental_sdk_git_stash": "0f96e7edd07a2a6a0aa7abf59a22e40c4c263c6a",
+      "scope": "Unfiltered published SDK Mac PR suite; no installed genuine approval claim",
+      "source_inputs": 499,
+      "input_manifest_sha256": "fe65ca5be84e81ff0a103b147d2f20c4803a49ee3f3cddb3977bd3497cee7595",
+      "log_sha256": "08134cc4c4335a3562f109d30274c6adecb5828b3d00e9dd463b287af1b033bb",
+      "exit_code": 65,
+      "seconds": 8.206210459116846,
+      "experimental_sdk_restored_byte_exact": true
+    },
+    "mac-source-3b2fbee-full-published-v3": {
+      "source_commit": "3b2fbee112684627c7cc061e7d80f92b99d27dc2",
+      "experimental_sdk_git_stash": "975e8bedd70477d162cbe0893d96943f2b42a7f2",
+      "scope": "Unfiltered published SDK Mac PR suite; no installed genuine approval claim",
+      "source_inputs": 499,
+      "input_manifest_sha256": "fe65ca5be84e81ff0a103b147d2f20c4803a49ee3f3cddb3977bd3497cee7595",
+      "log_sha256": "f27b5c981b126434c219ef48f3bf2eb08bc746a07ad2d34711c3948bffe375f3",
+      "exit_code": 0,
+      "seconds": 93.2934664580971,
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 1661,
+        "passedTests": 1661,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "test_failures": [],
+      "experimental_sdk_restored_byte_exact": true
+    }
+  },
+  "independently_verified_signed_non_sdk_inputs_each": 495,
+  "raw_logs_and_input_hashes_verified": true,
+  "actual_xcresult_summaries_independently_verified": true,
+  "cache_repairs": {
+    "mac-source-3b2fbee-published-v2-cache-repair.json": {
+      "cause": "Second compiler diagnostic names this exact prior-header PCM",
+      "path": "/Users/pj/project/build/MacTestIsolationM5/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules/marmot_uniffiFFI-1KNRUIXGJEZQJRMJL82Z0FTCM.pcm",
+      "sha256": "afdf68451097bf86ba0175d930a9faa9334bb7342dadda9f91cffcc5ccbbaae1",
+      "bytes": 556408,
+      "target_idle_verified": true
+    },
+    "mac-source-3b2fbee-published-v1-cache-repair.json": {
+      "cause": "Compiler reports this exact PCM contains the previous experimental header",
+      "path": "/Users/pj/project/build/MacTestIsolationM5/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules/marmot_uniffiFFI-ANJFQSPITBY9ONMYZP4O7TT7H.pcm",
+      "sha256": "06401559f3d97474671688b7a0b824aa36534afa863ee150a91c4752f5597287",
+      "bytes": 556456,
+      "target_idle_verified": true
+    }
+  },
+  "skips": [
+    "External native source-button driver requires opt-in; actual Mac UI qualification remains pending",
+    "Genuine source-picker model separately passed1/1",
+    "Genuine complete source-model transfer separately passed1/1 with native controller1/1",
+    "Genuine imported-reader fixture opt-in absent; prior SDK84113 qualification retained, SDK987 reader UI not established by this suite"
+  ],
+  "native_acceptance": "genuine-history-source-transfer-verification.json",
+  "limits": [
+    "Full suites establish published/experimental source compatibility, not installed navigation or physical phone acceptance",
+    "Continue UI and both-app transfer remain open",
+    "Two compiler-only failures preserve actual diagnostics and named stale FFI PCM repairs; no behavioral failure or broad cache deletion"
+  ],
+  "artifact_paths": "Parent/M5 build/results prefixes in qualification; actual XCResults on M5"
+}
