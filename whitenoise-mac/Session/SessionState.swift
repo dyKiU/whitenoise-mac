@@ -422,6 +422,12 @@ final class SessionState {
                             throw MarmotKitError.DeviceLinkingClosed
                         }
                         return try self.makeDeviceEnrollmentModel()
+                    },
+                    enrollmentApproval: { [weak self, weak scope] in
+                        guard let self, let scope, self.accountScope === scope, !scope.isCancelled else {
+                            throw MarmotKitError.DeviceLinkingClosed
+                        }
+                        return try await self.makeDeviceEnrollmentApprovalModel()
                     }
                 ))
         #endif

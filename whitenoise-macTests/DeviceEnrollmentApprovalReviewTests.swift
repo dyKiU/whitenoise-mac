@@ -10,6 +10,7 @@ import Testing
         private let lock = NSLock()
         private var reads: [UInt64] = []
         private var actions: [UInt64] = []
+        private var packets: [(UInt64, Data)] = []
         private var phase: DeviceLinkingApprovalPhaseFfi = .awaitingApproval
         private var invalid = 0
         private var paused = false
@@ -38,6 +39,10 @@ import Testing
         }
         var reviewedRevisions: [UInt64] { lock.withLock { reads } }
         var approvedRevisions: [UInt64] { lock.withLock { actions } }
+        var receivedPackets: [(UInt64, Data)] { lock.withLock { packets } }
+        override func receiveEnrollmentPacket(displayedRevision: UInt64, packet: Data) async throws {
+            lock.withLock { packets.append((displayedRevision, packet)) }
+        }
         override func snapshot() async throws -> DeviceLinkingApprovalSnapshotFfi {
             .init(revision: 7, phase: lock.withLock { phase })
         }
@@ -160,6 +165,93 @@ import Testing
             try await model.cancel()
             #expect(model.cleanupError == nil)
             #expect(original.cancelCount == 2)
+            #expect(original.approvedRevisions.isEmpty)
+            await state.deactivate()
+        }
+        @Test func paneDisplaysFullAuthenticatedKeysAndOriginalReviewedRevision() async throws {
+            let original = ReviewApproval(noPointer: .init())
+            let (state, _, model) = try await heldModel(original)
+            try await model.refreshReview()
+            let display = try #require(model.reviewDisplay)
+            #expect(display.revision == 7)
+            #expect(display.sourceKey == String(repeating: "01", count: 32))
+            #expect(display.joiningKey == String(repeating: "02", count: 32))
+            #expect(display.existingDeviceCount == 2)
+            #expect(original.approvedRevisions.isEmpty)
+            await state.deactivate()
+            #expect(model.reviewDisplay == nil)
+        }
+        @Test func paneActionInvokesOnlyExplicitReviewedOriginalRevision() async throws {
+            let original = ReviewApproval(noPointer: .init())
+            let (state, _, model) = try await heldModel(original)
+            try await model.refreshReview()
+            try await model.performReviewAction(.approve, displayedRevision: 7)
+            #expect(original.approvedRevisions == [7])
+            #expect(model.reviewDisplay == nil)
+            await state.deactivate()
+        }
+        @Test func panePacketActionRequiresApprovedPhaseAndExactRevisionAndBytes() async throws {
+            let original = ReviewApproval(noPointer: .init())
+            let (state, _, model) = try await heldModel(original)
+            try await model.refreshReview()
+            let packet = Data([0, 1, 2, 255])
+            await #expect(throws: MarmotKitError.DeviceLinkingStaleRevision) {
+                try await model.performReviewAction(
+                    .receivePacket, displayedRevision: 7, input: packet.base64EncodedString())
+            }
+            original.advancePhase()
+            try await model.refresh()
+            await #expect(throws: MarmotKitError.DeviceLinkingStaleRevision) {
+                try await model.performReviewAction(
+                    .receivePacket, displayedRevision: 8, input: packet.base64EncodedString())
+            }
+            do {
+                try await model.performReviewAction(.receivePacket, displayedRevision: 7, input: "not base64!")
+                Issue.record("Malformed opaque input must not reach the original SDK handle")
+            } catch {}
+            #expect(original.receivedPackets.isEmpty)
+            try await model.performReviewAction(
+                .receivePacket, displayedRevision: 7, input: packet.base64EncodedString())
+            let received = try #require(original.receivedPackets.first)
+            #expect(received.0 == 7)
+            #expect(received.1 == packet)
+            #expect(original.receivedPackets.count == 1)
+            #expect(original.approvedRevisions.isEmpty)
+            await state.deactivate()
+            await #expect(throws: MarmotKitError.DeviceLinkingClosed) {
+                try await model.performReviewAction(
+                    .receivePacket, displayedRevision: 7, input: packet.base64EncodedString())
+            }
+            #expect(original.receivedPackets.count == 1)
+        }
+        @Test func paneFactoryRequiresCapturedSdkCapabilityAndCurrentAccountOwner() async throws {
+            let original = ReviewApproval(noPointer: .init())
+            let (state, runtime, held) = try await heldModel(original)
+            var calls = 0
+            let unavailable = DeviceVerificationViewModel(
+                begin: { throw MarmotKitError.DeviceLinkingNotReady }, cancel: {},
+                enrollmentSupported: false,
+                enrollmentApproval: {
+                    calls += 1
+                    return held
+                })
+            await #expect(throws: MarmotKitError.DeviceLinkingNotReady) { try await unavailable.enrollmentApproval() }
+            #expect(calls == 0)
+            let active = DeviceVerificationViewModel(
+                begin: { throw MarmotKitError.DeviceLinkingNotReady }, cancel: {},
+                enrollmentSupported: true,
+                enrollmentApproval: {
+                    calls += 1
+                    await state.activate(
+                        account: AccountItem.samples[1], runtime: runtime, connectivityAvailable: false)
+                    await state.activate(
+                        account: AccountItem.samples[0], runtime: runtime, connectivityAvailable: false)
+                    return held
+                })
+            await #expect(throws: MarmotKitError.DeviceLinkingClosed) { try await active.enrollmentApproval() }
+            #expect(calls == 1)
+            #expect(!held.isActive)
+            #expect(original.cancelCount == 1)
             #expect(original.approvedRevisions.isEmpty)
             await state.deactivate()
         }

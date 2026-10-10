@@ -250,3 +250,18 @@ SDK-derived capability, without changing app capability logic. See
 handle/model boundary, not an approval pane or native A/B/C acceptance. No local
 SDK overrides are part of the commit; final integrated SDK/native full gates
 remain required before development application adoption.
+
+A separate B approval pane now opens only through the actual account-owned factory
+while the SDK reports enrollment support. It displays the original SDK-authenticated
+source and joining device public keys in full, plus the existing device count.
+Explicit approval captures that rendered revision. Opaque packet intake is separate
+and only reaches the same original approval in its approved-awaiting-packet phase.
+Refresh, display and packet decoding do not approve or reconstruct permission.
+
+Pane default-deny RED0/2 precedes GREEN2/2; final focused11/11 and affected64/64
+pass on the matched3fab candidate SDK. Apple stringsdata/XLIFF import adds five
+keys across nine languages, preserving all1242 previous entries and order; strict
+coverage and scoped formatting pass. See native-enrollment-approval-pane-evidence.json.
+This is scoped native action/lifetime qualification, not visual acceptance or
+actual native A/B/C enrollment. Full native PR and final integrated SDK gates
+remain required before development application adoption.
