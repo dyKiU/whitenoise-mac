@@ -1,0 +1,195 @@
+{
+  "scope": "Explicit original first-device setup attempt after successful current-owner empty read; no eligibility, SDK grant or nil fallback from invalid selected target. Core remains authoritative.",
+  "base": "d62d082558b3c66cda901587f0a5933ea94744d1",
+  "source_stashes": {
+    "red": "e942f390e204dc7b9b1f7cc2a13d433a7094102d",
+    "green1": "79fca5247af57a12dd60cc68061c213200db8221",
+    "green2": "e8ba1d4ad580d96b3c311490c0798a7d317689fa",
+    "final": "34cec1c672552fa2e38d391963b3322d82ba7d6c",
+    "sdk_local": "99a9142ce0a6cb329f19aef3eef2797a9721f72b",
+    "sdk_m5": "718b94b354f2207854cb34ee2402c1dcfa8ed240"
+  },
+  "runs": {
+    "red-v1": {
+      "source_base": "d62d082558b3c66cda901587f0a5933ea94744d1",
+      "source_inputs": 434,
+      "input_manifest_sha256": "c8c088cc1faad22fdfb6ee05897fde5fc8b6175ebc4cad8a5d36d0379432ac07",
+      "profile": "local-e6/experimentalflag1",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 65,
+      "seconds": 26.21,
+      "log_sha256": "54bb0db4794c111e34367bf849788865a4caf428e861dd6b9fd1375c9cf5a8b4",
+      "tests": {
+        "result": "Failed",
+        "totalTestCount": 9,
+        "passedTests": 7,
+        "failedTests": 2,
+        "skippedTests": 0
+      },
+      "test_failures": [
+        {
+          "failureText": "Expectation failed: expected error \".DeviceLinkingRuntimeUnavailable\" of type MarmotKitError, but \".DeviceLinkingNotReady\" of type MarmotKitError was thrown instead: MarmotKitError.DeviceLinkingRuntimeUnavailable",
+          "targetName": "whitenoise-macTests",
+          "testIdentifier": 7,
+          "testIdentifierString": "DeviceVerificationViewModelTests/firstDeviceAttemptPreservesActualSdkMissingAccountRefusal()",
+          "testIdentifierURL": "test://com.apple.xcode/whitenoise-mac/whitenoise-macTests/DeviceVerificationViewModelTests/firstDeviceAttemptPreservesActualSdkMissingAccountRefusal()",
+          "testName": "firstDeviceAttemptPreservesActualSdkMissingAccountRefusal()"
+        },
+        {
+          "failureText": "Expectation failed: model.offersFirstDeviceSetupAttempt\nmodel \u2192 whitenoise_mac.DeviceVerificationViewModel\noffersFirstDeviceSetupAttempt \u2192 false",
+          "targetName": "whitenoise-macTests",
+          "testIdentifier": 4,
+          "testIdentifierString": "DeviceVerificationViewModelTests/firstDeviceSetupRequiresSuccessfulEmptyReadAndPreservesNilFactoryInput()",
+          "testIdentifierURL": "test://com.apple.xcode/whitenoise-mac/whitenoise-macTests/DeviceVerificationViewModelTests/firstDeviceSetupRequiresSuccessfulEmptyReadAndPreservesNilFactoryInput()",
+          "testName": "firstDeviceSetupRequiresSuccessfulEmptyReadAndPreservesNilFactoryInput()"
+        }
+      ]
+    },
+    "green-v1": {
+      "source_base": "d62d082558b3c66cda901587f0a5933ea94744d1",
+      "source_inputs": 434,
+      "input_manifest_sha256": "bfe4e3066918900f874eb01aea657c59f527d4fa330f4f86df30ef59eb5bd856",
+      "profile": "local-e6/experimentalflag1",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 0,
+      "seconds": 19.35,
+      "log_sha256": "f1c9bffd97a2a0e374de7f12f6eae2ab0f73fa8b9434c71887441e5d0b6c81c9",
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 9,
+        "passedTests": 9,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "test_failures": []
+    },
+    "green-v2": {
+      "source_base": "d62d082558b3c66cda901587f0a5933ea94744d1",
+      "source_inputs": 434,
+      "input_manifest_sha256": "dad287d133f7cf02ffffb48ccc00217d575862e9f2d3c5305f567abdc890182f",
+      "profile": "local-e6/experimentalflag1",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 0,
+      "seconds": 9.27,
+      "log_sha256": "09b53d9bd6cbad6d3b2c8e3066de06597d4a21cd6a53e243e60122e7c9a0d29c",
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 10,
+        "passedTests": 10,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "test_failures": []
+    },
+    "affected-v2": {
+      "source_base": "d62d082558b3c66cda901587f0a5933ea94744d1",
+      "source_inputs": 434,
+      "input_manifest_sha256": "3dee6de2a61e11100a205e0e7182fc0ded1edeb9ca132fdb6ede0b92c3f114e2",
+      "profile": "local-e6/experimentalflag1",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 0,
+      "seconds": 21.84,
+      "log_sha256": "0cca4b10b413cd085bfea0bafb45cb0b4f84628fab0aad36e3290a8b76fd5167",
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 48,
+        "passedTests": 48,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "test_failures": []
+    }
+  },
+  "catalog": {
+    "command": [
+      "xcrun",
+      "xcstringstool",
+      "sync",
+      "/Users/pj/project/build/mac-first-device-setup-localizations/Localizable.xcstrings",
+      "--stringsdata",
+      "/Users/pj/project/build/MacTestIsolationM5/Build/Intermediates.noindex/whitenoise-mac.build/Debug/whitenoise-mac.build/Objects-normal/arm64/DeviceVerificationView.stringsdata",
+      "--skip-marking-strings-stale"
+    ],
+    "compiled_stringsdata_sha256": "4f56cfe7cec41e7d0556a6700e76edc4b6c57e4674b6c037293de23297529e14",
+    "Apple_export_template": "/Users/pj/project/build/mac-verification-localizations/de.xcloc/Localized Contents/de.xliff",
+    "template_sha256": "3a53cf6f35b05849b8c11c14d338f2b8ecb700b34ca7a08e3039a1676d35add1",
+    "original_catalog_sha256": "667981d24eef710464416ae2026721c6f0223d13dd56e95cef45260071126122",
+    "original_entries": 1238,
+    "added": [
+      "Approve first-device setup"
+    ],
+    "imports": [
+      {
+        "language": "de",
+        "exit_code": 0,
+        "xliff_sha256": "1223a64ba1154c17c17ce40274d297ab6e7f2e8b9d005e23f2b9297474261984",
+        "log_sha256": "5df93355611e3f7638221b3f0814bdc992c4f70d03c1a4f320d44e35be1ae184"
+      },
+      {
+        "language": "es",
+        "exit_code": 0,
+        "xliff_sha256": "d4721458f8d65403d1fd3fc7272295de89967d9b6fa340a4ecc7466de27d77e8",
+        "log_sha256": "a517cbee47692ee482885bb74b852c50e9243eed8a3762a0ccaeda71aa7b0c89"
+      },
+      {
+        "language": "fr",
+        "exit_code": 0,
+        "xliff_sha256": "4158873ca0768fdcce34c704c62ed759881e4d00e54f396ee28b80f857c22252",
+        "log_sha256": "f4029087095674badadff32d508736becf3aad855af62d7af7ef741185e1060f"
+      },
+      {
+        "language": "it",
+        "exit_code": 0,
+        "xliff_sha256": "cabb4b0acf6448e23207fd4a07575c51569094ea29fce44a54f4bd3b348ba700",
+        "log_sha256": "093e33456a931b44352a4c2309c3d1ad32aecb3547a4ecf172c7b27754a55437"
+      },
+      {
+        "language": "pt",
+        "exit_code": 0,
+        "xliff_sha256": "b43020e90639aef0819c20dbcd082aa67131027b992d79a18263850bac3d57ba",
+        "log_sha256": "d7f3329bdc5fd5c7109e546b357e15e62e4d894331dabf15429c5ee388c2f19a"
+      },
+      {
+        "language": "ru",
+        "exit_code": 0,
+        "xliff_sha256": "35b544d2afe66083f7faebefe74199beb9acfb92875319b6f54f41861a0dc42f",
+        "log_sha256": "e8ec139840fbaa32f87178cb343972ff7894ada72e42cd36455ecd540f7a4fce"
+      },
+      {
+        "language": "tr",
+        "exit_code": 0,
+        "xliff_sha256": "bc517afb887f718b5a1573c298aaf428cd86cee174ff64f75945e7349d1339e8",
+        "log_sha256": "59df10f7eec663b9e1ad070017b4ab331346f45d0de556cdb72f6c3a51812457"
+      },
+      {
+        "language": "zh-Hans",
+        "exit_code": 0,
+        "xliff_sha256": "64394fd9d038c11fd944f0d6f814edb6575dbdca4ae71ad9dec5b7c1156d21cf",
+        "log_sha256": "a56fb5432c9880c63226a2ec827a521f007f58f31b848344e1fc2630a923ed30"
+      },
+      {
+        "language": "zh-Hant",
+        "exit_code": 0,
+        "xliff_sha256": "9b20cf93281b26e24901fe071c4300bec715b0ff5bad4733f786f5fcefe833fb",
+        "log_sha256": "eecd49a2b8868bbe7fb854d143e6a8aeb50ccca2b284facd9952ea47cada12e8"
+      }
+    ],
+    "all_existing_entries_and_order_unchanged": true,
+    "preservation": "Only whole Apple sync/import-generated new entry retained; original raw top-level entry blocks preserved, no nested plural edits",
+    "catalog_sha256": "0b717e56821fbb44c69f9970fa67c5c44d146e4619effd52a573f57f44983266"
+  },
+  "checks": [
+    "strict scoped swift-format repository configuration",
+    "git diff --check",
+    "localization coverage nine languages100%;1239total1230translatable"
+  ],
+  "core_policy_paths": [
+    "marmot-app/src/client/device_linking/setup.rs construct_setup_challenge",
+    "cgka-engine/src/device_group_genesis.rs non-denied genesis/Accepted SelectionBusy fence"
+  ],
+  "limits": [
+    "No enrollment capability, SDK, approval UI, install, publish or full PR claim",
+    "Generated e6 controls qualify original model/factory lifetime; actual native pairing remains separate",
+    "First localization tool attempt stopped at missing template key before import; restored exact original catalog then imported9languages using generic existing Apple export unit skeleton"
+  ]
+}

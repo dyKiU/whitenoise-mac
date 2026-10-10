@@ -12,7 +12,43 @@ import Observation
 final class AccountScope {
     private(set) var isCancelled = false
     #if WN_EXPERIMENTAL_DEVICE_SYNC
+        let selectedChat: NativeSelectedChatAccountOwner
+        private(set) var selectedChatTransfer: SelectedChatTransferViewModel?
+
+        func installSelectedChatTransfer(_ model: SelectedChatTransferViewModel) {
+            guard !isCancelled, selectedChatTransfer == nil else {
+                model.invalidate()
+                return
+            }
+            selectedChatTransfer = model
+            addCancellation { model.invalidate() }
+        }
+
         private(set) var deviceVerification: DeviceVerificationViewModel?
+
+        private(set) var deviceEnrollment: DeviceEnrollmentViewModel?
+        private(set) var deviceEnrollmentApproval: DeviceEnrollmentApprovalViewModel?
+
+        func installDeviceEnrollment(_ model: DeviceEnrollmentViewModel) {
+            guard !isCancelled else {
+                model.invalidate()
+                return
+            }
+            if deviceEnrollment == nil { addCancellation { [weak self] in self?.deviceEnrollment?.invalidate() } }
+            deviceEnrollment?.invalidate()
+            deviceEnrollment = model
+        }
+        func installDeviceEnrollmentApproval(_ model: DeviceEnrollmentApprovalViewModel) {
+            guard !isCancelled else {
+                model.invalidate()
+                return
+            }
+            if deviceEnrollmentApproval == nil {
+                addCancellation { [weak self] in self?.deviceEnrollmentApproval?.invalidate() }
+            }
+            deviceEnrollmentApproval?.invalidate()
+            deviceEnrollmentApproval = model
+        }
 
         func installDeviceVerification(_ model: DeviceVerificationViewModel) {
             guard !isCancelled, deviceVerification == nil else { return }
@@ -46,6 +82,9 @@ final class AccountScope {
         let attachmentPolicy = AttachmentPolicyController(accountRef: account.accountRef, runtime: runtime)
         let blockedUsers = BlockedUsersViewModel(accountRef: account.accountRef, runtime: runtime)
         let productAnalytics = ProductAnalyticsRecorder()
+        #if WN_EXPERIMENTAL_DEVICE_SYNC
+            self.selectedChat = NativeSelectedChatAccountOwner(accountRef: account.accountRef, runtime: runtime)
+        #endif
         self.account = account
         self.runtime = runtime
         self.settingsModel = SettingsViewModel(
@@ -72,6 +111,9 @@ final class AccountScope {
             runtime: runtime
         )
         self.productAnalytics = productAnalytics
+        #if WN_EXPERIMENTAL_DEVICE_SYNC
+            addCancellation { [selectedChat] in selectedChat.invalidate() }
+        #endif
     }
 
     func start(connectivityAvailable: Bool) {

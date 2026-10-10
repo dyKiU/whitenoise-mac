@@ -3,9 +3,11 @@
     import MarmotKit
     import SwiftUI
 
-    /// Opaque packet transport and explicit comparison only; enrollment is not exposed.
+    /// Verification transport with separate original-owner enrollment panes.
     struct DeviceVerificationView: View {
         let model: DeviceVerificationViewModel
+        @State private var enrollment: DeviceEnrollmentViewModel?
+        @State private var approval: DeviceEnrollmentApprovalViewModel?
         @State private var incoming = ""
         @State private var setup = ""
         @State private var outgoing: [DeviceLinkingOutgoingPacketFfi] = []
@@ -18,8 +20,14 @@
                 if !model.verificationSupported {
                     Text("Device verification is unavailable in this build.")
                 } else {
-                    Text("Verification only. Device enrollment is not available in this build.")
-                        .foregroundStyle(.secondary)
+                    if !model.enrollmentSupported {
+                        Text("Verification only. Device enrollment is not available in this build.")
+                            .foregroundStyle(.secondary)
+                    }
+                    if model.enrollmentSupported {
+                        Button("Review enrollment") { perform { approval = try await model.enrollmentApproval() } }
+                            .disabled(!model.isActive)
+                    }
                     if model.owner == nil {
                         Button("Start verification") {
                             perform {
@@ -48,15 +56,30 @@
                         .lineLimit(2...4)
                         .disabled(!model.isActive || model.isStarting)
                     if model.owner == nil {
-                        Button("Approve setup") {
-                            perform {
-                                guard let selectedTarget else { throw VerificationInputError.invalidPacket }
-                                try await model.approve(request: decodedPacket(), target: selectedTarget)
-                                setup = try model.setupPacket().base64EncodedString()
-                                incoming = ""
+                        if model.offersFirstDeviceSetupAttempt {
+                            Button("Approve first-device setup") {
+                                perform {
+                                    try await model.approveFirstDeviceSetup(request: decodedPacket())
+                                    setup = try model.setupPacket().base64EncodedString()
+                                    incoming = ""
+                                }
                             }
+                            .disabled(model.isStarting || !model.isActive)
+                        } else if !model.targets.isEmpty {
+                            Button("Approve setup") {
+                                perform {
+                                    guard let selectedTarget else { throw VerificationInputError.invalidPacket }
+                                    try await model.approve(request: decodedPacket(), target: selectedTarget)
+                                    setup = try model.setupPacket().base64EncodedString()
+                                    incoming = ""
+                                }
+                            }
+                            .disabled(selectedTarget == nil || model.isStarting || !model.isActive)
                         }
-                        .disabled(selectedTarget == nil || model.isStarting || !model.isActive)
+                        if !model.hasLoadedTargets && !model.isReadingTargets && actionFailed {
+                            Button("Try again") { perform { try await model.loadTargets() } }
+                                .disabled(model.isStarting || !model.isActive)
+                        }
                     } else {
                         HStack {
                             Button("Receive setup") {
@@ -88,7 +111,11 @@
                             .disabled(snapshot.phase != .comparisonAvailable)
                         }
                         if model.snapshot?.phase == .verificationCompleteEnrollmentPending {
-                            Text("Verification complete. Enrollment remains unavailable.")
+                            if model.enrollmentSupported {
+                                Button("Device enrollment") { perform { enrollment = try model.enrollmentTransport() } }
+                            } else {
+                                Text("Verification complete. Enrollment remains unavailable.")
+                            }
                         }
                         ForEach(Array(outgoing.enumerated()), id: \.offset) { _, packet in
                             HStack {
@@ -116,6 +143,12 @@
                     if actionFailed { Text("Verification action failed. Retry or cancel.").foregroundStyle(.red) }
                 }
             }
+            .sheet(isPresented: Binding(get: { enrollment != nil }, set: { if !$0 { enrollment = nil } })) {
+                if let enrollment { DeviceEnrollmentTransportView(model: enrollment) }
+            }
+            .sheet(isPresented: Binding(get: { approval != nil }, set: { if !$0 { approval = nil } })) {
+                if let approval { DeviceEnrollmentApprovalView(model: approval) }
+            }
             .task {
                 guard model.verificationSupported, model.isActive else { return }
                 do { try await model.loadTargets() } catch { if model.isActive { actionFailed = true } }
@@ -123,6 +156,8 @@
             .onDisappear { actionTask?.cancel() }
             .onChange(of: model.isActive) { _, active in
                 if !active {
+                    enrollment = nil
+                    approval = nil
                     setup = ""
                     incoming = ""
                     outgoing = []

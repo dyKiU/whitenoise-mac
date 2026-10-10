@@ -1,0 +1,90 @@
+{
+  "command": [
+    "xcrun",
+    "xcstringstool",
+    "sync",
+    "/Users/pj/project/build/mac-selected-chat-pane-localizations/Localizable.xcstrings",
+    "--stringsdata",
+    "/Users/pj/project/build/MacTestIsolationM5/Build/Intermediates.noindex/whitenoise-mac.build/Debug/whitenoise-mac.build/Objects-normal/arm64/SelectedChatTransferView.stringsdata",
+    "/Users/pj/project/build/MacTestIsolationM5/Build/Intermediates.noindex/whitenoise-mac.build/Debug/whitenoise-mac.build/Objects-normal/arm64/MessengerShellView.stringsdata",
+    "--skip-marking-strings-stale"
+  ],
+  "compiled_stringsdata_sha256": "89b18c4155202ce757a495f6f84995ebd7482e7f8e11f1cca7343f5105d6866e",
+  "Apple_export_template": "/Users/pj/project/build/mac-verification-localizations/de.xcloc/Localized Contents/de.xliff",
+  "template_sha256": "3a53cf6f35b05849b8c11c14d338f2b8ecb700b34ca7a08e3039a1676d35add1",
+  "original_catalog_sha256": "2c5d4e9f973d33e0e1dc0a7dbd01157de255e3c5aa0dc833921e294e56057ccf",
+  "original_entries": 1247,
+  "added": [
+    "Copy chat to linked devices",
+    "Chat ID",
+    "Review chat request",
+    "Export chat request",
+    "Receive chat consent",
+    "Receive chat offer",
+    "Continue chat copy",
+    "Export chat consent",
+    "Export chat offer",
+    "Chat copy action failed. Retry or cancel.",
+    "Approval applies only to this chat.",
+    "Chat request ended."
+  ],
+  "imports": [
+    {
+      "language": "de",
+      "exit_code": 0,
+      "xliff_sha256": "21d5a82a0990f95fb318fb796b3c7a7152d8374144fed527fb54872a70ee5696",
+      "log_sha256": "37b9862aa36839f5d381f5201caba9552283b66f6a4f7709bb540a4fd903efb4"
+    },
+    {
+      "language": "es",
+      "exit_code": 0,
+      "xliff_sha256": "9fe952c2a4d5eeae2db640617b3a0ba0a21ee2e23836b9ca7215bc1c013bb713",
+      "log_sha256": "dbe6df405427fc9e4482536b73ec982f65cd10b746fa16877504e71a74b6a643"
+    },
+    {
+      "language": "fr",
+      "exit_code": 0,
+      "xliff_sha256": "cb421fef218dbf53cbd795502cdbe07fa2065cf20a1e9050e4c3756eb5016fe1",
+      "log_sha256": "4ec61aad379832fbeec1820a8f6dac79ee261e981cec3cf306408a955f024971"
+    },
+    {
+      "language": "it",
+      "exit_code": 0,
+      "xliff_sha256": "ec8fb51aebc20df0c6d7bb69976d6e72b9969e1057ca3ddd89864f8d378ad9c3",
+      "log_sha256": "0dbbc1458702bbdab1752625d506be8bb3f90252d77c735e14ef2a27538336cd"
+    },
+    {
+      "language": "pt",
+      "exit_code": 0,
+      "xliff_sha256": "9e6d9ef330398cb5687101c3ebd2a9b2cec6479698b4e450c1eb8ec579e89288",
+      "log_sha256": "138957cc71def9b2f2e44b03ec89aebf488c70cd04242644b2288e7fe399a3e2"
+    },
+    {
+      "language": "ru",
+      "exit_code": 0,
+      "xliff_sha256": "41f2701b765fbb69c26688ecb4668a9593312b4d76540abfd91e9f5eb3364182",
+      "log_sha256": "79bd0e3238420a01b999f6627284c03e6aacab45f6f528993e75702ef9485982"
+    },
+    {
+      "language": "tr",
+      "exit_code": 0,
+      "xliff_sha256": "d226560bde1722966ac34c9b420e5f69df29397df87baf0bfe5ea29c8bf9630b",
+      "log_sha256": "a72e1e2967d48015407945d03d221128960e9f5fc74688d79cc3f1d13ec090d3"
+    },
+    {
+      "language": "zh-Hans",
+      "exit_code": 0,
+      "xliff_sha256": "049862824b98442eedca3edf91b7c492bc6fea1ae1f446115b9da87b8d6ae258",
+      "log_sha256": "9e6319392a06214d2c19640055b92a159d89f7e65a418ec81bb0582922c04ebc"
+    },
+    {
+      "language": "zh-Hant",
+      "exit_code": 0,
+      "xliff_sha256": "08b4cfbd6f3832397f0fe5103f3e2b67dd99287a2fd84390a19a05f841d2d22e",
+      "log_sha256": "ffea020ce5ad95947a23c920c003e817d401629e08e0539e05b30c3071b5943b"
+    }
+  ],
+  "all_existing_entries_and_order_unchanged": true,
+  "preservation": "Only whole Apple sync/import-generated new entry retained; original raw top-level entry blocks preserved, no nested plural edits",
+  "catalog_sha256": "caef84c13439dbf8958c084b346545d3d842a999c3c7ba759768b2e3f38e666e"
+}

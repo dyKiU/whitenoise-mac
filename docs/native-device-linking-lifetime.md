@@ -115,3 +115,167 @@ and tool provenance. Scoped Swift formatting and diff checks pass. The controls
 use generated-protocol doubles; actual native two-device UI pairing and scene
 suspension remain unqualified. Full PR gates qualify the source before integration,
 not enrollment, chat admission or live account behavior.
+
+## Original-owner enrollment scope (development only)
+
+DeviceLinkingScope now forwards explicit revision-bound `continueLinking`,
+`enrollmentPacket`, `receiveEnrollmentPacket` and `finalizeLinking` to the original
+retained SDK session. `checkActive` runs before and after each await. Native
+account replacement A→B→A, deactivation and `prepareForAccountExit` invalidate
+the original owner before a delayed packet can escape; SDK revision errors and
+opaque bytes are preserved.
+
+Default-deny RED executed five functions (six cases including both exit paths)
+and failed all five. GREEN passed five; affected original action/lifetime/runtime
+tests passed23/23. Exact426-input source hashes were frozen before/after each run.
+Two earlier zero-test stale FFI PCM failures and one runner preflight guard are
+preserved; only the exact compiler-named idle modules were retired. The RED
+source is recoverable from a named compact Git stash and hash-verified against
+the manifest. Strict scoped Swiftformat6.2.3 and diff checks pass. See
+native-device-linking-enrollment-scope-evidence.json.
+
+DeviceVerificationSession, Settings/model and advertised capability remain
+unchanged. Approval custody and enrollment UI are separate future slices. This
+is generated-handle native lifetime qualification, not genuine SDK enrollment,
+ABC settlement, selected-chat consent or native application acceptance. No full
+PR rerun, push/merge, SDK rebuild or sidecar adoption is claimed.
+
+
+## Original approval custody (development only)
+
+SessionState now owns one original DeviceLinkingApproval separately from its
+verification session. Finite snapshot, explicit approval and enrollment packet
+receipt forward exact displayed revisions/opaque bytes and check native ownership
+before and after awaits. The original SDK object remains the permission authority;
+no cached snapshot recreates an action. A held original is returned only while its
+current SDK phase remains nonterminal.
+
+Account/runtime replacement, deactivation and prepareForAccountExit invalidate
+pending factories and retained originals synchronously. Late original results are
+never adopted. Failed exact cleanup is retained for retry; session and approval
+cleanup are attempted independently, and either failure blocks either factory.
+The SDK's bounded multiple-pending batch (e6 limit128) is retained on refusal,
+without selecting an original or implicitly cancelling it by dropping the list.
+
+Default-deny RED ran eight tests and failed eight. Initial implementation passed
+8/8; final source avoids an empty-batch cancellation callback and passes8/8 plus
+31/31 affected session/action/lifetime/runtime tests. Repository strict swift-format
+and diff checks pass. Exact RED/initial GREEN sources remain in compact Git stashes;
+all429 input paths and terminal log hashes are recorded in
+native-device-linking-approval-scope-evidence.json.
+
+This is native custody/lifecycle qualification with generated original-handle test
+doubles and actual SessionState paths. It is not actual SDK enrollment or a full PR
+suite. Verification UI/protocol and advertised capability are unchanged. No merge,
+push, installation, production app or account data action occurred.
+
+
+## Separate enrollment presentation models (development only)
+
+AccountScope retains separate DeviceEnrollmentViewModel and
+DeviceEnrollmentApprovalViewModel objects. SessionState creates the session model
+only from its already-held concrete original scope; it never starts a session from
+snapshot display. Both models retain the exact account/runtime ownership ticket.
+Session actions forward explicit continue/export/receive/finalize revisions and
+opaque bytes. B actions refresh finite metadata or explicitly approve/receive on
+the separately held original approval. Refreshing or decoding never approves.
+Canonical base64 input is bounded to16KiB of opaque bytes and carries no native
+identity or permission. Cancellation immediately retires display and retains exact
+failed cleanup for retry; that retry checks the same retiring original rather than
+cancelling a replacement owner.
+
+Default-deny RED ran seven tests: two negative controls passed and five missing
+action controls failed. Unchanged controls passed7/7 after implementation;
+affected models/custody/session/transport/lifecycle/runtime controls passed43/43.
+Strict repository swift-format and diff checks pass. All433 source inputs and
+full terminal log hashes are recorded in native-enrollment-models-evidence.json;
+exact RED and GREEN source are preserved in named compact Git stashes.
+
+These are original-handle model/lifecycle controls, not actual SDK enrollment or a
+full PR suite. No view, capability, SDK/artifact, profile, installation or production
+state changed. The e6 B snapshot contains revision/phase only; authenticated review
+identity metadata and nativeABC acceptance are required before general approval UI.
+
+## Explicit first-device setup attempt
+
+The verification pane offers a separate first-device setup attempt only after a
+successful empty target read under its exact account/runtime owner. Failed,
+in-flight and retired reads cannot offer it; existing-target approval still
+requires the exact current selector. Nil reaches the original factory only from
+that explicit action. Empty target metadata does not grant eligibility: actual
+Core genesis policy and SelectionBusy remain authoritative.
+
+Default-denying RED ran9 (7passed/2failed), unchanged GREEN9/9, actual SessionState
+owner-retirement controls10/10, final affected48/48. Scoped strict formatting,
+diff and nine-language100% coverage pass. Apple stringsdata/XLIFF import added
+one key with nine translations; all1238 previous entries/order are preserved.
+See native-first-device-setup-evidence.json for exact source and terminal hashes.
+
+This is a scoped model/factory check, not full native enrollment or full PR
+qualification. SDK capability, verification protocol and original owners remain
+unchanged. No application installation or production state action occurred.
+
+## A/C opaque enrollment transport (capability gated)
+
+A separate Settings pane composes the already-held original enrollment model.
+Continue, opaque export/receive and finalize forward the rendered revision to
+that owner. Input is canonical base64 and bounded16KiB; no protocol is parsed.
+The original SDK decides permission/phase. Late results cannot populate replaced
+account state; cancellation clears displayed bytes and preserves cleanup retry.
+
+Actual runtime enrollmentSupported is captured into original-owner composition.
+It remainsfalse with e6, so this pane is unavailable; no advertised capability
+is enabled. B approval review and native A/B/C acceptance remain separate.
+
+Observable defaultdenyRED9 ran8pass/1fail; unchangedGREEN9/9, focused11/11 and
+final affected53/53 pass. Scoped strict formatting/diff and localization coverage
+pass. Three Apple sync/import-generated keys×9translations preserve all1239
+previous entries/order. Exact source/runs, compile-only fixture failure and
+comment-format correction are in native-enrollment-transport-evidence.json.
+No full PR, visual acceptance, new SDK, install or publication is claimed.
+
+The original B approval scope now forwards `reviewMetadata` on the same retained
+SDK object, with lifetime checks before and after the read. The separate approval
+model retains review display only under that owner and pending revision; reading
+never approves. Explicit reviewed approval uses the exact displayed revision and
+clears review metadata before the SDK action. SDK errors, actual account A→B→A,
+deactivation/account-exit, changed phase and failed exact cleanup are covered.
+
+Candidate SDK source `3fab3184` passed all ten release artifact/consumer gates.
+Native review RED0/2 precedes GREEN2/2 and seven control tests (eleven case
+executions); final affected60/60 passes. The first affected run59/60 retained the
+old e6 capability expectation; its smoke assertion was corrected to the new
+SDK-derived capability, without changing app capability logic. See
+`native-enrollment-approval-review-evidence.json`. This qualifies the original
+handle/model boundary, not an approval pane or native A/B/C acceptance. No local
+SDK overrides are part of the commit; final integrated SDK/native full gates
+remain required before development application adoption.
+
+A separate B approval pane now opens only through the actual account-owned factory
+while the SDK reports enrollment support. It displays the original SDK-authenticated
+source and joining device public keys in full, plus the existing device count.
+Explicit approval captures that rendered revision. Opaque packet intake is separate
+and only reaches the same original approval in its approved-awaiting-packet phase.
+Refresh, display and packet decoding do not approve or reconstruct permission.
+
+Pane default-deny RED0/2 precedes GREEN2/2; final focused11/11 and affected64/64
+pass on the matched3fab candidate SDK. Apple stringsdata/XLIFF import adds five
+keys across nine languages, preserving all1242 previous entries and order; strict
+coverage and scoped formatting pass. See native-enrollment-approval-pane-evidence.json.
+This is scoped native action/lifetime qualification, not visual acceptance or
+actual native A/B/C enrollment. Full native PR and final integrated SDK gates
+remain required before development application adoption.
+
+## Resumed original enrollment approval display
+
+An already-owned approval can resume in approvedAwaitingPacket,
+awaitingSettlement or settled. The pane refresh reads the original snapshot and
+requests authenticated review metadata only while awaitingApproval. Waiting/Done
+use existing catalogue keys; displaying resumed state never approves again.
+New terminal approvals remain ineligible for factory adoption.
+
+A genuine three-phase control first adopts the pending original, then advances
+that same handle: RED11/12 precedes unchanged GREEN12/12, affected53/53 passes,
+zero skips, with the isolated Mac host and matching experimental3fab SDK.
+Parent independently verifies all445 inputs per cohort and every complete log.
+Full native PR, final SDK and installed cryptographic flow remain open.

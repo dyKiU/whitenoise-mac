@@ -14,6 +14,7 @@ struct SettingsPanelView: View {
     let model: SettingsViewModel
     #if WN_EXPERIMENTAL_DEVICE_SYNC
         var deviceVerificationModel: DeviceVerificationViewModel? = nil
+        var selectedChatTransferModel: SelectedChatTransferViewModel? = nil
     #endif
 
     private var page: SettingsPage {
@@ -36,7 +37,9 @@ struct SettingsPanelView: View {
                 ProfileSettingsView()
             case .identityKeys:
                 #if WN_EXPERIMENTAL_DEVICE_SYNC
-                    ProfileKeysSettingsView(deviceVerificationModel: deviceVerificationModel)
+                    ProfileKeysSettingsView(
+                        deviceVerificationModel: deviceVerificationModel,
+                        selectedChatTransferModel: selectedChatTransferModel)
                 #else
                     ProfileKeysSettingsView()
                 #endif
