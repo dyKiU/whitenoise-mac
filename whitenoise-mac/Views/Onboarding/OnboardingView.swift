@@ -24,7 +24,7 @@ struct OnboardingView: View {
 
     var body: some View {
         Group {
-            if let model, model.snapshot != nil {
+            if let model, model.snapshot != nil, model.hasUnfinishedSetup {
                 AccountSetupView(model: model)
             } else {
                 switch workspace.authenticationMode {

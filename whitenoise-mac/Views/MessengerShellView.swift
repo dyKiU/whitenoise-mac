@@ -198,9 +198,11 @@ private struct DetailPaneView: View {
         .task(id: session.accountScope?.onboarding.snapshot?.revision) {
             guard workspace.phase == .onboarding,
                 session.accountScope?.onboarding.isDurablyReady == true,
+                session.accountScope?.onboarding.hasUnfinishedSetup == true,
                 workspace.activeAccount != nil
             else { return }
             let enteredAccountIdHex = workspace.activeAccount?.accountIdHex
+            session.accountScope?.onboarding.finishSetupPresentation()
             await workspace.activateReadyState()
             workspace.presentImprovementsPromptIfNeeded(forEnteredAccountIdHex: enteredAccountIdHex)
         }

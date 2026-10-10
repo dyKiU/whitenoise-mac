@@ -1,0 +1,168 @@
+{
+  "base": "87a3ce59830c61961b1d3e35b10471eecbd94693",
+  "scope": "Add Profile preserves existing signed-in account and scope; restored completed setup does not replace welcome/sign-in. Observed unfinished setup still completes, and another Add Profile attempt remains open. Installed journey pending.",
+  "red_compile_fixture_stash": "345905cf38fa8b375f4d1e485d2f458badda8e60",
+  "red_behavior_stash": "17e804e580bb4e138aef3fe4e2292145412eecb9",
+  "green_stash": "7146c58168f1ac8c19f057515130b97ef67c98c4",
+  "cohorts": [
+    {
+      "exit": 65,
+      "seconds": 19.222894191741943,
+      "log": "/Users/pj/project/build/mac-add-profile-red-v1.log",
+      "log_sha256": "aa6c411ca2fe8f6b3cc21842c6835a8a2ce597f76dc4e3a28f27b7098a40276b",
+      "executed": 0,
+      "failures": 0,
+      "classification": "zero-test fixture compile",
+      "inputs": "build/results/mac-add-profile-red-v1-inputs.json"
+    },
+    {
+      "exit": 65,
+      "seconds": 34.9325487613678,
+      "log": "/Users/pj/project/build/mac-add-profile-red-v2.log",
+      "log_sha256": "85be6d5954b33070151a0592d447935cf1f0313a1b140bef2f2f9a99b0260eda",
+      "executed": 1,
+      "failures": 1,
+      "classification": "behavioral regression",
+      "inputs": "build/results/mac-add-profile-red-v2-inputs.json"
+    },
+    {
+      "exit": 0,
+      "seconds": 21.029048919677734,
+      "log": "/Users/pj/project/build/mac-add-profile-green-v1.log",
+      "log_sha256": "fc9c1c9cae18484a395a2b7f23682cce9a12aefcf9c5fbd08ae2569705a88e0b",
+      "executed": 2,
+      "failures": 0,
+      "classification": "passing focused/affected",
+      "inputs": "build/results/mac-add-profile-green-v1-inputs.json"
+    },
+    {
+      "exit": 0,
+      "seconds": 11.907163143157959,
+      "log": "/Users/pj/project/build/mac-add-profile-affected-v1.log",
+      "log_sha256": "e7259478f17c14b42fbafcbb8a91c60e387965c012545aee847b2112af9800c6",
+      "executed": 176,
+      "failures": 0,
+      "classification": "passing focused/affected",
+      "inputs": "build/results/mac-add-profile-affected-v1-inputs.json"
+    },
+    {
+      "exit": 65,
+      "seconds": 15.873709201812744,
+      "log": "/Users/pj/project/build/mac-add-profile-nil-red-v1.log",
+      "log_sha256": "9f4b168c3dc106115dacf80f181bece8695956b2f93a0fd6d3c5554e1a027c0a",
+      "executed": 3,
+      "failures": 1,
+      "inputs": "build/results/mac-add-profile-nil-red-v1-inputs.json",
+      "scope": "nil regression/affected"
+    },
+    {
+      "exit": 0,
+      "seconds": 17.354096174240112,
+      "log": "/Users/pj/project/build/mac-add-profile-nil-green-v1.log",
+      "log_sha256": "4853c042703805f276cd4689f8f919033d5b3a5f6b0a25d252cc94fc7d6fedd9",
+      "executed": 177,
+      "failures": 0,
+      "inputs": "build/results/mac-add-profile-nil-green-v1-inputs.json",
+      "scope": "nil regression/affected"
+    },
+    {
+      "exit": 0,
+      "seconds": 66.94717216491699,
+      "log": "/Users/pj/project/build/mac-add-profile-full-experimental-v1.log",
+      "log_sha256": "a05bd3cbe873a77c5ce76b3798ff578bd0d984de22ae24c7727a26fb62f9c60c",
+      "executed": 1812,
+      "failures": 0,
+      "inputs": "build/results/mac-add-profile-full-experimental-v1-inputs.json",
+      "scope": "historical4049 full cohort; superseded by nil correction"
+    },
+    {
+      "exit": 65,
+      "seconds": 3.173765182495117,
+      "log": "/Users/pj/project/build/mac-add-profile-full-published-v1.log",
+      "log_sha256": "6f6b4bc8a994586f877535b0e289173b71cb73ce552986b6e430ee9172ea2e51",
+      "executed": 0,
+      "failures": 0,
+      "inputs": "build/results/mac-add-profile-full-published-v1-inputs.json",
+      "scope": "historical4049 full cohort; superseded by nil correction"
+    },
+    {
+      "exit": 65,
+      "seconds": 7.4671852588653564,
+      "log": "/Users/pj/project/build/mac-add-profile-full-published-v2.log",
+      "log_sha256": "4511a0261e53dd61031ee37e6fc68233176f599c8d581705fa7c51d8eae3bf0f",
+      "executed": 0,
+      "failures": 0,
+      "inputs": "build/results/mac-add-profile-full-published-v2-inputs.json",
+      "scope": "historical4049 full cohort; superseded by nil correction"
+    },
+    {
+      "exit": 0,
+      "seconds": 81.3114972114563,
+      "log": "/Users/pj/project/build/mac-add-profile-full-published-v3.log",
+      "log_sha256": "2e30d47ddfd6f10d62cf8b980b39900a697d00ceeb20fe967a4d915116bc4164",
+      "executed": 1663,
+      "failures": 0,
+      "inputs": "build/results/mac-add-profile-full-published-v3-inputs.json",
+      "scope": "historical4049 full cohort; superseded by nil correction"
+    }
+  ],
+  "static": [
+    "all source roots strict swift-format passed",
+    "all9 catalog languages1270/1270 translated; catalog unchanged",
+    "git diff --check passed"
+  ],
+  "limits": [
+    "Both final full integration cohorts pass; installed Add Profile journey follows qualified rebuild.",
+    "No credentials/account state accessed. Hosted runtime is FakeMarmotRuntime; installed app reproduction separately confirmed by user.",
+    "No SDK authority, account persistence or original linking scope changed."
+  ],
+  "tested_paths": {
+    "whitenoise-mac/Features/Onboarding/OnboardingCoordinator.swift": "9a7e9302e94702d0c737f44c14344736099f45c2c437cd3448824093dc31d12a",
+    "whitenoise-mac/Views/MessengerShellView.swift": "6d353d2f6ae7f0ff92ae118a27a779c166b8303b0e6a549f0e10fc44fba79c4d",
+    "whitenoise-mac/Views/Onboarding/OnboardingView.swift": "b76ebd9d5c47c297dbeb09372cd1b8305a9e6ea9c99826b0a1d3e9749750069c",
+    "whitenoise-macTests/AddProfileRoutingTests.swift": "1ae77da31c14ad6c4b7894d6ee7860e4c7a2081fde28a9a09c6f995814fd8f82"
+  },
+  "checkpoint_removal": {
+    "red_stash": "d0eca266100657888d56d26977767707a9796e37",
+    "green_stash": "72fb3bdc3ba3525e328af4b1974d4f0a20b51793",
+    "unchanged_regression": true,
+    "scope": "Restore absent Core checkpoint as nil and clear only its presentation flag; do not retain a cancelled setup snapshot."
+  },
+  "final_runtime_commit": "dd9baa50dc0ead4acf86aceb1abe335139dfb7e6",
+  "final_full": {
+    "full-final-experimental-v3": {
+      "exit": 0,
+      "seconds": 90.71111917495728,
+      "log": "/Users/pj/project/build/mac-add-profile-full-final-experimental-v3.log",
+      "log_sha256": "4f706ebfe09deaabf1489325921753194cf322d6febae6be2783a58eab3e0062",
+      "passed": 1808,
+      "failed": 0,
+      "skipped": 5,
+      "total": 1813,
+      "inputs": "build/results/mac-add-profile-full-final-experimental-v3-inputs.json"
+    },
+    "full-full-final-published-v1": {
+      "exit": 0,
+      "seconds": 50.62026000022888,
+      "log": "/Users/pj/project/build/mac-add-profile-full-full-final-published-v1.log",
+      "log_sha256": "f702c69a12792536ada11f7d58e3883923e90f656009af127733d3cf98ebe11f",
+      "passed": 1664,
+      "failed": 0,
+      "skipped": 0,
+      "total": 1664,
+      "inputs": "build/results/mac-add-profile-full-full-final-published-v1-inputs.json"
+    }
+  },
+  "sdk987_overlay_stash_m5": "9669967b3a24b87aa6162f76b34bf02368d321be",
+  "cache_failures": {
+    "published": [
+      "full-published-v1",
+      "full-published-v2"
+    ],
+    "final_experimental": [
+      "full-final-experimental-v1",
+      "full-final-experimental-v2"
+    ],
+    "scope": "Zero tests, exact diagnosed FFI header/PCM mismatches; only each named idle PCM retired. Repair JSONs/raw logs retained."
+  }
+}
