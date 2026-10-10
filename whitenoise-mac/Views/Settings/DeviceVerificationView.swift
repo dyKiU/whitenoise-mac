@@ -3,10 +3,11 @@
     import MarmotKit
     import SwiftUI
 
-    /// Opaque packet transport and explicit comparison only; enrollment is not exposed.
+    /// Verification transport with separate original-owner enrollment panes.
     struct DeviceVerificationView: View {
         let model: DeviceVerificationViewModel
         @State private var enrollment: DeviceEnrollmentViewModel?
+        @State private var approval: DeviceEnrollmentApprovalViewModel?
         @State private var incoming = ""
         @State private var setup = ""
         @State private var outgoing: [DeviceLinkingOutgoingPacketFfi] = []
@@ -22,6 +23,10 @@
                     if !model.enrollmentSupported {
                         Text("Verification only. Device enrollment is not available in this build.")
                             .foregroundStyle(.secondary)
+                    }
+                    if model.enrollmentSupported {
+                        Button("Review enrollment") { perform { approval = try await model.enrollmentApproval() } }
+                            .disabled(!model.isActive)
                     }
                     if model.owner == nil {
                         Button("Start verification") {
@@ -141,6 +146,9 @@
             .sheet(isPresented: Binding(get: { enrollment != nil }, set: { if !$0 { enrollment = nil } })) {
                 if let enrollment { DeviceEnrollmentTransportView(model: enrollment) }
             }
+            .sheet(isPresented: Binding(get: { approval != nil }, set: { if !$0 { approval = nil } })) {
+                if let approval { DeviceEnrollmentApprovalView(model: approval) }
+            }
             .task {
                 guard model.verificationSupported, model.isActive else { return }
                 do { try await model.loadTargets() } catch { if model.isActive { actionFailed = true } }
@@ -149,6 +157,7 @@
             .onChange(of: model.isActive) { _, active in
                 if !active {
                     enrollment = nil
+                    approval = nil
                     setup = ""
                     incoming = ""
                     outgoing = []

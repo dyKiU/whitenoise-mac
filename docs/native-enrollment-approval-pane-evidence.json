@@ -1,0 +1,197 @@
+{
+  "sdk_source": "3fab3184d8cc089c7a3d24988443ff2d38ee93a5",
+  "base": "7f457b84909661753fb79cbd5605fc89d5cc3ff6",
+  "red_stash": "887ee1fb4dee7c5878177c50bed2693534b11a0b",
+  "initial_green_stash": "4102f13805eb7985ba955678c5490e919e66b0c5",
+  "final_tested_stash": "e734730afa6ab10d0885854747e084b93b72afe9",
+  "phases": [
+    {
+      "phase": "red-v1",
+      "source_base": "7f457b84909661753fb79cbd5605fc89d5cc3ff6",
+      "source_inputs": 439,
+      "input_manifest_sha256": "f0a2049d11bbdc93e58adb09a472fe7ed7288bd16dcf21affa55ba67e99c8cd5",
+      "profile": "local-3fab/experimentalflag1",
+      "installed_manifest_sha256": "b050fbc04df5f4701a7508d5d1315e1fe29fb2da189fb05c88e426a0c4112a66",
+      "exit_code": 65,
+      "seconds": 22.9,
+      "log_sha256": "7feb4dd58f91634e6806e57ebb341346127d94bde13fdbcea02f3684c3098ef5",
+      "tests": {
+        "result": "Failed",
+        "totalTestCount": 2,
+        "passedTests": 0,
+        "failedTests": 2,
+        "skippedTests": 0
+      },
+      "test_failures": [
+        {
+          "failureText": "Caught error: .DeviceLinkingNotReady",
+          "targetName": "whitenoise-macTests",
+          "testIdentifier": 2,
+          "testIdentifierString": "DeviceEnrollmentApprovalReviewTests/paneActionInvokesOnlyExplicitReviewedOriginalRevision()",
+          "testIdentifierURL": "test://com.apple.xcode/whitenoise-mac/whitenoise-macTests/DeviceEnrollmentApprovalReviewTests/paneActionInvokesOnlyExplicitReviewedOriginalRevision()",
+          "testName": "paneActionInvokesOnlyExplicitReviewedOriginalRevision()"
+        },
+        {
+          "failureText": "Expectation failed: model.reviewDisplay\nmodel \u2192 whitenoise_mac.DeviceEnrollmentApprovalViewModel\nreviewDisplay \u2192 nil",
+          "targetName": "whitenoise-macTests",
+          "testIdentifier": 1,
+          "testIdentifierString": "DeviceEnrollmentApprovalReviewTests/paneDisplaysFullAuthenticatedKeysAndOriginalReviewedRevision()",
+          "testIdentifierURL": "test://com.apple.xcode/whitenoise-mac/whitenoise-macTests/DeviceEnrollmentApprovalReviewTests/paneDisplaysFullAuthenticatedKeysAndOriginalReviewedRevision()",
+          "testName": "paneDisplaysFullAuthenticatedKeysAndOriginalReviewedRevision()"
+        }
+      ]
+    },
+    {
+      "phase": "green-v1",
+      "source_base": "7f457b84909661753fb79cbd5605fc89d5cc3ff6",
+      "source_inputs": 440,
+      "input_manifest_sha256": "1339f5a12d91c723da50f69636ef832c8bd3e2c9c39d63a80fe46d8b88782159",
+      "profile": "local-3fab/experimentalflag1",
+      "installed_manifest_sha256": "b050fbc04df5f4701a7508d5d1315e1fe29fb2da189fb05c88e426a0c4112a66",
+      "exit_code": 0,
+      "seconds": 37.76,
+      "log_sha256": "72e23eee6bece97af54b00756b0fbb3e7e556bf344a8730c7a5c013cb14c04c4",
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 2,
+        "passedTests": 2,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "test_failures": []
+    },
+    {
+      "phase": "green-v2",
+      "source_base": "7f457b84909661753fb79cbd5605fc89d5cc3ff6",
+      "source_inputs": 440,
+      "input_manifest_sha256": "61548c54e4445864a8363de1cf54e920d6706d396073dc9103f9d86bf9e7424a",
+      "profile": "local-3fab/experimentalflag1",
+      "installed_manifest_sha256": "b050fbc04df5f4701a7508d5d1315e1fe29fb2da189fb05c88e426a0c4112a66",
+      "exit_code": 0,
+      "seconds": 18.54,
+      "log_sha256": "ab17dde9b70f8e62b67a500ac0565509445d80e63443d69b3056ff6676b03ec1",
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 11,
+        "passedTests": 11,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "test_failures": []
+    },
+    {
+      "phase": "affected-v2",
+      "source_base": "7f457b84909661753fb79cbd5605fc89d5cc3ff6",
+      "source_inputs": 440,
+      "input_manifest_sha256": "61548c54e4445864a8363de1cf54e920d6706d396073dc9103f9d86bf9e7424a",
+      "profile": "local-3fab/experimentalflag1",
+      "installed_manifest_sha256": "b050fbc04df5f4701a7508d5d1315e1fe29fb2da189fb05c88e426a0c4112a66",
+      "exit_code": 0,
+      "seconds": 3.42,
+      "log_sha256": "7a8a5488da0dc06ece4dd843cef6bed395f43a55525fee428f8e9e1b0903f379",
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 64,
+        "passedTests": 64,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "test_failures": []
+    }
+  ],
+  "final_owned_hashes": {
+    "whitenoise-mac/Features/DeviceEnrollment/DeviceEnrollmentApprovalViewModel.swift": "be2aa0431d92a08f2454953a2c0e2746067589cd67c0c12e3abca673f04c0392",
+    "whitenoise-mac/Features/DeviceVerification/DeviceVerificationViewModel.swift": "4559e09bed406777bbc38df234dcbaea7a6f57378d63031e94f85a5b122e045b",
+    "whitenoise-mac/Session/SessionState.swift": "e0675f788a03404b2e0271aa3417d69e6ba16eae78e2742c32c9d7932e708987",
+    "whitenoise-mac/Views/Settings/DeviceVerificationView.swift": "3566ea4f9c2216df74f649c199a0138ca418ecc5808cdb13140a860642c9be7d",
+    "whitenoise-mac/Views/Settings/DeviceEnrollmentApprovalView.swift": "b5186c8c7994641230aeabe726b658b75fc9f114d9b1d7046fe265250e94b6f0",
+    "whitenoise-macTests/DeviceEnrollmentApprovalReviewTests.swift": "52fb90c17cce3d0a4a9c7df05e8fa4fbd36bb47270e829f97a9609b761fddeaf",
+    "whitenoise-mac/Localizable.xcstrings": "2c5d4e9f973d33e0e1dc0a7dbd01157de255e3c5aa0dc833921e294e56057ccf"
+  },
+  "catalog": {
+    "command": [
+      "xcrun",
+      "xcstringstool",
+      "sync",
+      "/Users/pj/project/build/mac-enrollment-approval-pane-localizations/Localizable.xcstrings",
+      "--stringsdata",
+      "/Users/pj/project/build/MacTestIsolationM5/Build/Intermediates.noindex/whitenoise-mac.build/Debug/whitenoise-mac.build/Objects-normal/arm64/DeviceVerificationView.stringsdata",
+      "/Users/pj/project/build/MacTestIsolationM5/Build/Intermediates.noindex/whitenoise-mac.build/Debug/whitenoise-mac.build/Objects-normal/arm64/DeviceEnrollmentApprovalView.stringsdata",
+      "--skip-marking-strings-stale"
+    ],
+    "compiled_stringsdata_sha256": "c31670624283536610cf560c445eac3dd60b67027520635277425a94098bb94f",
+    "Apple_export_template": "/Users/pj/project/build/mac-verification-localizations/de.xcloc/Localized Contents/de.xliff",
+    "template_sha256": "3a53cf6f35b05849b8c11c14d338f2b8ecb700b34ca7a08e3039a1676d35add1",
+    "original_catalog_sha256": "3cd15f6e0fe5697b78ec59afd6520c8282948ba774a6c255837175d5941cc944",
+    "original_entries": 1242,
+    "added": [
+      "Review enrollment",
+      "Source device key",
+      "Joining device key",
+      "Existing devices",
+      "Approve"
+    ],
+    "imports": [
+      {
+        "language": "de",
+        "exit_code": 0,
+        "xliff_sha256": "df66dcd4315f5453facefb15d084d6107e7cba560d7da62a10c1d23399a0e532",
+        "log_sha256": "273d90affb6c09f64c35726a3a722f9b3e756b526dc6e7a1a3a7aae274602d43"
+      },
+      {
+        "language": "es",
+        "exit_code": 0,
+        "xliff_sha256": "afb38219ca779698e24745844f834eb1e4c08651d75ce9a1799f5fdf8f984c22",
+        "log_sha256": "bdde896289fdc080442de1dc0c502b2f065674977f8ba3a790f6d201a5a5f493"
+      },
+      {
+        "language": "fr",
+        "exit_code": 0,
+        "xliff_sha256": "91ea9c7bd7ac2c17f48f989d1feae003a13c57d1cb6d6c48ed2b09504aa68ff2",
+        "log_sha256": "e78852bba6e83aa1dfac74e7884c077b9d323a76d5a8d9223d64340d10559cdf"
+      },
+      {
+        "language": "it",
+        "exit_code": 0,
+        "xliff_sha256": "2b96a52d6564897a8a29f51f29817bd4a34d98fe4c7367e8371ac17ecaeda771",
+        "log_sha256": "0035a7aeae3a865b1bcfa26dea2cdee19c7952aa29c823a63f148646c3748345"
+      },
+      {
+        "language": "pt",
+        "exit_code": 0,
+        "xliff_sha256": "69f57b3448c9a646e6d8e385911e553377a5ff82033b8c76339b74578efc62a9",
+        "log_sha256": "8b24096917767ff86728af45932f55f1729d4950b50a295e32921869abc7b200"
+      },
+      {
+        "language": "ru",
+        "exit_code": 0,
+        "xliff_sha256": "9633f01941e283292b999a1b9625111c37cdfd760f3f4da81e65c84245b4bfd7",
+        "log_sha256": "5b67ed3e28cda84a443245aaa62629003b4eac35c8c12f7ab6a5769507ff0d39"
+      },
+      {
+        "language": "tr",
+        "exit_code": 0,
+        "xliff_sha256": "a126ec7433a0bcc3103e8c667debaa5867b8a6104633249ccc8a39a9b143f77f",
+        "log_sha256": "93dba7d1da750dc4af80ccdb65392742ac1e5eff326f4e4319a38b35943bf175"
+      },
+      {
+        "language": "zh-Hans",
+        "exit_code": 0,
+        "xliff_sha256": "b349a4a452c5cd540867de6117a0a9e17bfbb68d333666c48656f8765080acff",
+        "log_sha256": "82c81d2ea85a6a0319d10574247f2743a13688b85b20d59c607af038badad375"
+      },
+      {
+        "language": "zh-Hant",
+        "exit_code": 0,
+        "xliff_sha256": "c96c73311445098fd10329473319a361eac9c14769d7cfa2183fccfd47e11d82",
+        "log_sha256": "2faa1943fb6dc13c09ddf48cb16560808b8ab07490065cf7ad9a2be616a330d2"
+      }
+    ],
+    "all_existing_entries_and_order_unchanged": true,
+    "preservation": "Only whole Apple sync/import-generated new entry retained; original raw top-level entry blocks preserved, no nested plural edits",
+    "catalog_sha256": "2c5d4e9f973d33e0e1dc0a7dbd01157de255e3c5aa0dc833921e294e56057ccf"
+  },
+  "scope": "Separate explicit account-owned B review pane displays full authenticated source/joining public keys and existing device count; exact rendered revision goes to original approval. Only approvedAwaitingPacket accepts bounded opaque bytes. Original SDK capability gates entry; account replacement, stale/failed review, cancellation and cleanup retry cannot recreate consent. Refresh/decode never approve.",
+  "checks": "Scoped canonical strict swift-format, strict localization coverage and git diff --check pass.",
+  "limits": "Generated original-handle doubles and actual SessionState lifecycle controls, not native fresh A/B/C crypto acceptance. No full PR, visual UI acceptance, final integrated SDK, application installation or publication claimed."
+}
