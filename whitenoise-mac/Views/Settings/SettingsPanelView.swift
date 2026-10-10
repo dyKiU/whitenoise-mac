@@ -15,6 +15,7 @@ struct SettingsPanelView: View {
     #if WN_EXPERIMENTAL_DEVICE_SYNC
         var deviceVerificationModel: DeviceVerificationViewModel? = nil
         var selectedChatTransferModel: SelectedChatTransferViewModel? = nil
+        var acquireHistoryReview: (@MainActor () throws -> HistoryConsentReviewViewModel)? = nil
     #endif
 
     private var page: SettingsPage {
@@ -39,7 +40,8 @@ struct SettingsPanelView: View {
                 #if WN_EXPERIMENTAL_DEVICE_SYNC
                     ProfileKeysSettingsView(
                         deviceVerificationModel: deviceVerificationModel,
-                        selectedChatTransferModel: selectedChatTransferModel)
+                        selectedChatTransferModel: selectedChatTransferModel,
+                        acquireHistoryReview: acquireHistoryReview)
                 #else
                     ProfileKeysSettingsView()
                 #endif

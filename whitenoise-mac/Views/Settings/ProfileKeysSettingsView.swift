@@ -27,6 +27,7 @@ struct ProfileKeysSettingsView: View {
     #if WN_EXPERIMENTAL_DEVICE_SYNC
         var deviceVerificationModel: DeviceVerificationViewModel? = nil
         var selectedChatTransferModel: SelectedChatTransferViewModel? = nil
+        var acquireHistoryReview: (@MainActor () throws -> HistoryConsentReviewViewModel)? = nil
     #endif
 
     var body: some View {
@@ -45,6 +46,9 @@ struct ProfileKeysSettingsView: View {
                     if let selectedChatTransferModel {
                         SelectedChatTransferView(model: selectedChatTransferModel)
                             .id(ObjectIdentifier(selectedChatTransferModel))
+                    }
+                    if let acquireHistoryReview {
+                        HistoryConsentReviewEntryView(acquire: acquireHistoryReview)
                     }
                 #endif
             } else {
