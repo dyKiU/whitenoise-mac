@@ -35,10 +35,8 @@
                 self.copy = nil
             }
             return try await adopt(
-                factory, make: { NativeSelectedChatCopyScope(accountRef: self.accountRef, original: $0) }
-            ) {
-                self.copy = $0
-            }
+                factory, make: { NativeSelectedChatCopyScope(accountRef: self.accountRef, original: $0) },
+                install: { self.copy = $0 })
         }
 
         func adoptConsent(
@@ -50,10 +48,8 @@
                 self.consent = nil
             }
             return try await adopt(
-                factory, make: { NativeSelectedChatConsentScope(accountRef: self.accountRef, original: $0) }
-            ) {
-                self.consent = $0
-            }
+                factory, make: { NativeSelectedChatConsentScope(accountRef: self.accountRef, original: $0) },
+                install: { self.consent = $0 })
         }
 
         private func adopt<Original: Sendable, Handle: NativeSelectedChatHandle>(
