@@ -229,6 +229,48 @@ final class SessionState {
             if let firstError { throw firstError }
         }
 
+        private func installSelectedChatTransfer(on account: AccountScope) {
+            let current: @MainActor () -> Bool = { [weak self, weak account] in
+                guard let self, let account else { return false }
+                return self.accountScope === account && !account.isCancelled && account.selectedChat.isActive
+            }
+            account.installSelectedChatTransfer(
+                SelectedChatTransferViewModel(
+                    begin: { [weak self, weak account] group, target in
+                        guard let self, let account, current() else { throw MarmotKitError.SelectedChatCopyClosed }
+                        let original = try await self.beginSelectedChatCopy(
+                            groupIdHex: group, linkedRosterSelector: target)
+                        guard current(), account.selectedChat.copy === original else {
+                            throw MarmotKitError.SelectedChatCopyClosed
+                        }
+                        return SelectedChatCopyViewModel(
+                            original: original,
+                            isCurrent: { [weak original, weak account] in
+                                current() && original != nil && account?.selectedChat.copy === original
+                            })
+                    },
+                    receive: { [weak self, weak account] packet in
+                        guard let self, let account, current() else { throw MarmotKitError.SelectedChatCopyClosed }
+                        let original = try await self.receiveSelectedChatCopyRequest(packet: packet)
+                        guard current(), account.selectedChat.consent === original else {
+                            throw MarmotKitError.SelectedChatCopyClosed
+                        }
+                        return SelectedChatConsentViewModel(
+                            original: original,
+                            isCurrent: { [weak original, weak account] in
+                                current() && original != nil && account?.selectedChat.consent === original
+                            })
+                    },
+                    targets: { [weak account] in
+                        guard let account, current() else { throw MarmotKitError.SelectedChatCopyClosed }
+                        let values = try await account.runtime.deviceLinkingTargets(
+                            accountRef: account.account.accountRef)
+                        guard current() else { throw MarmotKitError.SelectedChatCopyClosed }
+                        return values
+                    },
+                    isCurrent: current))
+        }
+
         func beginSelectedChatCopy(groupIdHex: String, linkedRosterSelector: Data) async throws
             -> NativeSelectedChatCopyScope
         {
@@ -446,6 +488,7 @@ final class SessionState {
         )
         accountScope = scope
         #if WN_EXPERIMENTAL_DEVICE_SYNC
+            installSelectedChatTransfer(on: scope)
             scope.installDeviceVerification(
                 DeviceVerificationViewModel(
                     begin: { [weak self, weak scope] in

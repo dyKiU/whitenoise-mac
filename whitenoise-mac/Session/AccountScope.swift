@@ -13,6 +13,16 @@ final class AccountScope {
     private(set) var isCancelled = false
     #if WN_EXPERIMENTAL_DEVICE_SYNC
         let selectedChat: NativeSelectedChatAccountOwner
+        private(set) var selectedChatTransfer: SelectedChatTransferViewModel?
+
+        func installSelectedChatTransfer(_ model: SelectedChatTransferViewModel) {
+            guard !isCancelled, selectedChatTransfer == nil else {
+                model.invalidate()
+                return
+            }
+            selectedChatTransfer = model
+            addCancellation { model.invalidate() }
+        }
 
         private(set) var deviceVerification: DeviceVerificationViewModel?
 

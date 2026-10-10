@@ -72,3 +72,22 @@ chat scope suites.
 This is the presentation-model checkpoint. Account-owned pane composition,
 localized views, final matched SDK, full PR suites and installed delivery remain
 separate acceptance gates. No generated binding or binary overrides are committed.
+
+## Account-owned transfer composition
+
+Account activation installs a transfer feature with weak references to the exact
+Session/account lifetime. It creates display models only through existing owned
+factories, reads actual SDK target selectors, and checks the exact handle and
+account again after awaits. Account cancellation invalidates the feature. No
+WorkspaceState fields or methods were added. Creating a copy/request display
+never exports a request or approves consent implicitly. Invalid packet input
+and unknown targets refuse before factory entry; a failed first snapshot retains
+its original model for explicit cancellation.
+
+Actual transfer RED11/13 precedes unchanged GREEN13/13. The separate missing
+account composition RED13/14 precedes unchanged GREEN14/14. Final focused17/17
+and affected70/70 pass, no skips, on the same isolated M5 PR host and SDK3fab.
+Parent verification checks six complete448-input/log cohorts and four signed
+source paths. Localized panes, full PR, matched final SDK and installed delivery
+remain pending. The feature permits an explicit experimental attempt; target
+metadata and native capability flags do not grant chat admission.
