@@ -301,3 +301,9 @@ before account teardown and refuse late cancelled/superseded reads. Keep this
 projection separate from live authenticated timeline rows and original consent.
 Use `docs/synchronized-history-reader.md`; native adapter/UI acceptance is a
 separate gate, and no record or cursor supplies transfer/download permission.
+
+Create chat history readers through `AccountScope.synchronizedHistoryModel`,
+which captures the account reference and registers exact reader invalidation.
+Account replacement invalidates before teardown; releasing a chat retires its
+reader even when no live conversation has been opened. Retired scopes return
+inactive readers and must never call the injected storage read dependency.
