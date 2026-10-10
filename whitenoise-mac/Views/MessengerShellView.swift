@@ -170,13 +170,19 @@ private struct DetailPaneView: View {
                             EmptyDetailView()
                         }
                     case .settings:
-                        if let model = session.accountScope?.settingsModel {
+                        if let scope = session.accountScope {
                             #if WN_EXPERIMENTAL_DEVICE_SYNC
                                 SettingsPanelView(
-                                    model: model, deviceVerificationModel: session.accountScope?.deviceVerification,
-                                    selectedChatTransferModel: session.accountScope?.selectedChatTransfer)
+                                    model: scope.settingsModel, deviceVerificationModel: scope.deviceVerification,
+                                    selectedChatTransferModel: scope.selectedChatTransfer,
+                                    acquireHistoryReview: { [weak scope] in
+                                        guard let scope, session.accountScope === scope, !scope.isCancelled else {
+                                            throw MarmotKitError.HistoryTransferClosed
+                                        }
+                                        return try session.historyConsentReviewModel()
+                                    })
                             #else
-                                SettingsPanelView(model: model)
+                                SettingsPanelView(model: scope.settingsModel)
                             #endif
                         } else {
                             EmptyDetailView()

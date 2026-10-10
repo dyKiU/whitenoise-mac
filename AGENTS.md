@@ -314,3 +314,31 @@ history storage calls run through the model's detached task. Update protocol,
 matching history-capable SDK; the older SDK83 cohort cannot compile the new
 bridge with `WN_EXPERIMENTAL_DEVICE_SYNC` enabled. Published builds refuse the
 unavailable query. Mapping preserves source attestation, not live authorship.
+
+## Incoming history review
+
+`AccountScope` owns the experimental `HistoryConsentReviewViewModel`. Its loader
+captures the exact account scope across awaits and retains original SDK consent
+handles through `NativeHistoryAccountOwner`. Features depend on the Core
+`HistoryConsentReviewing` interface, never Session. Row UUIDs select already-held
+originals; snapshot fields and device fingerprints never create approval authority.
+Listing and selection only refresh. Approval forwards the displayed revision to
+the exact recipient original; account replacement invalidates the model before
+teardown. One malformed original must not block review of another. Focused model
+and related lifetime evidence is in `docs/history-recipient-review-model-verification.json`;
+installed UI, real transfer acceptance and full PR qualification remain separate.
+
+The incoming review pane is acquired explicitly from Settings through the exact
+live account scope. Approval must capture the snapshot revision rendered in the
+button; listing, selecting and refresh never approve. Keep full device fingerprints
+and source-attestation visible; row IDs only select already-held originals.
+Cancel presentation tasks on dismissal or account retirement. Apple catalog
+provenance and focused gates are in
+`docs/history-recipient-review-pane-verification.json`; full PR and genuine
+installed approval/reader acceptance remain separate requirements.
+
+Full recipient-pane PR qualification at signed `ed16012` passes experimental
+1,787/0 and published 1,661/0, with no skips. Two prior published attempts
+executed no tests because of individually diagnosed stale FFI PCMs; both are
+preserved separately. See `docs/history-recipient-review-full-pr-verification.json`.
+Genuine installed original approval and imported reader acceptance remain open.

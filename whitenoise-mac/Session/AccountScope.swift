@@ -12,6 +12,17 @@ import Observation
 final class AccountScope {
     private(set) var isCancelled = false
     #if WN_EXPERIMENTAL_DEVICE_SYNC
+        private(set) var historyConsentReview: HistoryConsentReviewViewModel?
+
+        func installHistoryConsentReview(_ model: HistoryConsentReviewViewModel) {
+            guard !isCancelled, historyConsentReview == nil else {
+                model.invalidate()
+                return
+            }
+            historyConsentReview = model
+            addCancellation { model.invalidate() }
+        }
+
         let history: NativeHistoryAccountOwner
         let selectedChat: NativeSelectedChatAccountOwner
         private(set) var selectedChatTransfer: SelectedChatTransferViewModel?

@@ -1,0 +1,143 @@
+{
+  "base_commit": "b6249f69b1740ec383f65958486be48a9ba7fbda",
+  "qualified_candidate_git_stash": "835ce4d67875d9d52efe74760821bafe1dd6a132",
+  "scope": "Mac Settings recipient pane, explicit rendered revision approval of already-held original, localization and focused ownership controls. Installed genuine approval remains unqualified.",
+  "initial": {
+    "source_inputs": 475,
+    "input_manifest_sha256": "12ab54b16f20a78ed0ff60f263688e847d6dad5bf28469604a7855c8c16e0e23",
+    "log_sha256": "4aff4db56f2c564b3ea22f0356e0f3e693e1d57b15e313548a30dbf80c0f72e5",
+    "exit_code": 0,
+    "seconds": 36.774357167072594,
+    "sdk_source": "84113c20771a0092cb0e52ca094836375f9dd406",
+    "scope": "Mac incoming history pane compile and model controls; not installed UI or genuine imported-history acceptance",
+    "tests": {
+      "result": "Passed",
+      "totalTestCount": 8,
+      "passedTests": 8,
+      "failedTests": 0,
+      "skippedTests": 0
+    },
+    "test_failures": []
+  },
+  "localized": {
+    "source_inputs": 475,
+    "input_manifest_sha256": "270177076b6d2766f87f056af23d59e576fcfcd1967b5c5de0b486f0a89fa4ee",
+    "log_sha256": "a34cd977cccd33308a2dbd5c1ea524148ad0dd868fb03c055a4ad95de5cd73db",
+    "exit_code": 0,
+    "seconds": 19.736353082815185,
+    "sdk_source": "84113c20771a0092cb0e52ca094836375f9dd406",
+    "scope": "Localized Mac incoming history pane and 24 original-owner/account controls; not installed UI or genuine imported-history acceptance",
+    "tests": {
+      "result": "Passed",
+      "totalTestCount": 24,
+      "passedTests": 24,
+      "failedTests": 0,
+      "skippedTests": 0
+    },
+    "test_failures": []
+  },
+  "root_independent_verification": "All 950 immutable inputs matched exact Git objects; both complete raw logs hashed; actual M5 XCResults independently queried: 8/8 and 24/24. All five shipped source/catalog paths match localized frozen inputs.",
+  "runtime_and_catalog_sha256": {
+    "whitenoise-mac/Features/HistoryConsentReview/HistoryConsentReviewView.swift": "c6ddd66e815ab8d26ae7efd5f84d4a40338b81cd379d2b471f8aa7d951a18de9",
+    "whitenoise-mac/Views/Settings/SettingsPanelView.swift": "9ec4441e89316db1465a7d13c3d1f8fc6bdadc0590a14dec5f8df5258ac3a1f7",
+    "whitenoise-mac/Views/Settings/ProfileKeysSettingsView.swift": "ac80e954422fadbca4d3aad9d9923729d7dc093e9d867c307d6a3d7eef316afa",
+    "whitenoise-mac/Views/MessengerShellView.swift": "ed6616ad88745415992f59c4bfa36575403d41c9a529004f6866c69dc3b40105",
+    "whitenoise-mac/Localizable.xcstrings": "2703c03953c3d448111b8dd7612a71231cfb466efb1dfc894e1955cf0935b80b"
+  },
+  "localization": {
+    "command": [
+      "xcrun",
+      "xcstringstool",
+      "sync",
+      "/Users/pj/project/build/mac-history-recipient-localizations/Localizable.xcstrings",
+      "--stringsdata",
+      "/Users/pj/project/build/MacTestIsolationM5/Build/Intermediates.noindex/whitenoise-mac.build/Debug/whitenoise-mac.build/Objects-normal/arm64/HistoryConsentReviewView.stringsdata",
+      "--skip-marking-strings-stale"
+    ],
+    "compiled_stringsdata_sha256": "ccac903c3c2ae26529360379722d87e1cb37771ba68b30f66035876e20c2a797",
+    "Apple_export_template": "/Users/pj/project/build/mac-verification-localizations/de.xcloc/Localized Contents/de.xliff",
+    "template_sha256": "3a53cf6f35b05849b8c11c14d338f2b8ecb700b34ca7a08e3039a1676d35add1",
+    "original_catalog_sha256": "8c2eef36c9eb183d6077e37bb9112aea1ef9f245eb77f88c2d831c6752fe2ee1",
+    "original_entries": 1267,
+    "added": [
+      "Review incoming history",
+      "No pending history requests.",
+      "Receiving device key",
+      "Snapshot through",
+      "Records",
+      "Imported records",
+      "Size",
+      "History request unavailable. Retry or cancel."
+    ],
+    "imports": [
+      {
+        "language": "de",
+        "exit_code": 0,
+        "xliff_sha256": "69d414551e117a8f150735a3e3f518ece76a081ad50c6460db7232ad5a1efebf",
+        "log_sha256": "7135313f575739de4f9e8461d93c35c485822baaf450a6e275e21441bbb69ba2"
+      },
+      {
+        "language": "es",
+        "exit_code": 0,
+        "xliff_sha256": "51905eaafa9201da5e8151a2ab828bb3dd20d1bd74b8df753579f7445211e21c",
+        "log_sha256": "784f2b26365a38ac457669fb82968792f1f285bd4a662bff6b8b76bb214d1a2d"
+      },
+      {
+        "language": "fr",
+        "exit_code": 0,
+        "xliff_sha256": "174747dab62a23e2d6f7b13daa8fb09c15c3a1195bb31b089876be1640b0863f",
+        "log_sha256": "20a21e87c82d5413490acc38698832e8043ffa816bb92856e345f0453c819b06"
+      },
+      {
+        "language": "it",
+        "exit_code": 0,
+        "xliff_sha256": "40cc43793fd4a296c1006d8ace05f94ebecf057e2583e3e6467d9f0cdc4b384d",
+        "log_sha256": "cedf29288e89c260193d91d05743756da71df1094a4d01aa8f9b3fef60919a74"
+      },
+      {
+        "language": "pt",
+        "exit_code": 0,
+        "xliff_sha256": "19dc0d915bee94d9b17ef9bee952dc316027576bc9089f216cdf26dd5b61bdbc",
+        "log_sha256": "6e3350ff2c10d752908018bf3e33bc18d5a04ee1a50547d0ce063b56c2bc3292"
+      },
+      {
+        "language": "ru",
+        "exit_code": 0,
+        "xliff_sha256": "cef90189a45f766866a4fde72805ac1d84789735704e4b05700406a6fc340c7e",
+        "log_sha256": "72745fd346814330aec51ed793ee1b7a83757e91cc0be293a563395d10ad818d"
+      },
+      {
+        "language": "tr",
+        "exit_code": 0,
+        "xliff_sha256": "b630f11d0135c66ce5dc3fc832df4bfa6950ed939aa4f3c8ad02ff29bbd08215",
+        "log_sha256": "40469df2e76f4b26709805dfe1d7bed338d3540885581439b6a1db7e8a9657e5"
+      },
+      {
+        "language": "zh-Hans",
+        "exit_code": 0,
+        "xliff_sha256": "2312b2a34c7a3da751be54e43fb2f963abb7e2d08d624bf84d40bd6564502745",
+        "log_sha256": "d8a9357cd9845c214a39b356d5bfac96994f7caf40bc6d336c9255202cb42f88"
+      },
+      {
+        "language": "zh-Hant",
+        "exit_code": 0,
+        "xliff_sha256": "a64b828f4e6c0b26e779321bfee33ac70a62de3f5c710058f6ed8b28a9b2311d",
+        "log_sha256": "a7f6e708e1d0098da984071fe1b02cba257249d48fb17a4a77ba3e633eec47ea"
+      }
+    ],
+    "all_existing_entries_and_order_unchanged": true,
+    "preservation": "Only whole Apple sync/import-generated new entry retained; original raw top-level entry blocks preserved, no nested plural edits",
+    "catalog_sha256": "2703c03953c3d448111b8dd7612a71231cfb466efb1dfc894e1955cf0935b80b"
+  },
+  "catalog_root_verification": "All 1267 original raw entry blocks and ordering unchanged; eight added keys translated for nine target languages; all nine raw import logs matched. Localization coverage 1266/1266 in every language.",
+  "qualification_failures": [
+    "Wrong older checkout localization formatting restored byte-exact to its Git HEAD; original 1247 entries semantically unchanged and SDK overlays preserved.",
+    "Correct import v3 and v4 failed before tests on diagnosed stale FFI PCMs; exact two named idle modules moved to rollback with complete logs retained. v5 nine Apple imports passed."
+  ],
+  "limits": [
+    "Full unfiltered experimental and published PR suites pending.",
+    "Installed presentation and approval of a genuine pending SDK original remain pending.",
+    "Genuine imported-history UI acceptance and combined-source SDK adoption pending.",
+    "Source-device picker is not provided by this recipient pane."
+  ]
+}
