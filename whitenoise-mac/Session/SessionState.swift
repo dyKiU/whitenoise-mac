@@ -186,6 +186,23 @@ final class SessionState {
             relayListsDidChange: relayListsDidChange
         )
         accountScope = scope
+        #if WN_EXPERIMENTAL_DEVICE_SYNC
+            scope.installDeviceVerification(
+                DeviceVerificationViewModel(
+                    begin: { [weak self, weak scope] in
+                        guard let self, let scope, self.accountScope === scope, !scope.isCancelled else {
+                            throw MarmotKitError.DeviceLinkingClosed
+                        }
+                        return try await self.beginDeviceLinkingSession()
+                    },
+                    cancel: { [weak self, weak scope] in
+                        guard let self, let scope, self.accountScope === scope, !scope.isCancelled else {
+                            throw MarmotKitError.DeviceLinkingClosed
+                        }
+                        try await self.cancelDeviceLinking()
+                    }
+                ))
+        #endif
         scope.start(connectivityAvailable: connectivityAvailable)
         await updateProductAnalyticsActivity(.accountChanged)
     }

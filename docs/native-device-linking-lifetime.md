@@ -69,3 +69,18 @@ These action controls use generated-protocol doubles and prove native ownership 
 forwarding, not genuine SDK pairing. Scoped swift-format and diff checks passed.
 The previous full published/experimental gates precede this slice; final full PR
 qualification is required before integration. See native-device-linking-actions-evidence.json.
+
+## Account-owned verification display model
+
+AccountScope retains the verification display model, installed by SessionState with
+weak exact-scope factory callbacks through the existing original-object adoption
+boundary. Features use a Core verification-only protocol; they do not depend on a
+Session concrete type. No snapshot is persisted or interpreted as permission.
+The model confirms the revision captured by the caller display, invalidates on
+account retirement, and rejects cancelled or late factory results. Session remains
+responsible for exact late SDK cleanup.
+
+The missing-feature display RED failed both tests; initial Green passed2/2 and the
+affected final cohort passed26/26 (model4, action4, lifetime9, runtime5, AccountScope4).
+Settings UI and final full PR qualification remain subsequent steps. See
+native-device-linking-model-evidence.json.
