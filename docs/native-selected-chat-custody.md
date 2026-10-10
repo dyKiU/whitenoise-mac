@@ -47,3 +47,28 @@ WorkspaceState/FakeMarmotRuntime exit callbacks and synthetic account storage.
 
 Explicit consent UI, final matched SDK, full published/experimental PR suites,
 installed multi-host delivery, history and offline/revocation remain pending.
+
+## Explicit presentation actions
+
+The selected-chat copy and consent models retain their already-owned original
+scopes. Refresh only displays SDK state. Consent approval uses the reviewed
+revision; response and offer exports require the approved snapshot revision.
+Incoming packets use canonical base64 and the core's 16,384-byte bound; native
+code never constructs protocol messages. Account retirement hides display and
+packets, including a reply arriving after an action was suspended. Cleanup
+remains attached to the same original and retries failures.
+
+Actual missing-feature RED0/2 precedes unchanged GREEN2/2. Expanded controls
+expose stale display/output after invalid snapshots (RED8/10); the minimal
+state-clearing correction passes the unchanged10 tests. Final focused11/11
+and affected64/64 pass with zero skips on isolated M5 PR host, SDK3fab and the
+existing MacTestIsolationM5 target. All six complete447-input and raw-log cohorts
+are independently checked in the parent evidence. Commands use
+`bash scripts/test-isolated.sh -jobs 2`, `WN_EXPERIMENTAL_DEVICE_SYNC=1`, and
+`-only-testing:whitenoise-macTests/SelectedChatPresentationTests`; affected also
+selects native linking scope/runtime/lifetime, enrollment review, and selected
+chat scope suites.
+
+This is the presentation-model checkpoint. Account-owned pane composition,
+localized views, final matched SDK, full PR suites and installed delivery remain
+separate acceptance gates. No generated binding or binary overrides are committed.
