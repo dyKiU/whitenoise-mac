@@ -168,3 +168,20 @@ the Marmot/MLS core in `MarmotKit` rather than in app code.
 
 This project is licensed under the GNU Affero General Public License v3.0
 (AGPL-3.0). See [LICENSE](LICENSE) for the full text.
+
+### Experimental native linking lifetime
+
+With `WN_EXPERIMENTAL_DEVICE_SYNC`, `SessionState` owns one original SDK linking
+session and subscription through a feature-scoped `DeviceLinkingScope`. Account
+replacement, runtime replacement and actual sign-out/remove/reset teardown invalidate
+the native owner before awaiting cleanup. A late factory result is cancelled as the
+original object, even after A→B→A; pending factories do not hold terminal reset open.
+Cleanup failures retain that exact object for explicit retry and block new factories.
+Real class runtime identity preserves the scope on shell rerenders; value runtime
+implementations intentionally provide no preservation identity.
+
+This adds lifetime wiring, not pairing UI or enrollment capability. Scene background
+currently reports analytics and does not close the runtime; no scene suspension claim
+is made. The local e6 SDK overrides remain uncommitted development inputs. Focused
+qualification is recorded in `docs/native-device-linking-lifetime.md`; full PR
+qualification is required before pushing or merging this slice.

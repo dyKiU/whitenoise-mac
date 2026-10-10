@@ -607,7 +607,7 @@ extension WorkspaceState {
     /// updates `accounts`/`chatsByAccount`. When the removed account is the active one, the
     /// in-memory message/profile caches are cleared and a remaining account is reselected
     /// (or the app returns to onboarding when none remain).
-    func removeAccount(_ account: AccountItem) async {
+    func removeAccount(_ account: AccountItem, beforeAccountExit: (@MainActor () async throws -> Void)? = nil) async {
         guard let client, !isAccountMutationInProgress else { return }
 
         lastError = nil
@@ -621,6 +621,7 @@ extension WorkspaceState {
         suppressMediaDiskStores(forAccountId: removedAccountId)
         defer { resumeMediaDiskStores(forAccountId: removedAccountId) }
         do {
+            if wasActive { try await beforeAccountExit?() }
             if wasActive {
                 stopTimelineListener()
                 cancelTimelineLoad()
@@ -760,7 +761,7 @@ extension WorkspaceState {
     /// Non-destructive sign-out: retains the account's local data but deactivates
     /// it (and cleans up its relay key packages). If it was the active account, the
     /// UI switches to another signed-in account, or onboarding when none remain.
-    func signOutAccount(_ account: AccountItem) async {
+    func signOutAccount(_ account: AccountItem, beforeAccountExit: (@MainActor () async throws -> Void)? = nil) async {
         guard let client, !isAccountMutationInProgress else { return }
         lastError = nil
         isSigningOutAccount = true
@@ -769,6 +770,7 @@ extension WorkspaceState {
         let wasActive = activeAccountId == account.id
         let selectedGroupId = wasActive ? selectedChat?.id : nil
         do {
+            if wasActive { try await beforeAccountExit?() }
             await flushComposerDraftPersistence(forAccountId: account.id)
             if wasActive {
                 stopTimelineListener()
@@ -856,7 +858,7 @@ extension WorkspaceState {
         }
     }
 
-    func deleteAllData() async {
+    func deleteAllData(beforeRuntimeReset: (@MainActor () async throws -> Void)? = nil) async {
         guard let client, !isAccountMutationInProgress else { return }
 
         isDeletingAllData = true
@@ -864,6 +866,11 @@ extension WorkspaceState {
         suppressAllMediaDiskStores()
         defer { resumeAllMediaDiskStores() }
         defer { isDeletingAllData = false }
+
+        do { try await beforeRuntimeReset?() } catch {
+            lastError = error.localizedDescription
+            return
+        }
 
         let selectedGroupId = selectedChat?.id
 

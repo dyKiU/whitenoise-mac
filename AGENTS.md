@@ -268,3 +268,17 @@ The rules, in the order they are most often broken:
 - **No new computed `var …: some View`.** Extract a `View` struct instead. A computed property
   shares its parent's observation set, so it re-renders whenever anything the parent reads changes;
   a struct observes only what it is given.
+
+## Experimental native linking owner
+
+`SessionState` and `DeviceLinkingScope` retain the original opaque SDK session and
+subscription. Never reconstruct it from snapshot metadata or enable enrollment from
+native capability flags. Factory adoption must retain the exact account scope,
+runtime instance and ownership ticket across awaits, including A→B→A. Invalidate
+before any Core teardown; retain failed exact cleanup and retry deliberately.
+The generic `beforeAccountExit`/`beforeRuntimeReset` callbacks wire existing app
+exit paths without adding feature state to `WorkspaceState`. Runtime identity is
+only positive for class implementations, tested with actual `MarmotClient`.
+Keep generated development SDK overrides out of commits. Use the dedicated
+`MacTestIsolationM5` cache and isolated host for focused tests. Current lifetime
+qualification does not cover pairing UI, scene suspension, or a full PR rerun.
