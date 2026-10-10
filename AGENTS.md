@@ -81,7 +81,10 @@ The explicit development bundle `dev.ipf.whitenoise.mac.syncdev` selects
 `MarmotStorageProfile.syncDevelopment`: a separate Application Support root and
 account-ID keyed `SyncDevelopmentSecretStore`. Production keeps the platform
 default account store. Keep initialization and reset on the same captured
-profile. Keychain regressions must use unique test service names and synthetic
+profile. An explicitly supplied `SecretStore` owns credential cleanup for that
+client: enumerate its actual SDK accounts and remove through that callback before
+shutdown or root deletion. Never purge the profile Keychain for a supplied store.
+A refused removal must leave the runtime and root intact. Keychain regressions must use unique test service names and synthetic
 credentials, with cleanup; never query production credentials.
 
 Build the separate Mac sidecar with `scripts/build-sync-development.sh` and a

@@ -384,6 +384,7 @@ nonisolated final class MarmotClient: MarmotRuntime, @unchecked Sendable {
     let marmot: Marmot
     let rootPath: String
     private let storageProfile: MarmotStorageProfile
+    private let suppliedSecretStore: (any SecretStore)?
     var storageRootPath: String { rootPath }
 
     convenience init() throws {
@@ -398,17 +399,21 @@ nonisolated final class MarmotClient: MarmotRuntime, @unchecked Sendable {
         rootPath: String,
         relayUrls: [String],
         cursorPersistence: CursorPersistenceFfi = .advance,
-        storageProfile: MarmotStorageProfile = .current
+        storageProfile: MarmotStorageProfile = .current,
+        secretStore: (any SecretStore)? = nil,
+        relayPolicy: RelayPolicyFfi? = nil
     ) throws {
         self.rootPath = rootPath
         self.storageProfile = storageProfile
+        self.suppliedSecretStore = secretStore
         self.marmot = try Marmot.newWithConfiguration(
             rootPath: rootPath,
             relayUrls: relayUrls,
             options: MarmotOptions(
+                relayPolicy: relayPolicy,
                 cursorPersistence: cursorPersistence,
                 clientName: "whitenoise",
-                secretStore: storageProfile.makeSecretStore(),
+                secretStore: secretStore ?? storageProfile.makeSecretStore(),
                 attachmentAcquisitionMode: .hostManaged
             )
         )
@@ -970,7 +975,13 @@ nonisolated final class MarmotClient: MarmotRuntime, @unchecked Sendable {
     func deleteAllLocalData() async throws {
         try await Self.deleteAllLocalData(
             purgeAccountKeychain: {
-                try MarmotAccountKeychain.purgeAllAccountKeys(service: storageProfile.keychainService)
+                if let suppliedSecretStore {
+                    for account in try marmot.listAccounts() {
+                        try suppliedSecretStore.removeSecret(label: account.label, accountIdHex: account.accountIdHex)
+                    }
+                } else {
+                    try MarmotAccountKeychain.purgeAllAccountKeys(service: storageProfile.keychainService)
+                }
             },
             shutdown: { await marmot.shutdown() },
             rootPath: rootPath
