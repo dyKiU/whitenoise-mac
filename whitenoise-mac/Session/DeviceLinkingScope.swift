@@ -45,6 +45,32 @@
             return session.setupPacket()
         }
 
+        // Explicit enrollment actions remain on the original account-owned SDK object.
+        func continueLinking(displayedRevision: UInt64) async throws {
+            try checkActive()
+            try await session.continueLinking(displayedRevision: displayedRevision)
+            try checkActive()
+        }
+
+        func enrollmentPacket(displayedRevision: UInt64) async throws -> Data {
+            try checkActive()
+            let packet = try await session.enrollmentPacket(displayedRevision: displayedRevision)
+            try checkActive()
+            return packet
+        }
+
+        func receiveEnrollmentPacket(displayedRevision: UInt64, packet: Data) async throws {
+            try checkActive()
+            try await session.receiveEnrollmentPacket(displayedRevision: displayedRevision, packet: packet)
+            try checkActive()
+        }
+
+        func finalizeLinking(displayedRevision: UInt64) async throws {
+            try checkActive()
+            try await session.finalizeLinking(displayedRevision: displayedRevision)
+            try checkActive()
+        }
+
         func outgoingPackets() async throws -> [DeviceLinkingOutgoingPacketFfi] {
             try checkActive()
             let packets = try await session.outgoingPackets()

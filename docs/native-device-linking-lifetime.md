@@ -115,3 +115,27 @@ and tool provenance. Scoped Swift formatting and diff checks pass. The controls
 use generated-protocol doubles; actual native two-device UI pairing and scene
 suspension remain unqualified. Full PR gates qualify the source before integration,
 not enrollment, chat admission or live account behavior.
+
+## Original-owner enrollment scope (development only)
+
+DeviceLinkingScope now forwards explicit revision-bound `continueLinking`,
+`enrollmentPacket`, `receiveEnrollmentPacket` and `finalizeLinking` to the original
+retained SDK session. `checkActive` runs before and after each await. Native
+account replacement A→B→A, deactivation and `prepareForAccountExit` invalidate
+the original owner before a delayed packet can escape; SDK revision errors and
+opaque bytes are preserved.
+
+Default-deny RED executed five functions (six cases including both exit paths)
+and failed all five. GREEN passed five; affected original action/lifetime/runtime
+tests passed23/23. Exact426-input source hashes were frozen before/after each run.
+Two earlier zero-test stale FFI PCM failures and one runner preflight guard are
+preserved; only the exact compiler-named idle modules were retired. The RED
+source is recoverable from a named compact Git stash and hash-verified against
+the manifest. Strict scoped Swiftformat6.2.3 and diff checks pass. See
+native-device-linking-enrollment-scope-evidence.json.
+
+DeviceVerificationSession, Settings/model and advertised capability remain
+unchanged. Approval custody and enrollment UI are separate future slices. This
+is generated-handle native lifetime qualification, not genuine SDK enrollment,
+ABC settlement, selected-chat consent or native application acceptance. No full
+PR rerun, push/merge, SDK rebuild or sidecar adoption is claimed.
