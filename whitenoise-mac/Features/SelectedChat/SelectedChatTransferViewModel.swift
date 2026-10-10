@@ -12,10 +12,12 @@
         @ObservationIgnored private let isCurrent: @MainActor () -> Bool
         private var retired = false
         private var currentCopy: SelectedChatCopyViewModel?
+        private var currentGroupIdHex: String?
         private var currentConsent: SelectedChatConsentViewModel?
         private var currentTargets: [DeviceLinkingTargetFfi] = []
         private(set) var isWorking = false
         var isActive: Bool { !retired && isCurrent() }
+        var copyGroupIdHex: String? { isActive ? currentGroupIdHex : nil }
         var copy: SelectedChatCopyViewModel? { isActive ? currentCopy : nil }
         var consent: SelectedChatConsentViewModel? { isActive ? currentConsent : nil }
         var targets: [DeviceLinkingTargetFfi] { isActive ? currentTargets : [] }
@@ -61,6 +63,7 @@
             else { throw MarmotKitError.SelectedChatCopyNotReady }
             let model = try await beginOriginal(groupIdHex, linkedRosterSelector)
             currentCopy = model
+            currentGroupIdHex = groupIdHex
             try checkActive()
             try await model.refresh()
             try checkActive()
@@ -77,6 +80,7 @@
         }
         func invalidate() {
             retired = true
+            currentGroupIdHex = nil
             currentTargets = []
             currentCopy?.invalidate()
             currentConsent?.invalidate()

@@ -42,8 +42,15 @@
         }
         func refresh() async throws {
             try checkActive()
-            let value = try await original.snapshot()
-            try checkActive()
+            let value: SelectedChatCopySnapshotFfi
+            do {
+                value = try await original.snapshot()
+                try checkActive()
+            } catch {
+                currentSnapshot = nil
+                outgoingValue = nil
+                throw error
+            }
             guard value.siblingCount <= 128, value.consentingSiblingCount <= value.siblingCount,
                 value.offeredSiblingCount <= value.siblingCount
             else {
@@ -135,15 +142,23 @@
         }
         func refresh() async throws {
             try checkActive()
-            let value = try await original.snapshot()
-            try checkActive()
+            let value: SelectedChatConsentSnapshotFfi
+            do {
+                value = try await original.snapshot()
+                try checkActive()
+            } catch {
+                currentSnapshot = nil
+                outgoingValue = nil
+                reviewedRevision = nil
+                throw error
+            }
             guard !value.chatSelector.isEmpty, value.chatSelector.count <= 256 else {
                 reviewedRevision = nil
                 currentSnapshot = nil
                 outgoingValue = nil
                 throw MarmotKitError.SelectedChatCopyNotReady
             }
-            if currentSnapshot?.revision != value.revision { outgoingValue = nil }
+            if currentSnapshot?.revision != value.revision || value.phase != .approved { outgoingValue = nil }
             currentSnapshot = value
             reviewedRevision = value.phase == .awaitingApproval ? value.revision : nil
         }

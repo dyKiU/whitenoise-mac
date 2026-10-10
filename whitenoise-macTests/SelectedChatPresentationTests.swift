@@ -35,6 +35,7 @@ import Testing
         private var continued: [UInt64] = []
         private var cancelled = 0
         var invalidSnapshot = false
+        var snapshotFails = false
         var requestBytes = Data([7, 8, 9])
         var cancelFails = false
         var afterRequest: (@Sendable () async -> Void)?
@@ -43,7 +44,8 @@ import Testing
         var cancellations: Int { lock.withLock { cancelled } }
         var requested: [UInt64] { lock.withLock { revisions } }
         func snapshot() async throws -> SelectedChatCopySnapshotFfi {
-            .init(
+            if snapshotFails { throw MarmotKitError.SelectedChatCopyClosed }
+            return .init(
                 revision: 19, phase: .awaitingSiblingConsent, siblingCount: invalidSnapshot ? 129 : 2,
                 consentingSiblingCount: 0,
                 offeredSiblingCount: 0)
@@ -69,13 +71,17 @@ import Testing
         private let lock = NSLock()
         private var revisions: [UInt64] = []
         var invalidSnapshot = false
+        var snapshotFails = false
         private var packetRevisions: [UInt64] = []
+        var terminalPhase: SelectedChatConsentPhaseFfi?
         var exported: [UInt64] { lock.withLock { packetRevisions } }
         var approved: [UInt64] { lock.withLock { revisions } }
         func snapshot() async throws -> SelectedChatConsentSnapshotFfi {
-            lock.withLock {
+            if snapshotFails { throw MarmotKitError.SelectedChatCopyClosed }
+            return lock.withLock {
                 .init(
-                    revision: revisions.isEmpty ? 23 : 24, phase: revisions.isEmpty ? .awaitingApproval : .approved,
+                    revision: revisions.isEmpty ? 23 : 24,
+                    phase: terminalPhase ?? (revisions.isEmpty ? .awaitingApproval : .approved),
                     chatSelector: invalidSnapshot ? Data() : Data(repeating: 4, count: 32))
             }
         }
@@ -275,10 +281,19 @@ import Testing
             try await transfer.loadTargets()
             try await transfer.begin(groupIdHex: "actual-group", linkedRosterSelector: selector)
             #expect(receivedGroup == "actual-group")
+            #expect(transfer.copyGroupIdHex == "actual-group")
             #expect(receivedTarget == selector)
             #expect(transfer.copy === copy)
             #expect(copy.snapshot?.revision == 19)
             #expect(original.requested.isEmpty)
+            await #expect(throws: MarmotKitError.SelectedChatCopyBusy) {
+                try await transfer.begin(groupIdHex: "different-group", linkedRosterSelector: selector)
+            }
+            #expect(transfer.copyGroupIdHex == "actual-group")
+            #expect(receivedGroup == "actual-group")
+            transfer.invalidate()
+            #expect(transfer.copyGroupIdHex == nil)
+            #expect(copy.snapshot == nil)
             try await copy.cancel()
         }
         @Test func transferReceivesExactOpaqueRequestWithoutApproving() async throws {
@@ -393,6 +408,60 @@ import Testing
             }
             try await consent.cancel()
             #expect(!consent.isActive)
+        }
+        @Test(arguments: [SelectedChatConsentPhaseFfi.cancelled, .expired, .closed])
+        func terminalConsentPhaseClearsPacketEvenAtSameRevision(phase: SelectedChatConsentPhaseFfi) async throws {
+            let original = PresentationConsent()
+            let model = SelectedChatConsentViewModel(
+                original: NativeSelectedChatConsentScope(accountRef: "isolated", original: original),
+                isCurrent: { true })
+            try await model.refresh()
+            try await model.approveReviewed(displayedRevision: 23)
+            try await model.perform(.response, displayedRevision: 24)
+            #expect(model.outgoingPacket != nil)
+            original.terminalPhase = phase
+            try await model.refresh()
+            #expect(model.snapshot?.revision == 24)
+            #expect(model.snapshot?.phase == phase)
+            #expect(model.outgoingPacket == nil)
+            await #expect(throws: MarmotKitError.SelectedChatCopyStaleRevision) {
+                try await model.perform(.offer, displayedRevision: 24)
+            }
+            #expect(original.exported == [24])
+            try await model.cancel()
+        }
+        @Test func sdkSnapshotErrorsClearBothPriorDisplaysAndPackets() async throws {
+            let copyOriginal = PresentationCopy()
+            let copy = SelectedChatCopyViewModel(
+                original: NativeSelectedChatCopyScope(accountRef: "isolated", original: copyOriginal),
+                isCurrent: { true })
+            try await copy.refresh()
+            try await copy.exportRequest(displayedRevision: 19)
+            copyOriginal.snapshotFails = true
+            await #expect(throws: MarmotKitError.SelectedChatCopyClosed) { try await copy.refresh() }
+            #expect(copy.snapshot == nil)
+            #expect(copy.outgoingPacket == nil)
+            await #expect(throws: MarmotKitError.SelectedChatCopyStaleRevision) {
+                try await copy.exportRequest(displayedRevision: 19)
+            }
+            #expect(copyOriginal.requested == [19])
+            try await copy.cancel()
+            let consentOriginal = PresentationConsent()
+            let consent = SelectedChatConsentViewModel(
+                original: NativeSelectedChatConsentScope(accountRef: "isolated", original: consentOriginal),
+                isCurrent: { true })
+            try await consent.refresh()
+            try await consent.approveReviewed(displayedRevision: 23)
+            try await consent.perform(.response, displayedRevision: 24)
+            consentOriginal.snapshotFails = true
+            await #expect(throws: MarmotKitError.SelectedChatCopyClosed) { try await consent.refresh() }
+            #expect(consent.snapshot == nil)
+            #expect(consent.outgoingPacket == nil)
+            await #expect(throws: MarmotKitError.SelectedChatCopyStaleRevision) {
+                try await consent.perform(.offer, displayedRevision: 24)
+            }
+            #expect(consentOriginal.exported == [24])
+            try await consent.cancel()
         }
     }
 #endif

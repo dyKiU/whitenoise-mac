@@ -91,3 +91,29 @@ Parent verification checks six complete448-input/log cohorts and four signed
 source paths. Localized panes, full PR, matched final SDK and installed delivery
 remain pending. The feature permits an explicit experimental attempt; target
 metadata and native capability flags do not grant chat admission.
+
+## Explicit Mac pane and entry points
+
+The chat shell injects the current account's transfer feature into a copy sheet
+for the selected actual group ID. Profile Keys Settings injects the same feature
+for incoming request review. The retained original copy group's ID stays visible
+even if another chat is selected; the recipient displays the SDK-authenticated
+chat selector in full hex. Review, approval, request export, consent/offer import
+and export, and continuation are explicit actions with the rendered revision.
+The pane cancels its awaiting tasks when dismissed; account custody still owns
+original cleanup and late factory results. Failed cleanup remains retryable.
+
+Actual group-display RED16/17 precedes unchanged GREEN17/17. Terminal consent
+phases retaining old output fail17/18 (three cases); the minimal phase-clearing
+fix passes18/18. An original SDK snapshot error retaining prior controls/output
+fails18/19; clearing native display while rethrowing the same error passes19/19.
+Final affected72/72 passes, no skips. Parent evidence independently verifies all
+eight source/log cohorts and the eight signed implementation/catalog/test paths.
+The pane compiles in the actual isolated host; interactive installed UI/delivery
+acceptance and full PR qualification remain open.
+
+Apple xcstringstool sync on actual compiled stringsdata and nine XLIFF imports
+adds12 keys, preserving all1,247 prior catalogue values and key order. All nine
+languages pass repository translation coverage (1,250/1,250 translatable keys).
+The compact catalogue tool provenance records complete import log/XLIFF hashes.
+Generated SDK overrides, products and raw logs are not committed.

@@ -26,6 +26,7 @@ struct ProfileKeysSettingsView: View {
     @Environment(WorkspaceState.self) private var workspace
     #if WN_EXPERIMENTAL_DEVICE_SYNC
         var deviceVerificationModel: DeviceVerificationViewModel? = nil
+        var selectedChatTransferModel: SelectedChatTransferViewModel? = nil
     #endif
 
     var body: some View {
@@ -40,6 +41,10 @@ struct ProfileKeysSettingsView: View {
                     if let deviceVerificationModel {
                         DeviceVerificationView(model: deviceVerificationModel)
                             .id(ObjectIdentifier(deviceVerificationModel))
+                    }
+                    if let selectedChatTransferModel {
+                        SelectedChatTransferView(model: selectedChatTransferModel)
+                            .id(ObjectIdentifier(selectedChatTransferModel))
                     }
                 #endif
             } else {

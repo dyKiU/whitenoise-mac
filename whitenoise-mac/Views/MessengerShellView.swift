@@ -154,6 +154,14 @@ private struct DetailPaneView: View {
                                 safetyModel: scope.safetyModel(groupIdHex: chat.id),
                                 blockedUsersModel: scope.blockedUsers
                             )
+                            #if WN_EXPERIMENTAL_DEVICE_SYNC
+                                .safeAreaInset(edge: .top, spacing: 0) {
+                                    if let transfer = scope.selectedChatTransfer {
+                                        SelectedChatCopyEntryView(model: transfer, groupIdHex: chat.id)
+                                        .id(chat.id)
+                                    }
+                                }
+                            #endif
                         } else {
                             EmptyDetailView()
                         }
@@ -161,7 +169,8 @@ private struct DetailPaneView: View {
                         if let model = session.accountScope?.settingsModel {
                             #if WN_EXPERIMENTAL_DEVICE_SYNC
                                 SettingsPanelView(
-                                    model: model, deviceVerificationModel: session.accountScope?.deviceVerification)
+                                    model: model, deviceVerificationModel: session.accountScope?.deviceVerification,
+                                    selectedChatTransferModel: session.accountScope?.selectedChatTransfer)
                             #else
                                 SettingsPanelView(model: model)
                             #endif
