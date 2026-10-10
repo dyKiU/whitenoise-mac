@@ -44,6 +44,66 @@
       "failures": 0,
       "classification": "passing focused/affected",
       "inputs": "build/results/mac-add-profile-affected-v1-inputs.json"
+    },
+    {
+      "exit": 65,
+      "seconds": 15.873709201812744,
+      "log": "/Users/pj/project/build/mac-add-profile-nil-red-v1.log",
+      "log_sha256": "9f4b168c3dc106115dacf80f181bece8695956b2f93a0fd6d3c5554e1a027c0a",
+      "executed": 3,
+      "failures": 1,
+      "inputs": "build/results/mac-add-profile-nil-red-v1-inputs.json",
+      "scope": "nil regression/affected"
+    },
+    {
+      "exit": 0,
+      "seconds": 17.354096174240112,
+      "log": "/Users/pj/project/build/mac-add-profile-nil-green-v1.log",
+      "log_sha256": "4853c042703805f276cd4689f8f919033d5b3a5f6b0a25d252cc94fc7d6fedd9",
+      "executed": 177,
+      "failures": 0,
+      "inputs": "build/results/mac-add-profile-nil-green-v1-inputs.json",
+      "scope": "nil regression/affected"
+    },
+    {
+      "exit": 0,
+      "seconds": 66.94717216491699,
+      "log": "/Users/pj/project/build/mac-add-profile-full-experimental-v1.log",
+      "log_sha256": "a05bd3cbe873a77c5ce76b3798ff578bd0d984de22ae24c7727a26fb62f9c60c",
+      "executed": 1812,
+      "failures": 0,
+      "inputs": "build/results/mac-add-profile-full-experimental-v1-inputs.json",
+      "scope": "historical4049 full cohort; superseded by nil correction"
+    },
+    {
+      "exit": 65,
+      "seconds": 3.173765182495117,
+      "log": "/Users/pj/project/build/mac-add-profile-full-published-v1.log",
+      "log_sha256": "6f6b4bc8a994586f877535b0e289173b71cb73ce552986b6e430ee9172ea2e51",
+      "executed": 0,
+      "failures": 0,
+      "inputs": "build/results/mac-add-profile-full-published-v1-inputs.json",
+      "scope": "historical4049 full cohort; superseded by nil correction"
+    },
+    {
+      "exit": 65,
+      "seconds": 7.4671852588653564,
+      "log": "/Users/pj/project/build/mac-add-profile-full-published-v2.log",
+      "log_sha256": "4511a0261e53dd61031ee37e6fc68233176f599c8d581705fa7c51d8eae3bf0f",
+      "executed": 0,
+      "failures": 0,
+      "inputs": "build/results/mac-add-profile-full-published-v2-inputs.json",
+      "scope": "historical4049 full cohort; superseded by nil correction"
+    },
+    {
+      "exit": 0,
+      "seconds": 81.3114972114563,
+      "log": "/Users/pj/project/build/mac-add-profile-full-published-v3.log",
+      "log_sha256": "2e30d47ddfd6f10d62cf8b980b39900a697d00ceeb20fe967a4d915116bc4164",
+      "executed": 1663,
+      "failures": 0,
+      "inputs": "build/results/mac-add-profile-full-published-v3-inputs.json",
+      "scope": "historical4049 full cohort; superseded by nil correction"
     }
   ],
   "static": [
@@ -56,9 +116,15 @@
     "No SDK authority, account persistence or original linking scope changed."
   ],
   "tested_paths": {
-    "whitenoise-mac/Features/Onboarding/OnboardingCoordinator.swift": "d3a1d5cde52153a1e2cf13041296705a76108890597c80f66c93361b2b8fe9b2",
+    "whitenoise-mac/Features/Onboarding/OnboardingCoordinator.swift": "9a7e9302e94702d0c737f44c14344736099f45c2c437cd3448824093dc31d12a",
     "whitenoise-mac/Views/MessengerShellView.swift": "6d353d2f6ae7f0ff92ae118a27a779c166b8303b0e6a549f0e10fc44fba79c4d",
     "whitenoise-mac/Views/Onboarding/OnboardingView.swift": "b76ebd9d5c47c297dbeb09372cd1b8305a9e6ea9c99826b0a1d3e9749750069c",
-    "whitenoise-macTests/AddProfileRoutingTests.swift": "039e1ebf3d0b33841dc67cc86a19639e605a68b8ccab7c903baf02e980a6e579"
+    "whitenoise-macTests/AddProfileRoutingTests.swift": "1ae77da31c14ad6c4b7894d6ee7860e4c7a2081fde28a9a09c6f995814fd8f82"
+  },
+  "checkpoint_removal": {
+    "red_stash": "d0eca266100657888d56d26977767707a9796e37",
+    "green_stash": "72fb3bdc3ba3525e328af4b1974d4f0a20b51793",
+    "unchanged_regression": true,
+    "scope": "Restore absent Core checkpoint as nil and clear only its presentation flag; do not retain a cancelled setup snapshot."
   }
 }

@@ -14,6 +14,27 @@ import XCTest
         try await checkHostedRoute(initiallyReady: false)
     }
 
+    func testRemovedCheckpointClearsExistingSetupPresentation() async throws {
+        let runtime = FakeMarmotRuntime(accounts: [])
+        runtime.onboardingState = OnboardingSnapshotFfi(
+            accountIdHex: "checkpoint-fixture", recoveryEpoch: nil, revision: 2, ready: false,
+            steps: [], proposal: nil, singleDeviceNotice: nil, cancellationPending: false)
+        let model = OnboardingCoordinator(accountRef: "fixture", runtime: runtime)
+        model.start()
+        defer { model.stop() }
+        let deadline = ContinuousClock.now.advanced(by: .seconds(3))
+        while model.snapshot == nil, ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        XCTAssertNotNil(model.snapshot)
+        XCTAssertTrue(model.hasUnfinishedSetup)
+        runtime.onboardingState = nil
+        model.start()
+        try await Task.sleep(for: .milliseconds(100))
+        XCTAssertNil(model.snapshot)
+        XCTAssertFalse(model.hasUnfinishedSetup)
+    }
+
     private func checkHostedRoute(initiallyReady: Bool) async throws {
         let account = AccountSummaryFfi(
             label: "Routing fixture", accountIdHex: String(repeating: "ab", count: 32),

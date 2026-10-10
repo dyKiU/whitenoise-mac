@@ -141,7 +141,12 @@ final class OnboardingCoordinator {
                 )
             }
             try Task.checkCancellation()
-            if let restoredSnapshot = restored.0 { install(restoredSnapshot) }
+            if let restoredSnapshot = restored.0 {
+                install(restoredSnapshot)
+            } else {
+                snapshot = nil
+                hasUnfinishedSetup = false
+            }
             recoveryRequired = restored.1
             guard restored.0 != nil else { return }
 
