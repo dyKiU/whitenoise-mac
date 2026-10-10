@@ -19,6 +19,9 @@ nonisolated protocol MarmotRuntime: Sendable {
         func deviceLinkingTargets(accountRef: String) async throws -> [DeviceLinkingTargetFfi]
         func pendingDeviceLinkingApprovals(accountRef: String) async throws -> [DeviceLinkingApproval]
         func beginDeviceLinkingSession(accountRef: String) async throws -> DeviceLinkingSession
+        func beginHistoryTransfer(accountRef: String, groupIdHex: String, recipientDevice: Data) async throws
+            -> HistoryTransfer
+        func pendingHistoryRequests(accountRef: String) async throws -> [HistoryConsent]
         func beginSelectedChatCopy(accountRef: String, groupIdHex: String, linkedRosterSelector: Data) async throws
             -> SelectedChatCopy
         func receiveSelectedChatCopyRequest(accountRef: String, packet: Data) async throws -> SelectedChatConsent
@@ -442,6 +445,16 @@ nonisolated final class MarmotClient: MarmotRuntime, @unchecked Sendable {
 
         func pendingDeviceLinkingApprovals(accountRef: String) async throws -> [DeviceLinkingApproval] {
             try await marmot.pendingDeviceLinkingApprovals(accountRef: accountRef)
+        }
+
+        func beginHistoryTransfer(accountRef: String, groupIdHex: String, recipientDevice: Data) async throws
+            -> HistoryTransfer
+        {
+            try await marmot.beginHistoryTransfer(
+                accountRef: accountRef, groupIdHex: groupIdHex, recipientDevice: recipientDevice)
+        }
+        func pendingHistoryRequests(accountRef: String) async throws -> [HistoryConsent] {
+            try await marmot.pendingHistoryRequests(accountRef: accountRef)
         }
 
         func beginSelectedChatCopy(accountRef: String, groupIdHex: String, linkedRosterSelector: Data) async throws

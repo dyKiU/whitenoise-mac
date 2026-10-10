@@ -12,6 +12,7 @@ import Observation
 final class AccountScope {
     private(set) var isCancelled = false
     #if WN_EXPERIMENTAL_DEVICE_SYNC
+        let history: NativeHistoryAccountOwner
         let selectedChat: NativeSelectedChatAccountOwner
         private(set) var selectedChatTransfer: SelectedChatTransferViewModel?
 
@@ -85,6 +86,7 @@ final class AccountScope {
         let blockedUsers = BlockedUsersViewModel(accountRef: account.accountRef, runtime: runtime)
         let productAnalytics = ProductAnalyticsRecorder()
         #if WN_EXPERIMENTAL_DEVICE_SYNC
+            self.history = NativeHistoryAccountOwner(accountRef: account.accountRef, runtime: runtime)
             self.selectedChat = NativeSelectedChatAccountOwner(accountRef: account.accountRef, runtime: runtime)
         #endif
         self.account = account
@@ -115,6 +117,7 @@ final class AccountScope {
         self.productAnalytics = productAnalytics
         #if WN_EXPERIMENTAL_DEVICE_SYNC
             addCancellation { [selectedChat] in selectedChat.invalidate() }
+            addCancellation { [history] in history.invalidate() }
         #endif
     }
 
