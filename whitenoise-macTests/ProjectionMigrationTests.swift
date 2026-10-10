@@ -1940,18 +1940,31 @@ struct ProjectionMigrationTests {
 
 struct MarmotKitReleaseProvenanceTests {
     @Test func generatedReleaseProvenancePinsTheAuditedBuild() throws {
-        #expect(MarmotKitVersion.mdkTag == "marmotkit-v0.12.0")
-        #expect(MarmotKitVersion.mdkSHA == "122bd90ffac60bb6311346e228d0f609a18521ee")
-        #expect(MarmotKitVersion.uniffiVersion == "0.29.4")
-        #expect(MarmotKitVersion.features == "otlp-export,product-analytics-export")
-        #expect(MarmotKitVersion.swiftPMChecksum == "344251a65ec7afcdcce8b7bb0cbf26bfcf398983a99a11bfc93181a0069621a5")
-        #expect(
-            MarmotKitVersion.vendoredSwiftSHA256 == "14546a0a018b423457ab23df43819bdf8d876069a6866ffe9052a3cce628036b")
-        #expect(MarmotKitVersion.distribution == "static-library-and-privacy-v1")
-        #expect(MarmotKitVersion.privacySHA256 == "3759ff2493741386342599b39673989a461f491ad1fb207a7133a2b0035140f7")
-        let privacyData = try #require(MarmotKitVersion.privacyManifestData())
-        #expect(
-            SHA256.hash(data: privacyData).map { String(format: "%02x", $0) }.joined()
-                == MarmotKitVersion.privacySHA256)
+        #if WN_EXPERIMENTAL_DEVICE_SYNC
+            // The experimental runner verifies the installed native archive and manifest
+            // before compiling. Local provenance intentionally has no published-release pin.
+            #expect(MarmotKitVersion.mdkSHA.count == 40)
+            #expect(MarmotKitVersion.mdkSHA.allSatisfy { $0.isHexDigit && !$0.isUppercase })
+            #expect(MarmotKitVersion.mdkTag == "local-\(MarmotKitVersion.mdkSHA)")
+            #expect(MarmotKitVersion.uniffiVersion == "0.29.4")
+            #expect(MarmotKitVersion.features == "otlp-export,product-analytics-export,experimental-device-sync")
+        #else
+            #expect(MarmotKitVersion.mdkTag == "marmotkit-v0.12.0")
+            #expect(MarmotKitVersion.mdkSHA == "122bd90ffac60bb6311346e228d0f609a18521ee")
+            #expect(MarmotKitVersion.uniffiVersion == "0.29.4")
+            #expect(MarmotKitVersion.features == "otlp-export,product-analytics-export")
+            #expect(
+                MarmotKitVersion.swiftPMChecksum == "344251a65ec7afcdcce8b7bb0cbf26bfcf398983a99a11bfc93181a0069621a5")
+            #expect(
+                MarmotKitVersion.vendoredSwiftSHA256
+                    == "14546a0a018b423457ab23df43819bdf8d876069a6866ffe9052a3cce628036b")
+            #expect(MarmotKitVersion.distribution == "static-library-and-privacy-v1")
+            #expect(
+                MarmotKitVersion.privacySHA256 == "3759ff2493741386342599b39673989a461f491ad1fb207a7133a2b0035140f7")
+            let privacyData = try #require(MarmotKitVersion.privacyManifestData())
+            #expect(
+                SHA256.hash(data: privacyData).map { String(format: "%02x", $0) }.joined()
+                    == MarmotKitVersion.privacySHA256)
+        #endif
     }
 }

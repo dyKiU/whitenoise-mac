@@ -10,6 +10,13 @@ let marmotKitChecksum = "344251a65ec7afcdcce8b7bb0cbf26bfcf398983a99a11bfc93181a
 let marmotKitBinaryURL =
     "https://github.com/marmot-protocol/mdk/releases/download/\(marmotKitReleaseTag)/MarmotKitFFI-macos-\(marmotKitReleaseID).xcframework.zip"
 
+// Explicit local pin: keep generated Swift paired with its built binary.
+let marmotKitLocalPath: String? = nil
+let marmotKitBinaryTarget: Target =
+    marmotKitLocalPath.map {
+        .binaryTarget(name: "MarmotKitFFI", path: $0)
+    } ?? .binaryTarget(name: "MarmotKitFFI", url: marmotKitBinaryURL, checksum: marmotKitChecksum)
+
 let package = Package(
     name: "MarmotKit",
     platforms: [
@@ -21,11 +28,7 @@ let package = Package(
         .library(name: "MarmotKit", targets: ["MarmotKit"])
     ],
     targets: [
-        .binaryTarget(
-            name: "MarmotKitFFI",
-            url: marmotKitBinaryURL,
-            checksum: marmotKitChecksum
-        ),
+        marmotKitBinaryTarget,
         .target(
             name: "MarmotKit",
             dependencies: ["MarmotKitFFI"],

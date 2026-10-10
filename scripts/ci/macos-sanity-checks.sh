@@ -48,7 +48,8 @@ assert_entitlement_true() {
 }
 
 build_settings_file="$(mktemp)"
-trap 'rm -f "$build_settings_file"' EXIT
+package_manifest_file="$(mktemp)"
+trap 'rm -f "$build_settings_file" "$package_manifest_file"' EXIT
 
 xcodebuild \
   -project "$PROJECT" \
@@ -80,7 +81,7 @@ assert_build_setting_equals() {
 plutil -lint "$INFO_PLIST" >/dev/null
 plutil -lint "$ENTITLEMENTS" >/dev/null
 
-assert_plist_equals "$INFO_PLIST" "CFBundleDisplayName" "White Noise"
+assert_plist_equals "$INFO_PLIST" "CFBundleDisplayName" '$(WN_APP_DISPLAY_NAME)'
 assert_plist_equals "$INFO_PLIST" "CFBundlePackageType" "APPL"
 assert_plist_equals "$INFO_PLIST" "LSApplicationCategoryType" "public.app-category.social-networking"
 assert_plist_equals "$INFO_PLIST" "LSMinimumSystemVersion" "\$(MACOSX_DEPLOYMENT_TARGET)"
@@ -98,6 +99,8 @@ assert_entitlement_true "com.apple.security.device.audio-input"
 
 assert_build_setting_equals "PRODUCT_BUNDLE_IDENTIFIER" "dev.ipf.whitenoise.mac"
 assert_build_setting_equals "PRODUCT_NAME" "White Noise"
+assert_build_setting_equals "WN_APP_DISPLAY_NAME" "White Noise"
+assert_build_setting_equals "WN_APP_URL_SCHEME" "marmot"
 assert_build_setting_equals "INFOPLIST_FILE" "Config/Info.plist"
 assert_build_setting_equals "CODE_SIGN_ENTITLEMENTS" "whitenoise-mac/whitenoise-mac.entitlements"
 assert_build_setting_equals "ENABLE_HARDENED_RUNTIME" "YES"
@@ -117,8 +120,19 @@ marmot_checksum="$(sed -nE 's/^let marmotKitChecksum = "(.*)"$/\1/p' "$MARMOT_PA
 [[ -n "$marmot_release_id" ]] || fail "$MARMOT_PACKAGE is missing marmotKitReleaseID"
 [[ "$marmot_release_tag" == "marmotkit-"* ]] || fail "$MARMOT_PACKAGE has an unexpected release tag '$marmot_release_tag'"
 [[ "$marmot_checksum" =~ ^[0-9a-f]{64}$ ]] || fail "$MARMOT_PACKAGE checksum is not a 64-character hex digest"
-grep -q 'url: marmotKitBinaryURL' "$MARMOT_PACKAGE" \
-  || fail "$MARMOT_PACKAGE must declare MarmotKitFFI as a remote binaryTarget, not a local path"
+swift package dump-package --package-path "$(dirname "$MARMOT_PACKAGE")" > "$package_manifest_file"
+python3 - "$package_manifest_file" "$marmot_release_tag" "$marmot_release_id" "$marmot_checksum" <<'PYPIN'
+import json, pathlib, sys
+manifest = json.loads(pathlib.Path(sys.argv[1]).read_text())
+targets = [target for target in manifest['targets'] if target['name'] == 'MarmotKitFFI']
+expected_url = (f'https://github.com/marmot-protocol/mdk/releases/download/{sys.argv[2]}/'
+                f'MarmotKitFFI-macos-{sys.argv[3]}.xcframework.zip')
+if (len(targets) != 1 or targets[0].get('type') != 'binary'
+        or targets[0].get('url') != expected_url
+        or targets[0].get('checksum') != sys.argv[4]
+        or 'path' in targets[0]):
+    sys.exit('error: MarmotKitFFI must resolve to the pinned published URL/checksum')
+PYPIN
 grep -q 'MarmotKitFFI-macos-' "$MARMOT_PACKAGE" \
   || fail "$MARMOT_PACKAGE must pin the macOS asset; an unprefixed MarmotKitFFI asset is the iOS build"
 

@@ -22,9 +22,8 @@ xcodebuild -scheme whitenoise-mac -configuration Debug build CODE_SIGNING_ALLOWE
 # Build the unit-test target (catches test-only breakage without running)
 xcodebuild -scheme whitenoise-mac -configuration Debug build-for-testing CODE_SIGNING_ALLOWED=NO
 
-# Run the unit tests in the PR test plan
-xcodebuild test-without-building -scheme whitenoise-mac -configuration Debug \
-  -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO
+# Run unit tests in the PR plan with an isolated host identity
+scripts/test-isolated.sh
 
 # Run UI performance tests (requires macOS UI automation permissions)
 xcodebuild test -scheme whitenoise-mac -configuration Debug -testPlan UIPerformance \
@@ -38,8 +37,7 @@ smaller focused suites, with shared fakes and helpers in
 test function, which is how you iterate without paying for the full suite:
 
 ```sh
-xcodebuild test-without-building -scheme whitenoise-mac -configuration Debug \
-  -destination 'platform=macOS,arch=arm64' -testPlan PR CODE_SIGNING_ALLOWED=NO \
+scripts/test-isolated.sh \
   -only-testing:'whitenoise-macTests/TimelineTests/someTestName()'
 ```
 
@@ -65,6 +63,44 @@ UI performance tests live in `whitenoise-macUITests/`, are isolated in the
 `-uiFixture heavy-chat` argument for deterministic chat/search/media data.
 
 ## Test isolation on disk
+
+Use `scripts/test-isolated.sh` for unit tests, including focused `-only-testing:`
+arguments. `just test` and CI call the same runner. It overrides the hardcoded
+`TEST_HOST` path and verifies `dev.ipf.whitenoise.mac.tests` before execution;
+`MarmotStorageProfile.testHost` has a separate disk root and account-ID Keychain
+service. Its product name is `White Noise Unit Host`, so coverage's test-bundle
+name filter keeps the app. Choose task-specific `WN_TEST_DERIVED_DATA` and fresh
+`WN_TEST_RESULT_BUNDLE` paths. The runner unregisters only its temporary test host
+on exit and performs no installation. Preserve production preferences when
+checking erase/reset behavior; use synthetic sentinel keys and remove them.
+Storage-root fixtures describing production paths must inject `.production`
+against their temporary support root, rather than assuming the running profile.
+
+
+The explicit development bundle `dev.ipf.whitenoise.mac.syncdev` selects
+`MarmotStorageProfile.syncDevelopment`: a separate Application Support root and
+account-ID keyed `SyncDevelopmentSecretStore`. Production keeps the platform
+default account store. Keep initialization and reset on the same captured
+profile. Keychain regressions must use unique test service names and synthetic
+credentials, with cleanup; never query production credentials.
+
+Build the separate Mac sidecar with `scripts/build-sync-development.sh` and a
+task-specific `WN_SYNC_DERIVED_DATA` path. App-only `WN_APP_*` settings keep the
+SwiftPM privacy resource bundle name intact. The script signs locally with the
+project's sandbox entitlements, verifies signing, and performs no installation.
+The sidecar registers `marmot-syncdev`, preserving production URL registration;
+development deep-link flow verification remains pending. By default it uses
+published MarmotKit 0.12.0. Explicit `WN_EXPERIMENTAL_DEVICE_SYNC=1` enables the
+native device-linking runtime methods only after checking the installed local
+framework, generated Swift, source/builder identity and feature cohort. Use the
+same flag with `scripts/test-isolated.sh`; never enable it for published bindings.
+Keep fresh pairing and chat delivery acceptance separate from runtime smoke tests.
+
+For a reviewed local experimental cohort, use `scripts/sync-local-bindings.sh`
+with a clean MDK checkout/full SHA and explicit `EXPERIMENTAL_DEVICE_SYNC=1`.
+Reuse `CARGO_TARGET_DIR`; do not commit local binaries or generated local binding
+overrides. Restore published bindings before integration. See
+`docs/local-marmotkit-development.md` for checks and remaining native gates.
 
 Tests write real files, so every on-disk root a test double hands out is isolated
 per test and per process by default — see `whitenoise-macTests/Support/TestStorageRoot.swift`.
@@ -232,3 +268,17 @@ The rules, in the order they are most often broken:
 - **No new computed `var …: some View`.** Extract a `View` struct instead. A computed property
   shares its parent's observation set, so it re-renders whenever anything the parent reads changes;
   a struct observes only what it is given.
+
+## Experimental native linking owner
+
+`SessionState` and `DeviceLinkingScope` retain the original opaque SDK session and
+subscription. Never reconstruct it from snapshot metadata or enable enrollment from
+native capability flags. Factory adoption must retain the exact account scope,
+runtime instance and ownership ticket across awaits, including A→B→A. Invalidate
+before any Core teardown; retain failed exact cleanup and retry deliberately.
+The generic `beforeAccountExit`/`beforeRuntimeReset` callbacks wire existing app
+exit paths without adding feature state to `WorkspaceState`. Runtime identity is
+only positive for class implementations, tested with actual `MarmotClient`.
+Keep generated development SDK overrides out of commits. Use the dedicated
+`MacTestIsolationM5` cache and isolated host for focused tests. Lifetime qualification on signed9b245 passed the full PR suite with published0.12
+and experimental e6. It does not cover pairing UI or scene suspension.

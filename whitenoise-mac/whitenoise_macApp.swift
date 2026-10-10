@@ -22,6 +22,11 @@ struct whitenoise_macApp: App {
         shouldBootstrapWorkspace = configuration.shouldBootstrapWorkspace
     }
 
+    private struct AccountRuntimeSelection: Hashable {
+        let accountID: String?
+        let runtime: ObjectIdentifier?
+    }
+
     var body: some Scene {
         // A single `Window` scene (not `WindowGroup`) intentionally restricts the app to
         // exactly one window. The whole UI is driven by one shared `WorkspaceState`
@@ -46,7 +51,11 @@ struct whitenoise_macApp: App {
                         await synchronizeAccountScope()
                     }
                 }
-                .task(id: workspace.activeAccountId) {
+                .task(
+                    id: AccountRuntimeSelection(
+                        accountID: workspace.activeAccountId,
+                        runtime: workspace.client.flatMap { nativeRuntimeObjectIdentity($0) })
+                ) {
                     await synchronizeAccountScope()
                 }
                 .task(id: workspace.selectedChat?.id) {

@@ -451,7 +451,7 @@
 				EXTRACT_APP_INTENTS_METADATA = NO;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Config/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "White Noise";
+				INFOPLIST_KEY_CFBundleDisplayName = "$(WN_APP_DISPLAY_NAME)";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -465,9 +465,9 @@
 					"-framework",
 					AVKit,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = dev.ipf.whitenoise.mac;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(WN_APP_BUNDLE_IDENTIFIER)";
 				PRODUCT_MODULE_NAME = whitenoise_mac;
-				PRODUCT_NAME = "White Noise";
+				PRODUCT_NAME = "$(WN_APP_PRODUCT_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -506,7 +506,7 @@
 				EXTRACT_APP_INTENTS_METADATA = NO;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Config/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "White Noise";
+				INFOPLIST_KEY_CFBundleDisplayName = "$(WN_APP_DISPLAY_NAME)";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -520,9 +520,9 @@
 					"-framework",
 					AVKit,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = dev.ipf.whitenoise.mac;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(WN_APP_BUNDLE_IDENTIFIER)";
 				PRODUCT_MODULE_NAME = whitenoise_mac;
-				PRODUCT_NAME = "White Noise";
+				PRODUCT_NAME = "$(WN_APP_PRODUCT_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;

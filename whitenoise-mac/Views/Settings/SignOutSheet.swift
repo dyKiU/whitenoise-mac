@@ -35,6 +35,9 @@ struct SignOutSheet: View {
     }
 
     @Environment(WorkspaceState.self) private var workspace
+    #if WN_EXPERIMENTAL_DEVICE_SYNC
+        @Environment(SessionState.self) private var session
+    #endif
     @Environment(\.dismiss) private var dismiss
 
     let account: AccountItem
@@ -207,11 +210,32 @@ struct SignOutSheet: View {
         guard canSignOut else { return }
         if wipesLocalData {
             stage = .wiping
-            await workspace.removeAccount(account)
+            #if WN_EXPERIMENTAL_DEVICE_SYNC
+                await workspace.removeAccount(
+                    account,
+                    beforeAccountExit: {
+                        try await session.prepareForAccountExit(accountID: account.id)
+                    })
+            #else
+                await workspace.removeAccount(account)
+            #endif
         } else {
             stage = .signingOut
-            await workspace.signOutAccount(account)
+            #if WN_EXPERIMENTAL_DEVICE_SYNC
+                await workspace.signOutAccount(
+                    account,
+                    beforeAccountExit: {
+                        try await session.prepareForAccountExit(accountID: account.id)
+                    })
+            #else
+                await workspace.signOutAccount(account)
+            #endif
         }
+        #if WN_EXPERIMENTAL_DEVICE_SYNC
+            await session.activate(
+                account: workspace.activeAccount, runtime: workspace.client,
+                connectivityAvailable: !workspace.isOffline)
+        #endif
         stage = nil
         // Dismiss only when the teardown actually ran. Both calls clear `lastError` on entry and
         // set it from their `catch`, so a non-nil error here means nothing was torn down —

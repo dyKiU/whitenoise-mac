@@ -10,6 +10,7 @@ import Observation
 @MainActor
 @Observable
 final class AccountScope {
+    private(set) var isCancelled = false
     let account: AccountItem
     @ObservationIgnored let runtime: any MarmotRuntime
     let settingsModel: SettingsViewModel
@@ -197,6 +198,7 @@ final class AccountScope {
     }
 
     func cancelAll() async {
+        isCancelled = true
         attachmentPolicyTask?.cancel()
         attachmentPolicyTask = nil
         let pending = Array(cancellations.values)
