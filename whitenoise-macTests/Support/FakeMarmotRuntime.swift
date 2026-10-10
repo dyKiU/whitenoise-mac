@@ -867,6 +867,12 @@ nonisolated final class FakeMarmotRuntime: MarmotRuntime, @unchecked Sendable {
             throw MarmotKitError.DeviceLinkingUnsupported
         }
 
+        func historyTransferRecipients(accountRef: String, groupIdHex: String) async throws
+            -> [HistoryTransferRecipientFfi]
+        {
+            throw MarmotKitError.HistoryTransferUnsupported
+        }
+
         func beginHistoryTransfer(accountRef: String, groupIdHex: String, recipientDevice: Data) async throws
             -> HistoryTransfer
         {
