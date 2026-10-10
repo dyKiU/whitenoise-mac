@@ -1,0 +1,58 @@
+{
+  "scope": "Real SessionState account replacement owns and invalidates bounded synchronized-history reader; injected read dependency, no native adapter or installed history UI adoption",
+  "base": "cbc10ed4b10c69f6c2a24c40b598862885267430",
+  "red_stash": "d0c4aef30733a9b218f1db243f2d9a5b19726658",
+  "green_stash": "5416fd630ad086249bc3b3d5b4389ff0e6847c80",
+  "unchanged_regression_sha256": "cb6605955bdbd45d541caed35afed5e5a394210fe95beecf947c3ee9325c2100",
+  "cohorts": [
+    {
+      "prefix": "mac-history-account-red-v1",
+      "input_count": 457,
+      "manifest_sha256": "05ee572a5961a07e8bd0db17959c5ada32a3a59d1c0d78c16f98610156e7f295",
+      "result": {
+        "exit": 65,
+        "seconds": 23.653340101242065,
+        "log": "/Users/pj/project/build/mac-history-account-red-v1.log",
+        "log_sha256": "a8baa5503dd3386aea0380c1ca994e22176bc08f7c1ea1ba6522ddec31f65ad8"
+      },
+      "tests": {
+        "passedTests": 0,
+        "failedTests": 1,
+        "skippedTests": 0,
+        "totalTestCount": 1,
+        "result": "Failed"
+      }
+    },
+    {
+      "prefix": "mac-history-account-green-v1",
+      "input_count": 458,
+      "manifest_sha256": "65bd53b33ac3037ef4371a883f41114061da9a2d2f0687675210f40ae5653953",
+      "result": {
+        "exit": 0,
+        "seconds": 15.376585960388184,
+        "log": "/Users/pj/project/build/mac-history-account-green-v1.log",
+        "log_sha256": "499da04ea8e2ac69e32dd2bb8e5ec8fc2bb63f4284145c459353988c93199865"
+      },
+      "tests": {
+        "passedTests": 15,
+        "failedTests": 0,
+        "skippedTests": 0,
+        "totalTestCount": 15,
+        "result": "Passed"
+      }
+    }
+  ],
+  "controls": [
+    "actual account switching refuses late non-cooperative page publication",
+    "per-chat reader reuse and exact chat-release invalidation without retiring unrelated reader",
+    "fresh chat reopening creates new reader",
+    "retired account construction refuses reader execution",
+    "all prior8 reader controls and4 account scope controls"
+  ],
+  "post_freeze": "Only this proof and owner guidance; runtime/tests unchanged",
+  "remaining": [
+    "Full PR before merge",
+    "Native adapter/runtime method on matching SDK",
+    "Conversation UI/provenance/media/retention acceptance"
+  ]
+}

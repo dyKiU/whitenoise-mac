@@ -71,6 +71,8 @@ final class AccountScope {
     @ObservationIgnored private var attachmentPolicyTask: Task<Void, Never>?
     @ObservationIgnored private var cancellations: [UUID: @MainActor () -> Void] = [:]
     @ObservationIgnored private var conversations: [String: (model: ConversationViewModel, cancellation: UUID)] = [:]
+    @ObservationIgnored private var synchronizedHistoryReaders:
+        [String: (model: SynchronizedHistoryViewModel, cancellation: UUID)] = [:]
     @ObservationIgnored private var attachments: [String: (model: AttachmentViewModel, cancellation: UUID)] = [:]
     @ObservationIgnored private var groupSafety: [String: GroupSafetyViewModel] = [:]
 
@@ -163,6 +165,21 @@ final class AccountScope {
         cancellations[id] = nil
     }
 
+    func synchronizedHistoryModel(
+        groupIdHex: String,
+        read: @escaping SynchronizedHistoryViewModel.Reader
+    ) -> SynchronizedHistoryViewModel {
+        if let existing = synchronizedHistoryReaders[groupIdHex] { return existing.model }
+        let model = SynchronizedHistoryViewModel(accountRef: account.accountRef, groupIdHex: groupIdHex, read: read)
+        guard !isCancelled else {
+            model.invalidate()
+            return model
+        }
+        let cancellation = addCancellation { [model] in model.invalidate() }
+        synchronizedHistoryReaders[groupIdHex] = (model, cancellation)
+        return model
+    }
+
     /// Conversations open in `.automatic`: MarmotKit anchors the window on the first unread row,
     /// which the transcript positions under a "New messages" divider, else on the latest row.
     func conversationModel(
@@ -210,6 +227,10 @@ final class AccountScope {
     }
 
     func releaseConversation(groupIdHex: String) {
+        if let history = synchronizedHistoryReaders.removeValue(forKey: groupIdHex) {
+            releaseCancellation(history.cancellation)
+            history.model.invalidate()
+        }
         guard let owned = conversations.removeValue(forKey: groupIdHex) else { return }
         if selectedConversationModel === owned.model {
             selectedConversationModel = nil
@@ -256,6 +277,7 @@ final class AccountScope {
         cancellations.removeAll()
         selectedConversationModel = nil
         conversations.removeAll()
+        synchronizedHistoryReaders.removeAll()
         attachments.removeAll()
         groupSafety.removeAll()
         for cancel in pending {
