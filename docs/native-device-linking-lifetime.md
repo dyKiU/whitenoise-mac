@@ -233,3 +233,20 @@ pass. Three Apple sync/import-generated keys×9translations preserve all1239
 previous entries/order. Exact source/runs, compile-only fixture failure and
 comment-format correction are in native-enrollment-transport-evidence.json.
 No full PR, visual acceptance, new SDK, install or publication is claimed.
+
+The original B approval scope now forwards `reviewMetadata` on the same retained
+SDK object, with lifetime checks before and after the read. The separate approval
+model retains review display only under that owner and pending revision; reading
+never approves. Explicit reviewed approval uses the exact displayed revision and
+clears review metadata before the SDK action. SDK errors, actual account A→B→A,
+deactivation/account-exit, changed phase and failed exact cleanup are covered.
+
+Candidate SDK source `3fab3184` passed all ten release artifact/consumer gates.
+Native review RED0/2 precedes GREEN2/2 and seven control tests (eleven case
+executions); final affected60/60 passes. The first affected run59/60 retained the
+old e6 capability expectation; its smoke assertion was corrected to the new
+SDK-derived capability, without changing app capability logic. See
+`native-enrollment-approval-review-evidence.json`. This qualifies the original
+handle/model boundary, not an approval pane or native A/B/C acceptance. No local
+SDK overrides are part of the commit; final integrated SDK/native full gates
+remain required before development application adoption.
