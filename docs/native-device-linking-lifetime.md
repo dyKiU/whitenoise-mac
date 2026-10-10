@@ -168,3 +168,30 @@ This is native custody/lifecycle qualification with generated original-handle te
 doubles and actual SessionState paths. It is not actual SDK enrollment or a full PR
 suite. Verification UI/protocol and advertised capability are unchanged. No merge,
 push, installation, production app or account data action occurred.
+
+
+## Separate enrollment presentation models (development only)
+
+AccountScope retains separate DeviceEnrollmentViewModel and
+DeviceEnrollmentApprovalViewModel objects. SessionState creates the session model
+only from its already-held concrete original scope; it never starts a session from
+snapshot display. Both models retain the exact account/runtime ownership ticket.
+Session actions forward explicit continue/export/receive/finalize revisions and
+opaque bytes. B actions refresh finite metadata or explicitly approve/receive on
+the separately held original approval. Refreshing or decoding never approves.
+Canonical base64 input is bounded to16KiB of opaque bytes and carries no native
+identity or permission. Cancellation immediately retires display and retains exact
+failed cleanup for retry; that retry checks the same retiring original rather than
+cancelling a replacement owner.
+
+Default-deny RED ran seven tests: two negative controls passed and five missing
+action controls failed. Unchanged controls passed7/7 after implementation;
+affected models/custody/session/transport/lifecycle/runtime controls passed43/43.
+Strict repository swift-format and diff checks pass. All433 source inputs and
+full terminal log hashes are recorded in native-enrollment-models-evidence.json;
+exact RED and GREEN source are preserved in named compact Git stashes.
+
+These are original-handle model/lifecycle controls, not actual SDK enrollment or a
+full PR suite. No view, capability, SDK/artifact, profile, installation or production
+state changed. The e6 B snapshot contains revision/phase only; authenticated review
+identity metadata and nativeABC acceptance are required before general approval UI.

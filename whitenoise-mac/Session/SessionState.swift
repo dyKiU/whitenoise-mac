@@ -44,6 +44,61 @@ final class SessionState {
         @ObservationIgnored private var approvalCleanup: Task<Void, Error>?
         @ObservationIgnored private var approvalCancellation: (scope: AccountScope, id: UUID)?
 
+        func makeDeviceEnrollmentModel() throws -> DeviceEnrollmentViewModel {
+            guard let account = accountScope, !account.isCancelled, let original = deviceLinkingScope else {
+                throw MarmotKitError.DeviceLinkingNotReady
+            }
+            if let held = account.deviceEnrollment, held.isActive { return held }
+            let epoch = deviceLinkingEpoch
+            let selection = activationToken
+            let current: @MainActor () -> Bool = { [weak self, weak account, weak original] in
+                guard let self, let account, let original else { return false }
+                return self.accountScope === account && !account.isCancelled && self.deviceLinkingScope === original
+                    && self.deviceLinkingEpoch == epoch && self.activationToken == selection
+            }
+            let model = DeviceEnrollmentViewModel(original: original, isCurrent: current) { [weak self] in
+                guard let self else { throw MarmotKitError.DeviceLinkingClosed }
+                if current() {
+                    try await self.cancelDeviceLinking()
+                } else {
+                    guard self.retiringDeviceLinkingScope === original else { throw MarmotKitError.DeviceLinkingClosed }
+                    try await self.retryDeviceLinkingCleanup()
+                }
+            }
+            account.installDeviceEnrollment(model)
+            return model
+        }
+
+        func makeDeviceEnrollmentApprovalModel() async throws -> DeviceEnrollmentApprovalViewModel {
+            guard let account = accountScope, !account.isCancelled else { throw MarmotKitError.DeviceLinkingClosed }
+            let epoch = deviceLinkingEpoch
+            let selection = activationToken
+            let original = try await pendingOwnedDeviceLinkingApproval()
+            guard accountScope === account, !account.isCancelled, epoch == deviceLinkingEpoch,
+                selection == activationToken, deviceLinkingApprovalScope === original
+            else { throw MarmotKitError.DeviceLinkingClosed }
+            if let held = account.deviceEnrollmentApproval, held.isActive { return held }
+            let current: @MainActor () -> Bool = { [weak self, weak account, weak original] in
+                guard let self, let account, let original else { return false }
+                return self.accountScope === account && !account.isCancelled
+                    && self.deviceLinkingApprovalScope === original && self.deviceLinkingEpoch == epoch
+                    && self.activationToken == selection
+            }
+            let model = DeviceEnrollmentApprovalViewModel(original: original, isCurrent: current) { [weak self] in
+                guard let self else { throw MarmotKitError.DeviceLinkingClosed }
+                if current() {
+                    try await self.cancelDeviceLinking()
+                } else {
+                    guard self.retiringApprovalScopes.contains(where: { $0 === original }) else {
+                        throw MarmotKitError.DeviceLinkingClosed
+                    }
+                    try await self.retryDeviceLinkingCleanup()
+                }
+            }
+            account.installDeviceEnrollmentApproval(model)
+            return model
+        }
+
         func pendingOwnedDeviceLinkingApproval() async throws -> NativeDeviceLinkingApprovalScope {
             try await adoptDeviceLinkingApprovalBatch { runtime, accountRef in
                 try await runtime.pendingDeviceLinkingApprovals(accountRef: accountRef)

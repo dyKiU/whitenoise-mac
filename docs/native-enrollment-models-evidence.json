@@ -1,0 +1,76 @@
+{
+  "base": "9ceae2c952489e1e941c254327caae017e0321ca",
+  "sdk": "e6b0e9c159b632b8c07eb68f12f46c3bc930699c",
+  "sdk_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+  "source_stashes": {
+    "red": "59820c62f50885f2fdc5761ab8814d2d4d153fa8",
+    "green_affected": "d8dc001c1ac23d5d92e1f338036519dea42f6412"
+  },
+  "owned_source_sha256": {
+    "whitenoise-mac/Session/SessionState.swift": "20b706ea294a77554b95543e2ac6d3b6fb6140c6254017ce6247715edfa5c4d6",
+    "whitenoise-mac/Session/AccountScope.swift": "7184178849b2240feca5fb3325a6c930c32f9fea38167bd062bded1e48e14fd4",
+    "whitenoise-mac/Features/DeviceEnrollment/DeviceEnrollmentViewModel.swift": "efe481478092e529d65f7dbb3ec037d870207c6eac84e64bb5bee5751c70cbe7",
+    "whitenoise-mac/Features/DeviceEnrollment/DeviceEnrollmentApprovalViewModel.swift": "5f534a77da093fbad30de840def8063c91516b6d9001b1e15362da77bf2c5631",
+    "whitenoise-macTests/DeviceEnrollmentViewModelTests.swift": "232cd70bd953609ba53715ba428c519727b46995e9abaa9c53c79f4b15bc2cba"
+  },
+  "source_proof": "Five code/test inputs checked against frozen433 manifests; exact RED and GREEN recoverable from compact stash trees, new paths in third parents. GREEN and affected inputs identical.",
+  "runs": {
+    "red": {
+      "source_base": "9ceae2c952489e1e941c254327caae017e0321ca",
+      "source_inputs": 433,
+      "input_manifest_sha256": "03d9cafda73afcc9d1848c281fb077c87a471212bed49e69caf92592f84efd5a",
+      "profile": "local-e6/experimentalflag1",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 65,
+      "seconds": 44.11,
+      "log_sha256": "3db34aafed69edc9002796c92178697c95f400e721129d0cbc3f2b4a0eed4dfa",
+      "tests": {
+        "result": "Failed",
+        "totalTestCount": 7,
+        "passedTests": 2,
+        "failedTests": 5,
+        "skippedTests": 0
+      }
+    },
+    "green": {
+      "source_base": "9ceae2c952489e1e941c254327caae017e0321ca",
+      "source_inputs": 433,
+      "input_manifest_sha256": "847cc33c3475e019c1ea4b1439c327cefcb923720e06e4be0a967b0b290edad9",
+      "profile": "local-e6/experimentalflag1",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 0,
+      "seconds": 15.87,
+      "log_sha256": "5a28bc2652590c35c5ba9999c7c5919cb0bbb1829b711feb67fb16c0d117b8f5",
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 7,
+        "passedTests": 7,
+        "failedTests": 0,
+        "skippedTests": 0
+      }
+    },
+    "affected": {
+      "source_base": "9ceae2c952489e1e941c254327caae017e0321ca",
+      "source_inputs": 433,
+      "input_manifest_sha256": "847cc33c3475e019c1ea4b1439c327cefcb923720e06e4be0a967b0b290edad9",
+      "profile": "local-e6/experimentalflag1",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 0,
+      "seconds": 3.43,
+      "log_sha256": "822916274e482d403bf681069eb07c5a7980b89412ff4e0dcfde1f3503267ba7",
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 43,
+        "passedTests": 43,
+        "failedTests": 0,
+        "skippedTests": 0
+      }
+    }
+  },
+  "checks": {
+    "repository_strict_swift_format": "6.2.3 exit0 with .swift-format",
+    "git_diff_check": "exit0"
+  },
+  "review_limit": "Matched e6 approval snapshot has revision/phase only. Models do not invent peer identities, use a new review API, enable capability, or provide approval UI. Authoritative authenticated original-handle review metadata and actual nativeABC acceptance remain separate.",
+  "qualification_limit": "Generated original SDK-handle controls with actual SessionState account replacement/deactivation/exit. Actions remain on original concrete scope; no reconstructed permission. No actual SDK enrollment, fullPR, profile/artifact/install/push or production data action."
+}

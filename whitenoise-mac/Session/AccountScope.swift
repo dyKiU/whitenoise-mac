@@ -14,6 +14,30 @@ final class AccountScope {
     #if WN_EXPERIMENTAL_DEVICE_SYNC
         private(set) var deviceVerification: DeviceVerificationViewModel?
 
+        private(set) var deviceEnrollment: DeviceEnrollmentViewModel?
+        private(set) var deviceEnrollmentApproval: DeviceEnrollmentApprovalViewModel?
+
+        func installDeviceEnrollment(_ model: DeviceEnrollmentViewModel) {
+            guard !isCancelled else {
+                model.invalidate()
+                return
+            }
+            if deviceEnrollment == nil { addCancellation { [weak self] in self?.deviceEnrollment?.invalidate() } }
+            deviceEnrollment?.invalidate()
+            deviceEnrollment = model
+        }
+        func installDeviceEnrollmentApproval(_ model: DeviceEnrollmentApprovalViewModel) {
+            guard !isCancelled else {
+                model.invalidate()
+                return
+            }
+            if deviceEnrollmentApproval == nil {
+                addCancellation { [weak self] in self?.deviceEnrollmentApproval?.invalidate() }
+            }
+            deviceEnrollmentApproval?.invalidate()
+            deviceEnrollmentApproval = model
+        }
+
         func installDeviceVerification(_ model: DeviceVerificationViewModel) {
             guard !isCancelled, deviceVerification == nil else { return }
             deviceVerification = model
