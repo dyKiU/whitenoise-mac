@@ -6,7 +6,7 @@
     /// Native lifetime for one original SDK session; observations never restore permission.
     @MainActor
     @Observable
-    final class DeviceLinkingScope {
+    final class DeviceLinkingScope: DeviceVerificationSession {
         let accountRef: String
         private(set) var latestSnapshot: DeviceLinkingSnapshotFfi?
         private(set) var cleanupError: Error?
@@ -34,6 +34,46 @@
                     self.observationError = error
                 }
             }
+        }
+
+        private func checkActive() throws {
+            guard active else { throw MarmotKitError.DeviceLinkingClosed }
+        }
+
+        func setupPacket() throws -> Data {
+            try checkActive()
+            return session.setupPacket()
+        }
+
+        func outgoingPackets() async throws -> [DeviceLinkingOutgoingPacketFfi] {
+            try checkActive()
+            let packets = try await session.outgoingPackets()
+            try checkActive()
+            return packets
+        }
+
+        func receiveSetupPacket(_ packet: Data) async throws {
+            try checkActive()
+            try await session.receiveSetupPacket(packet: packet)
+            try checkActive()
+        }
+
+        func receivePacket(_ packet: Data) async throws {
+            try checkActive()
+            try await session.receivePacket(packet: packet)
+            try checkActive()
+        }
+
+        func acknowledgePacket(_ acknowledgementID: String) async throws {
+            try checkActive()
+            try await session.acknowledgePacket(acknowledgementId: acknowledgementID)
+            try checkActive()
+        }
+
+        func confirmComparison(displayedRevision: UInt64) async throws {
+            try checkActive()
+            try await session.confirmComparison(displayedRevision: displayedRevision)
+            try checkActive()
         }
 
         func invalidate() {

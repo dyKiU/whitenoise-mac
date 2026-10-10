@@ -159,7 +159,12 @@ private struct DetailPaneView: View {
                         }
                     case .settings:
                         if let model = session.accountScope?.settingsModel {
-                            SettingsPanelView(model: model)
+                            #if WN_EXPERIMENTAL_DEVICE_SYNC
+                                SettingsPanelView(
+                                    model: model, deviceVerificationModel: session.accountScope?.deviceVerification)
+                            #else
+                                SettingsPanelView(model: model)
+                            #endif
                         } else {
                             EmptyDetailView()
                         }

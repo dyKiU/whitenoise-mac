@@ -1,0 +1,35 @@
+{
+  "red": {
+    "tests": 2,
+    "passed": 0,
+    "source_stash": "68e24eed9243cb87e30bd2bbbf2a4d67cda9c898",
+    "log_sha256": "1f182b617d25036f91fe8f6a3513d52a6803a3dab013952f8c35a2f3d2b0bf3b"
+  },
+  "green": {
+    "source_base": "ecd6ceee408d0c2afaddf8bd89761a1bf726e489",
+    "source_inputs": 422,
+    "input_manifest_sha256": "4d6f3fc040fb48bc1c0a99ae060c2406130df3ea838d4cce717685f629a04888",
+    "profile": "local-e6/experimentalflag1",
+    "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+    "exit_code": 0,
+    "seconds": 8.75,
+    "log_sha256": "2bce07aee07fbf7438539a6d50873c5507be024c1816ba1ece0163b0aa2dff92",
+    "tests": {
+      "result": "Passed",
+      "totalTestCount": 26,
+      "passedTests": 26,
+      "failedTests": 0,
+      "skippedTests": 0
+    },
+    "test_failures": []
+  },
+  "owned_sha256": {
+    "whitenoise-mac/Core/DeviceVerificationSession.swift": "2171fd60a856c13c1d7de7539702a1a42fbbb200083fca718068fc739a69d842",
+    "whitenoise-mac/Features/DeviceVerification/DeviceVerificationViewModel.swift": "9121f0fbc92642f69c147b4c338c141394eb9fd7c963ca40215be06127390c2d",
+    "whitenoise-mac/Session/AccountScope.swift": "071026582bbf7d9a936c2682b4e6f0ce2e043d20e6513af46aeefbab45b65010",
+    "whitenoise-mac/Session/SessionState.swift": "c1e8a6438447a3ee58330aa95b4148c420b64d99eecdf5454619bb9feef54746",
+    "whitenoise-mac/Session/DeviceLinkingScope.swift": "9ff0886178b639d7fc6267204372f01500c22882871a3785891c1818a59f50f8",
+    "whitenoise-macTests/DeviceVerificationViewModelTests.swift": "737e41b846e1aa6be09421c0cdbd798577cc4caa66fdcf4cf90671d2c128b465"
+  },
+  "scope": "4 display-model controls plus18 action/lifetime/runtime and4 AccountScope controls. Display/session doubles are native ownership tests, not genuine SDK pairing. Settings UI, full final PR and enrollment remain unqualified."
+}

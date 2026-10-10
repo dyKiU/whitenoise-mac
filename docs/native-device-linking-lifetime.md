@@ -54,3 +54,64 @@ a different actual current account from absent scope; absent scope still retries
 the retained negative original cleanup before Core exit. The exact test source is
 preserved in named stash caf4105c and a compact verified blob. No new SDK session or
 permission is reconstructed. Both final full PR gates passed on that signed product.
+
+## Original-owner verification actions
+
+The scoped owner forwards setup/peer packet transport, outgoing acknowledgements and
+comparison using the exact displayed revision to the original SDK object. It checks
+active ownership before invocation and after asynchronous completion; replacement
+therefore cannot expose delayed packet results. SDK errors remain typed and unchanged.
+Enrollment actions remain unavailable.
+
+The missing-feature RED ran 0/3 passing; guarded forwarding passed 3/3, then four
+action controls plus the existing nine lifetime and five runtime tests passed 18/18.
+These action controls use generated-protocol doubles and prove native ownership and
+forwarding, not genuine SDK pairing. Scoped swift-format and diff checks passed.
+The previous full published/experimental gates precede this slice; final full PR
+qualification is required before integration. See native-device-linking-actions-evidence.json.
+
+## Account-owned verification display model
+
+AccountScope retains the verification display model, installed by SessionState with
+weak exact-scope factory callbacks through the existing original-object adoption
+boundary. Features use a Core verification-only protocol; they do not depend on a
+Session concrete type. No snapshot is persisted or interpreted as permission.
+The model confirms the revision captured by the caller display, invalidates on
+account retirement, and rejects cancelled or late factory results. Session remains
+responsible for exact late SDK cleanup.
+
+The missing-feature display RED failed both tests; initial Green passed2/2 and the
+affected final cohort passed26/26 (model4, action4, lifetime9, runtime5, AccountScope4).
+Settings UI and final full PR qualification remain subsequent steps. See
+native-device-linking-model-evidence.json.
+
+## Verification-only Settings flow
+
+Settings now receives the exact AccountScope verification model through the shell.
+A new scope resets view-local opaque packets. The flow starts or approves through
+the original SDK factory, transports canonical bounded base64 packets, explicitly
+acknowledges delivery, and confirms the exact revision rendered with the comparison
+numbers. Copying a packet is not a delivery acknowledgement. No enrollment or
+continuation action is exposed; the screen states that enrollment is unavailable.
+
+The missing transport-forwarding regression failed0/1; final affected selection
+passed27/27 (model5/action4/lifetime9/runtime5/AccountScope4). Final exact424-input
+full PR gates passed experimental e6/flag1 1672/1672 and published0.12/flag0
+1649/1649. Two published runs failed before tests on compiler-named stale FFI PCMs;
+only those named modules were retired while the cache was idle, then the canonical
+gate passed. All four experimental generated overrides were restored byte-exact.
+These counts describe suite executions, not distinct tests across repetitions.
+
+Localization used Apple compiler stringsdata and Xcode XLIFF export/import. Only
+18 new machine-produced catalog entry blocks were imported, with162 translations
+across nine languages; all1220 prior entries remain unchanged. Thirteen unrelated
+extraction metadata changes were discarded. Coverage passes1229/1229 in each
+language. Initial extraction/import attempts with the wrong feature cohort were
+retained as unsuccessful workflow attempts, then repeated with the actual feature
+flag and dedicated cache. No plural substitutions were hand-edited.
+
+See native-device-verification-settings-evidence.json for hashes, compact RED stash
+and tool provenance. Scoped Swift formatting and diff checks pass. The controls
+use generated-protocol doubles; actual native two-device UI pairing and scene
+suspension remain unqualified. Full PR gates qualify the source before integration,
+not enrollment, chat admission or live account behavior.

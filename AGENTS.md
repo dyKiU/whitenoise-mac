@@ -282,3 +282,13 @@ only positive for class implementations, tested with actual `MarmotClient`.
 Keep generated development SDK overrides out of commits. Use the dedicated
 `MacTestIsolationM5` cache and isolated host for focused tests. Lifetime qualification on signed9b245 passed the full PR suite with published0.12
 and experimental e6. It does not cover pairing UI or scene suspension.
+
+
+The experimental Settings verification pane takes its account-owned model explicitly
+through the shell. Keep opaque packet bytes and comparison display local to that
+owner, confirm the displayed revision, and acknowledge packet delivery explicitly.
+Do not add enrollment actions while the SDK capability is unavailable. Localization
+for this pane used Apple stringsdata/XLIFF export-import, preserving all prior
+catalog entries; retain that tool provenance when extending it. Final source passed
+full published0.12 and experimental e6 PR gates; actual native pairing remains a
+separate acceptance gate.

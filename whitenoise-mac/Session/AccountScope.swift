@@ -11,6 +11,15 @@ import Observation
 @Observable
 final class AccountScope {
     private(set) var isCancelled = false
+    #if WN_EXPERIMENTAL_DEVICE_SYNC
+        private(set) var deviceVerification: DeviceVerificationViewModel?
+
+        func installDeviceVerification(_ model: DeviceVerificationViewModel) {
+            guard !isCancelled, deviceVerification == nil else { return }
+            deviceVerification = model
+            addCancellation { model.invalidate() }
+        }
+    #endif
     let account: AccountItem
     @ObservationIgnored let runtime: any MarmotRuntime
     let settingsModel: SettingsViewModel
