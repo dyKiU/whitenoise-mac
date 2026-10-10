@@ -156,6 +156,8 @@ private struct DetailPaneView: View {
                             )
                             #if WN_EXPERIMENTAL_DEVICE_SYNC
                                 .safeAreaInset(edge: .top, spacing: 0) {
+                                    HistorySourceEntryView(model: scope.historySourceModel(groupIdHex: chat.id))
+                                    .id(chat.id)
                                     SynchronizedHistoryEntryView(
                                         model: scope.synchronizedHistoryModel(groupIdHex: chat.id)
                                     )
