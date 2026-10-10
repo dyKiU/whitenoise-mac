@@ -54,3 +54,18 @@ a different actual current account from absent scope; absent scope still retries
 the retained negative original cleanup before Core exit. The exact test source is
 preserved in named stash caf4105c and a compact verified blob. No new SDK session or
 permission is reconstructed. Both final full PR gates passed on that signed product.
+
+## Original-owner verification actions
+
+The scoped owner forwards setup/peer packet transport, outgoing acknowledgements and
+comparison using the exact displayed revision to the original SDK object. It checks
+active ownership before invocation and after asynchronous completion; replacement
+therefore cannot expose delayed packet results. SDK errors remain typed and unchanged.
+Enrollment actions remain unavailable.
+
+The missing-feature RED ran 0/3 passing; guarded forwarding passed 3/3, then four
+action controls plus the existing nine lifetime and five runtime tests passed 18/18.
+These action controls use generated-protocol doubles and prove native ownership and
+forwarding, not genuine SDK pairing. Scoped swift-format and diff checks passed.
+The previous full published/experimental gates precede this slice; final full PR
+qualification is required before integration. See native-device-linking-actions-evidence.json.
