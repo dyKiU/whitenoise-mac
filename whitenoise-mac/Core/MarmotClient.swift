@@ -16,6 +16,9 @@ nonisolated protocol MarmotRuntime: Sendable {
         func deviceLinkingTargets(accountRef: String) async throws -> [DeviceLinkingTargetFfi]
         func pendingDeviceLinkingApprovals(accountRef: String) async throws -> [DeviceLinkingApproval]
         func beginDeviceLinkingSession(accountRef: String) async throws -> DeviceLinkingSession
+        func beginSelectedChatCopy(accountRef: String, groupIdHex: String, linkedRosterSelector: Data) async throws
+            -> SelectedChatCopy
+        func receiveSelectedChatCopyRequest(accountRef: String, packet: Data) async throws -> SelectedChatConsent
         func approveDeviceLinkingSession(accountRef: String, request: Data, target: Data?) async throws
             -> DeviceLinkingSession
     #endif
@@ -424,6 +427,16 @@ nonisolated final class MarmotClient: MarmotRuntime, @unchecked Sendable {
 
         func pendingDeviceLinkingApprovals(accountRef: String) async throws -> [DeviceLinkingApproval] {
             try await marmot.pendingDeviceLinkingApprovals(accountRef: accountRef)
+        }
+
+        func beginSelectedChatCopy(accountRef: String, groupIdHex: String, linkedRosterSelector: Data) async throws
+            -> SelectedChatCopy
+        {
+            try await marmot.beginSelectedChatCopy(
+                accountRef: accountRef, groupIdHex: groupIdHex, linkedRosterSelector: linkedRosterSelector)
+        }
+        func receiveSelectedChatCopyRequest(accountRef: String, packet: Data) async throws -> SelectedChatConsent {
+            try await marmot.receiveSelectedChatCopyRequest(accountRef: accountRef, packet: packet)
         }
 
         func beginDeviceLinkingSession(accountRef: String) async throws -> DeviceLinkingSession {

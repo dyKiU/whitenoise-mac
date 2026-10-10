@@ -850,6 +850,15 @@ nonisolated final class FakeMarmotRuntime: MarmotRuntime, @unchecked Sendable {
             throw MarmotKitError.DeviceLinkingUnsupported
         }
 
+        func beginSelectedChatCopy(accountRef: String, groupIdHex: String, linkedRosterSelector: Data) async throws
+            -> SelectedChatCopy
+        {
+            throw MarmotKitError.SelectedChatCopyUnsupported
+        }
+        func receiveSelectedChatCopyRequest(accountRef: String, packet: Data) async throws -> SelectedChatConsent {
+            throw MarmotKitError.SelectedChatCopyUnsupported
+        }
+
         func beginDeviceLinkingSession(accountRef: String) async throws -> DeviceLinkingSession {
             throw MarmotKitError.DeviceLinkingUnsupported
         }
