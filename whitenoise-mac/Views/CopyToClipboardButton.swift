@@ -54,7 +54,7 @@ struct CopyToClipboardButton<Label: View>: View {
 
     var body: some View {
         Button {
-            workspace.copyText(value, concealed: concealed)
+            copyValue(using: workspace)
             confirmation.confirm()
             // The checkmark is invisible to VoiceOver, so announce the same result it conveys.
             AccessibilityNotification.Announcement(L10n.string("Copied")).post()
@@ -64,4 +64,9 @@ struct CopyToClipboardButton<Label: View>: View {
         .help(actionDescription)
         .accessibilityLabel(actionDescription)
     }
+    /// The same configured write used by the hosted button action.
+    func copyValue(using workspace: WorkspaceState) {
+        workspace.copyText(value, concealed: concealed)
+    }
+
 }
