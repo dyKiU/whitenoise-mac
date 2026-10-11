@@ -37,10 +37,28 @@ settings=(
   ${device_sync_settings[@]+"${device_sync_settings[@]}"}
 )
 
-xcodebuild build-for-testing "${settings[@]}"
+# Apply the environment budget to both phases; explicit caller jobs win.
+build_jobs=()
+test_jobs=()
+if [[ -n "${WN_TEST_JOBS:-}" ]]; then
+  build_jobs=(-jobs "$WN_TEST_JOBS")
+  test_jobs=(-jobs "$WN_TEST_JOBS")
+fi
+arguments=("$@")
+for ((index = 0; index < ${#arguments[@]}; index++)); do
+  if [[ "${arguments[index]}" == -jobs ]]; then
+    build_jobs=(-jobs)
+    if ((index + 1 < ${#arguments[@]})); then
+      build_jobs+=("${arguments[index + 1]}")
+    fi
+    test_jobs=()
+  fi
+done
+
+xcodebuild build-for-testing "${settings[@]}" ${build_jobs[@]+"${build_jobs[@]}"}
 identifier=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Contents/Info.plist")
 if [[ "$identifier" != dev.ipf.whitenoise.mac.tests ]]; then
   echo "Refusing test execution with an unexpected host identity." >&2
   exit 1
 fi
-xcodebuild test-without-building "${settings[@]}" -resultBundlePath "$result_bundle" "$@"
+xcodebuild test-without-building "${settings[@]}" ${test_jobs[@]+"${test_jobs[@]}"} -resultBundlePath "$result_bundle" "$@"
