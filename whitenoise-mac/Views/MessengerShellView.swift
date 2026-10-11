@@ -156,15 +156,17 @@ private struct DetailPaneView: View {
                             )
                             #if WN_EXPERIMENTAL_DEVICE_SYNC
                                 .safeAreaInset(edge: .top, spacing: 0) {
-                                    HistorySourceEntryView(model: scope.historySourceModel(groupIdHex: chat.id))
-                                    .id(chat.id)
-                                    SynchronizedHistoryEntryView(
-                                        model: scope.synchronizedHistoryModel(groupIdHex: chat.id)
-                                    )
-                                    .id(chat.id)
-                                    if let transfer = scope.selectedChatTransfer {
-                                        SelectedChatCopyEntryView(model: transfer, groupIdHex: chat.id)
+                                    VStack(alignment: .trailing, spacing: 0) {
+                                        HistorySourceEntryView(model: scope.historySourceModel(groupIdHex: chat.id))
                                         .id(chat.id)
+                                        SynchronizedHistoryEntryView(
+                                            model: scope.synchronizedHistoryModel(groupIdHex: chat.id)
+                                        )
+                                        .id(chat.id)
+                                        if let transfer = scope.selectedChatTransfer {
+                                            SelectedChatCopyEntryView(model: transfer, groupIdHex: chat.id)
+                                            .id(chat.id)
+                                        }
                                     }
                                 }
                             #endif
