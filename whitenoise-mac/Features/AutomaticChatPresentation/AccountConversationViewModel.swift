@@ -101,8 +101,9 @@ import Observation
                     throw AutomaticChatPresentationError.retired
                 }
                 guard accepted.clientToken == token else { throw AutomaticChatPresentationError.invalidSnapshot }
-                // Queued admission may have no ordinary event ID yet; the token is never an event ID.
+                // Native admission returns the canonical ID; the client token is never an event ID.
                 pendingTexts[token]?.acceptedMessageIdHex = accepted.messageIdHex.isEmpty ? nil : accepted.messageIdHex
+                reconcileObservedPendingTexts()
                 return accepted
             } catch {
                 pendingTexts[token] = nil
@@ -124,7 +125,7 @@ import Observation
                     pendingTexts[token]?.status = status
                 } catch {
                     guard !retired, owner === original else { return }
-                    error = .unavailable
+                    self.error = .unavailable
                 }
             }
         }
@@ -148,12 +149,14 @@ import Observation
                 owner = original
                 guard let initial = original.snapshot() else { throw AutomaticChatPresentationError.invalidSnapshot }
                 try install(initial)
+                await refreshPendingStatus()
                 while let replacement = try await original.next() {
                     guard !retired, !Task.isCancelled, owner === original else {
                         original.cancel()
                         return
                     }
                     try install(replacement)
+                    await refreshPendingStatus()
                 }
                 guard !retired, owner === original else { return }
                 refuse(original)
@@ -163,7 +166,7 @@ import Observation
                     refuse(original)
                 } else {
                     snapshot = nil
-                    error = .unavailable
+                    self.error = .unavailable
                     isLoading = false
                 }
             }
@@ -183,8 +186,14 @@ import Observation
                 throw AutomaticChatPresentationError.invalidSnapshot
             }
             snapshot = replacement
+            reconcileObservedPendingTexts()
+            isLoading = false
+            error = nil
+        }
+
+        private func reconcileObservedPendingTexts() {
             let observedIds = Set(
-                replacement.rows.compactMap { row -> String? in
+                (snapshot?.rows ?? []).compactMap { row -> String? in
                     if case .pairedSource(let message) = row { return message.messageIdHex }
                     return nil
                 })
@@ -192,8 +201,6 @@ import Observation
                 guard let eventId = pending.acceptedMessageIdHex else { return true }
                 return !observedIds.contains(eventId)
             }
-            isLoading = false
-            error = nil
         }
 
         private func refuse(_ original: any AccountConversationObserving) {

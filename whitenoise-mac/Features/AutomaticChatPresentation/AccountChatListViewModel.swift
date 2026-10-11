@@ -151,7 +151,7 @@ import Observation
                     refuse(original)
                 } else {
                     snapshot = nil
-                    error = .unavailable
+                    self.error = .unavailable
                     isLoading = false
                 }
             }

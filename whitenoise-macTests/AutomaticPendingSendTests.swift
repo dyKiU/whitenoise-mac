@@ -99,7 +99,7 @@ import Testing
                 eventId.map { id in
                     [
                         .pairedSource(
-                            PairedChatMessageFfi(
+                            row: PairedChatMessageFfi(
                                 kind: 9, canonicalChat: true, messageIdHex: id,
                                 authorHex: String(repeating: "e", count: 64),
                                 createdAt: 1, expiresAt: nil, deleted: false, content: "Synthetic message",
@@ -109,7 +109,7 @@ import Testing
                     ]
                 } ?? []
             return AccountConversationWindowSnapshotFfi(
-                generation: "synthetic-generation", sequence: sequence, header: .pairedSource(header),
+                generation: "synthetic-generation", sequence: sequence, header: .pairedSource(header: header),
                 rows: rows, nextBefore: nil)
         }
         private func waitFor(_ predicate: () -> Bool) async -> Bool {

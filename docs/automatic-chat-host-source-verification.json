@@ -1,0 +1,91 @@
+{
+  "scope": "Compiled original-owned automatic presentation and broad sharing adapters with scoped fake lifecycle/union/paging/send controls; no installed UI or full PR acceptance claim",
+  "sdk_source": "de38be1295618728ef541e43bfc00ffb6cdb6a86",
+  "sdk_manifest_sha256": "0b5b3d3bb93b47ebc74065e735504ffc928fd06d0424a3ccb5d07fe58ca18bd4",
+  "cohorts": [
+    {
+      "prefix": "build/results/automatic-host-mac-de38-focused-v1",
+      "exit": 65,
+      "frozen_inputs": 538,
+      "log_sha256": "b20dcf175bf6654ddb5df18818882ed963e8fde763e1d0c3dd4a294ef411eaed",
+      "inputs_sha256": "bbff9e4c6b5337410df29b055e0bdc06a244ebcd4fa71bd26bba676d16ab1ba6",
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "classification": "compile-only"
+    },
+    {
+      "prefix": "build/results/automatic-host-mac-de38-focused-v2",
+      "exit": 65,
+      "frozen_inputs": 538,
+      "log_sha256": "9e06dbf62c0483d0f16524c544032c9fc9afdade22994794befa3418bb9efa65",
+      "inputs_sha256": "4d233671388d47f0c4f6f3b73a3fbcca903b6d7828d763a34355c0a02031dd99",
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "classification": "compile-only"
+    },
+    {
+      "prefix": "build/results/automatic-host-mac-de38-focused-v3",
+      "exit": 65,
+      "frozen_inputs": 538,
+      "log_sha256": "737f506684ff51e4de2565be04c552fe004ca2925ee6df2cf39f860abf968886",
+      "inputs_sha256": "315fe89af276c5cc9f04a34e58261ee0f5d0cf90bc3c7fa501fd50016627398d",
+      "passed": 15,
+      "failed": 2,
+      "skipped": 0,
+      "classification": "behavioral"
+    },
+    {
+      "prefix": "build/results/automatic-host-mac-de38-focused-v4",
+      "exit": 0,
+      "frozen_inputs": 538,
+      "log_sha256": "9235ad650fbea1aa1f6ee886af6fc9beb6ff7ac664fd91e8dd3dd241d69646c3",
+      "inputs_sha256": "0453b8002e18c93f89da76789857b65be5a36bb87212b52d64fc90045dc4c3c5",
+      "passed": 17,
+      "failed": 0,
+      "skipped": 0,
+      "classification": "behavioral"
+    },
+    {
+      "prefix": "build/results/automatic-host-mac-de38-affected-v1",
+      "exit": 0,
+      "frozen_inputs": 538,
+      "log_sha256": "fadc474924acef01dab16384295ff1255c05ee220b79efbbb0f1d2384356ea38",
+      "inputs_sha256": "0453b8002e18c93f89da76789857b65be5a36bb87212b52d64fc90045dc4c3c5",
+      "passed": 404,
+      "failed": 0,
+      "skipped": 0,
+      "classification": "behavioral"
+    }
+  ],
+  "frozen_refs": {
+    "compile1": "f7194bddf54164d9a3efb0183d37f557a663aa82",
+    "compile2": "e5f869265ae38599d9f77768a361d9fd859e133c",
+    "RED": "6fb5f69cb0f81c98500bcab9885fae9920a5649b",
+    "GREEN_and_affected": "3af4403be1bfe44e5346a4bb0c0f5e37e6af1f97"
+  },
+  "behavioral_RED": "17 total15passed2failed0skipped; pending admission-observation ordering and rejected status freshness",
+  "GREEN": "17/0/0; unchanged regression fixtures",
+  "affected": "404/0/0 in14 suites; broad sharing+original enrollment/lifetime/AccountScope+ordinaryChatList/Timeline",
+  "product_fix": "Reconcile latest observed canonical IDs after admission/install and refresh pending status on original window updates",
+  "source_api_corrections": "Generated enum constructor row/header labels and self.error in catch blocks",
+  "static": {
+    "strict_changed_swift_files": 39,
+    "swift_format_exit": 0,
+    "diff_check_exit": 0
+  },
+  "files": {
+    "whitenoise-mac/Features/AutomaticChatPresentation/AccountChatListViewModel.swift": "272586973a97053cc510df5ec1f3c8326096c0276b87073c58f77d347fdbe39a",
+    "whitenoise-mac/Features/AutomaticChatPresentation/AccountConversationViewModel.swift": "681f8f520ce1a5278560a982940643ecaf8c2e62054475c7fc0cd482256ce258",
+    "whitenoise-macTests/AutomaticPendingSendTests.swift": "8f342e7be5690fc0d19e7b33fe5cd29e64cc3ea03564a43d7816ba83929ffc8f",
+    "whitenoise-macTests/AutomaticPairedListPagingTests.swift": "4fe20f7559ddb59f79891936dd0e23675ad24a3e8a3ae59f208ae61510e829d8"
+  },
+  "limits": [
+    "Catalog extraction/import still pending",
+    "Full experimental/published PR suites pending on final UI candidate",
+    "Real installed automatic app journey pending",
+    "Mirrored attachments/edit/persisted drafts not qualified; ordinary lane unchanged"
+  ],
+  "SDK_overrides_committed": false
+}

@@ -86,7 +86,7 @@ import Testing
                 sourceDigestHex: String(repeating: "d", count: 64))
             let rows = (start..<(start + 64)).map { index in
                 AccountChatRowFfi.pairedSource(
-                    PairedChatSummaryFfi(
+                    row: PairedChatSummaryFfi(
                         groupIdHex: String(format: "%04x", index), name: "Synthetic", description: "", source: source))
             }
             return AccountChatListWindowSnapshotFfi(
