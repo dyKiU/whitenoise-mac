@@ -28213,6 +28213,66 @@
         }
       }
     },
+    "Existing invitation keys stay unchanged. Pair devices to share chats." : {
+      "comment" : "Companion sign-in preserves existing public invitation keys; pairing is separate.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bestehende Einladungsschlüssel bleiben unverändert. Kopple Geräte, um Chats zu teilen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las claves de invitación existentes no cambian. Vincula dispositivos para compartir chats."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les clés d’invitation existantes restent inchangées. Associez les appareils pour partager les discussions."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le chiavi di invito esistenti restano invariate. Associa i dispositivi per condividere le chat."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "As chaves de convite existentes permanecem inalteradas. Emparelhe os dispositivos para partilhar conversas."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Существующие ключи приглашений не изменятся. Свяжите устройства, чтобы обмениваться чатами."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mevcut davet anahtarları değişmez. Sohbetleri paylaşmak için cihazları eşleştirin."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "现有邀请密钥保持不变。配对设备以共享聊天。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "現有邀請密鑰保持不變。配對裝置以共享聊天。"
+          }
+        }
+      }
+    },
     "Explanation (optional)" : {
       "extractionState" : "manual",
       "localizations" : {
