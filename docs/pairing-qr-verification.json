@@ -92,6 +92,60 @@
       "input_manifest_sha256": "3c969e9561385e6d6d334d60631b041ae280b6d6cc73feb599af5758b18754f6",
       "input_count": 510,
       "xcresult_summary_sha256": "0c96d07a15eee167ac9e49f8da1e4fd278c37f523ea5b117f4ed73e1d227cbeb"
+    },
+    {
+      "name": "mac-pairing-qr-full-experimental-v1",
+      "exit": 0,
+      "seconds": 68.58066010475159,
+      "log": "/Users/pj/project/build/mac-pairing-qr-full-experimental-v1.log",
+      "log_sha256": "85ea18017e5af01559e60db9a00295fd51164ec8d4adc9df9402edd0b8647db3",
+      "input_count": 511,
+      "input_manifest": "/Users/pjaeckel/project/whitenoisechat-openclaw/build/results/mac-pairing-qr-full-experimental-v1-inputs.json",
+      "input_manifest_sha256": "2aef0f3aa398b2a0ddac32f7f24370002eb6d2aecd26e75460bb89f2b4127fd1",
+      "actual_tests": 1825,
+      "passed": 1820,
+      "failed": 0,
+      "skipped": 5,
+      "xcresult_summary_sha256": "f63b9a1331901dde2448e6679079dcf3f1b7a725777743d6025df4de96fd1377"
+    },
+    {
+      "name": "mac-pairing-qr-full-published-v1",
+      "exit": 65,
+      "seconds": 3.184185266494751,
+      "log": "/Users/pj/project/build/mac-pairing-qr-full-published-v1.log",
+      "log_sha256": "82b53e9f77ede1fd472a15c28b6f33a94cc4ed5bdef4a1bd7240b147095f9972",
+      "input_count": 511,
+      "input_manifest": "/Users/pjaeckel/project/whitenoisechat-openclaw/build/results/mac-pairing-qr-full-published-v1-inputs.json",
+      "input_manifest_sha256": "63e6c24dca70603c4e9c9b04ef88d7d3dc3dc9450649c8cf650ab401d7e73a46",
+      "actual_tests": 0,
+      "classification": "zero-test named stale FFI PCM header mismatch"
+    },
+    {
+      "name": "mac-pairing-qr-full-published-v2",
+      "exit": 65,
+      "seconds": 22.508373975753784,
+      "log": "/Users/pj/project/build/mac-pairing-qr-full-published-v2.log",
+      "log_sha256": "645b8d40a09cf44046ff66bfbddde09f3c2de6a4c94a85a7ab569212135500d2",
+      "input_count": 511,
+      "input_manifest": "/Users/pjaeckel/project/whitenoisechat-openclaw/build/results/mac-pairing-qr-full-published-v2-inputs.json",
+      "input_manifest_sha256": "63e6c24dca70603c4e9c9b04ef88d7d3dc3dc9450649c8cf650ab401d7e73a46",
+      "actual_tests": 0,
+      "classification": "zero-test named stale FFI PCM header mismatch"
+    },
+    {
+      "name": "mac-pairing-qr-full-published-v3",
+      "exit": 0,
+      "seconds": 84.51078820228577,
+      "log": "/Users/pj/project/build/mac-pairing-qr-full-published-v3.log",
+      "log_sha256": "18e80d0cea8ad10a9deacf294231f45c74b6a8c60c83238257a5de2635e46cbc",
+      "input_count": 511,
+      "input_manifest": "/Users/pjaeckel/project/whitenoisechat-openclaw/build/results/mac-pairing-qr-full-published-v3-inputs.json",
+      "input_manifest_sha256": "63e6c24dca70603c4e9c9b04ef88d7d3dc3dc9450649c8cf650ab401d7e73a46",
+      "actual_tests": 1664,
+      "passed": 1664,
+      "failed": 0,
+      "skipped": 0,
+      "xcresult_summary_sha256": "7c0b4c028fceaa3594f30b77333b743b6a8e6454dc056c198dca77382007573e"
     }
   ],
   "localization": {
@@ -175,7 +229,8 @@
     ],
     "all_existing_entries_and_order_unchanged": true,
     "preservation": "Only whole Apple sync/import-generated new entry retained; original raw top-level entry blocks preserved, no nested plural edits",
-    "catalog_sha256": "c764839704850790f00ce1f93ae16335c8a7dfb7546401a15aa00fffb2b05afb"
+    "catalog_sha256": "c764839704850790f00ce1f93ae16335c8a7dfb7546401a15aa00fffb2b05afb",
+    "stringsdata_artifact_retention": "Initial extraction hashes recorded; original compiled stringsdata overwritten by later compiles, not asserted preserved. XLIFF inputs/import logs and both catalogs retained."
   },
   "static_checks": {
     "strict_swift_format_log": "/Users/pjaeckel/project/whitenoisechat-openclaw/build/results/mac-pairing-qr-format-v2.log",
@@ -196,9 +251,21 @@
       "bytes": 500160,
       "sha256": "be1f42dad2775c1b1e674a3ad10fe95a8cbcc7d68e439055f1d454d6e91e56ba",
       "reason": "exact compiler header modified since namedPCM built; ownMacDD idle"
+    },
+    {
+      "path": "/Users/pj/project/build/MacTestIsolationM5/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules/marmot_uniffiFFI-ANJFQSPITBY9ONMYZP4O7TT7H.pcm",
+      "bytes": 556456,
+      "sha256": "06401559f3d97474671688b7a0b824aa36534afa863ee150a91c4752f5597287",
+      "reason": "publishedv1 exact compiler namedPCM header mismatch; ownDDidle"
+    },
+    {
+      "path": "/Users/pj/project/build/MacTestIsolationM5/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules/marmot_uniffiFFI-1KNRUIXGJEZQJRMJL82Z0FTCM.pcm",
+      "bytes": 556408,
+      "sha256": "afdf68451097bf86ba0175d930a9faa9334bb7342dadda9f91cffcc5ccbbaae1",
+      "cache_idle": true
     }
   ],
-  "full_integration": "pending both published and experimental on this passing candidate",
+  "full_integration": "Final ac80 product: experimental1820/0/5 existing opt-in skips; published1664/0/0. Docs-only follow-up retains six tested product hashes.",
   "limits": [
     "No camera entitlement or live camera scanning.",
     "No installed app replacement or physical QR/SAS pairing yet.",
