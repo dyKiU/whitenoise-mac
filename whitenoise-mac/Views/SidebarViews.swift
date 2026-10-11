@@ -262,6 +262,15 @@ struct ChatListDrawerView: View {
                     .padding(.vertical, 8)
                 }
                 .accessibilityIdentifier(isShowingArchived ? "chat.archived.list" : "chat.list")
+                #if WN_EXPERIMENTAL_DEVICE_SYNC
+                    .onScrollPhaseChange { _, phase in
+                        if phase == .interacting, filter == .active {
+                            Task { await automaticChats?.pairedUserScrollChanged(true) }
+                        } else if phase == .idle {
+                            Task { await automaticChats?.pairedUserScrollChanged(false) }
+                        }
+                    }
+                #endif
                 .overlay {
                     // The notice needs room for an icon over a line or two of prose; in the
                     // collapsed rail it would render as a column of hyphenated fragments. An

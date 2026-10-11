@@ -20,6 +20,10 @@ import Observation
         @ObservationIgnored private let runtime: any AccountChatObserving
         @ObservationIgnored private var task: Task<Void, Never>?
         @ObservationIgnored private var owner: (any AccountChatListObserving)?
+        @ObservationIgnored private var pageTicket: UUID?
+        @ObservationIgnored private var pairedBoundaryVisible = false
+        @ObservationIgnored private var scrollPageArmed = false
+        private var pageStarts: [String?] = [nil]
         @ObservationIgnored private var retired = false
 
         init(accountRef: String, runtime: any AccountChatObserving) {
@@ -43,6 +47,10 @@ import Observation
 
         func invalidate() {
             retired = true
+            pageTicket = nil
+            pairedBoundaryVisible = false
+            scrollPageArmed = false
+            pageStarts = [nil]
             task?.cancel()
             task = nil
             owner?.cancel()
@@ -52,16 +60,59 @@ import Observation
             isLoading = false
         }
 
+        var hasPreviousPairedPage: Bool { pageStarts.count > 1 }
+
+        /// Layout changes cannot arm paging; only the containing scroll view's user gesture can.
+        func pairedUserScrollChanged(_ active: Bool) async {
+            scrollPageArmed = active
+            if active && pairedBoundaryVisible {
+                scrollPageArmed = false
+                await loadMorePaired()
+            }
+        }
+
+        func pairedBoundaryVisibilityChanged(_ visible: Bool) async {
+            let entered = visible && !pairedBoundaryVisible
+            pairedBoundaryVisible = visible
+            guard entered, scrollPageArmed else { return }
+            scrollPageArmed = false
+            await loadMorePaired()
+        }
+
         func loadMorePaired() async {
-            guard !retired, let original = owner, let current = snapshot,
-                let cursor = current.nextPairedGroupIdHex
-            else { return }
+            guard let cursor = snapshot?.nextPairedGroupIdHex else { return }
+            await requestPairedPage(after: cursor, backwards: false)
+        }
+
+        func loadPreviousPaired() async {
+            guard pageStarts.count > 1 else { return }
+            await requestPairedPage(after: pageStarts[pageStarts.count - 2], backwards: true)
+        }
+
+        private func requestPairedPage(after cursor: String?, backwards: Bool) async {
+            guard !retired, pageTicket == nil, let original = owner, let current = snapshot else { return }
+            let ticket = UUID()
+            pageTicket = ticket
+            defer { if pageTicket == ticket { pageTicket = nil } }
             do {
                 let replacement = try await original.pairedPage(sequence: current.sequence, afterGroupIdHex: cursor)
                 guard !retired, !Task.isCancelled, owner === original else { return }
+                guard snapshot?.sequence == current.sequence || snapshot?.sequence == replacement.sequence else {
+                    return
+                }
+                guard replacement.sequence > current.sequence else {
+                    throw AutomaticChatPresentationError.invalidSnapshot
+                }
                 try install(replacement)
+                if backwards {
+                    pageStarts.removeLast()
+                } else {
+                    // Keep the first-page reset plus a bounded recent cursor trail, never old rows.
+                    if pageStarts.count == 128 { pageStarts.remove(at: 1) }
+                    pageStarts.append(cursor)
+                }
             } catch {
-                guard !retired, owner === original else { return }
+                guard !retired, owner === original, snapshot?.sequence == current.sequence else { return }
                 refuse(original)
             }
         }
@@ -82,6 +133,7 @@ import Observation
                     return
                 }
                 owner = original
+                pageStarts = [nil]
                 guard let initial = original.snapshot() else { throw AutomaticChatPresentationError.invalidSnapshot }
                 try install(initial)
                 while let replacement = try await original.next() {
@@ -121,6 +173,8 @@ import Observation
         }
 
         private func refuse(_ original: any AccountChatListObserving) {
+            pageStarts = [nil]
+            scrollPageArmed = false
             original.cancel()
             owner = nil
             snapshot = nil
