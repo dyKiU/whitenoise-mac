@@ -1,0 +1,49 @@
+{
+  "source_base": "079406a0e268d985581df54b3f8989c74184f2e5",
+  "sdk_source": "de38be1295618728ef541e43bfc00ffb6cdb6a86",
+  "codec_commit": "1ecb9e8e5916da48e375f27d2929f894f74d52c2",
+  "input_count": 543,
+  "input_manifest_sha256": "3be39bd05cf66879903b64ffd331dd8e937acad5a99d364e4a4eb5866bb89d4a",
+  "command": [
+    "/opt/homebrew/bin/bash",
+    "scripts/test-isolated.sh",
+    "-jobs",
+    "1",
+    "-only-testing:whitenoise-macTests/PairingQRCodeTests",
+    "-only-testing:whitenoise-macTests/PairingMultipartQRCodeTests",
+    "-only-testing:whitenoise-macTests/PairingQRImportMultipartTests",
+    "-only-testing:whitenoise-macTests/DeviceVerificationViewModelTests",
+    "-only-testing:whitenoise-macTests/DeviceEnrollmentViewModelTests",
+    "-only-testing:whitenoise-macTests/DeviceEnrollmentApprovalReviewTests",
+    "-only-testing:whitenoise-macTests/NativeDeviceLinkingLifetimeTests",
+    "-only-testing:whitenoise-macTests/NativeDeviceLinkingActionTests",
+    "-only-testing:whitenoise-macTests/NativeDeviceLinkingEnrollmentActionTests",
+    "-only-testing:whitenoise-macTests/NativeDeviceLinkingApprovalScopeTests"
+  ],
+  "passed": 83,
+  "failed": 0,
+  "skipped": 0,
+  "seconds": 181.44,
+  "complete_log_sha256": "dde1bf153bf107abb3aa72cdcb5388e36c5f9486dee38af16080f40e7ce2e837",
+  "files": {
+    "whitenoise-mac/Features/DeviceVerification/PairingQRImportModel.swift": "d5a109289d31c186a892c0179ed3ca994e6a11a8ddbc48d97344647effb4cdd4",
+    "whitenoise-mac/Views/Settings/DeviceVerificationView.swift": "9b7c8564df847437cb598be0943245d73eb905a0b719d52e758290411e2dfdb8",
+    "whitenoise-mac/Views/Settings/PairingQRCodeSheet.swift": "689425b60f62c271808aa48de8aa7152ea49d9ca3bab32f77eaff6437c0012bd",
+    "whitenoise-mac/Views/Settings/DeviceEnrollmentTransportView.swift": "d00b2c9073c8254612491b3f881876d26ef18c278f9a1247870aa0d733232df2",
+    "whitenoise-mac/Views/Settings/DeviceEnrollmentApprovalView.swift": "66aaf73e6f61428ff612852baaf3d40c116bcab5d82fd575b64af30cc137d555",
+    "whitenoise-mac/Views/Settings/PairingQRTransportControls.swift": "e32c70efc7024b4fd74a0b63f876bfce90433d19f315759a68dbf67afb9cd353",
+    "whitenoise-macTests/PairingQRImportMultipartTests.swift": "f93a6d0629d49b8974a0b8677a60a4b30483f254359338330b31e94ddc5621ed"
+  },
+  "scope": "Actual isolated app compile and QR/import/verification/enrollment/lifetime tests; no installed UI or camera/physical-device claim",
+  "behaviour": [
+    "Single and multipart display with page controls and cancellable cycling",
+    "Whole-packet staging only after all bounded fragments and digest match",
+    "Current original/account checked across image awaits and before delivery",
+    "Partial transfer expiry/retirement/cancellation clears buffers",
+    "Enrollment and sibling approval use the same transport controls; original explicit actions and revision checks preserved"
+  ],
+  "limits": [
+    "Final full PR cohorts, installed Mac journey and physical iPhone pairing remain pending",
+    "Real native ABC and approved enrollment QR proof is separate in docs/pairing-multipart-qr-verification.json"
+  ]
+}

@@ -8,6 +8,13 @@
         @State private var incoming = ""
         @State private var action: Task<Void, Never>?
 
+        @State private var qrImport: PairingQRImportModel
+
+        init(model: DeviceEnrollmentViewModel?) {
+            self.model = model
+            _qrImport = State(initialValue: .init(capture: { { model?.isActive == true } }))
+        }
+
         var body: some View {
             Group {
                 if let model {
@@ -25,7 +32,12 @@
                                 CopyToClipboardButton(value: outgoing, actionDescription: L10n.string("Copy")) { _ in
                                     Text("Copy")
                                 }
+                                PairingQRExportButton(packet: outgoing, isActive: model.isActive && !model.isWorking)
                             }
+                            PairingQRImportControl(
+                                model: qrImport, isActive: model.isActive && !model.isWorking, incoming: $incoming
+                            )
+                            .id(ObjectIdentifier(model))
                             TextField("Opaque packet from the other device", text: $incoming, axis: .vertical)
                                 .lineLimit(2...4)
                             Button("Receive packet") { perform(.receivePacket, revision: snapshot.revision) }
@@ -36,6 +48,7 @@
                         }
                         Button(L10n.string(model.cleanupError == nil ? "Cancel" : "Try again")) {
                             incoming = ""
+                            qrImport.cancel()
                             action?.cancel()
                             action = Task { try? await model.cancel() }
                         }
@@ -48,8 +61,14 @@
             .onDisappear {
                 action?.cancel()
                 incoming = ""
+                qrImport.cancel()
             }
-            .onChange(of: model?.isActive) { _, active in if active != true { incoming = "" } }
+            .onChange(of: model?.isActive) { _, active in
+                if active != true {
+                    incoming = ""
+                    qrImport.cancel()
+                }
+            }
         }
 
         private func perform(_ operation: DeviceEnrollmentViewModel.TransportAction, revision: UInt64) {
