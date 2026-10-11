@@ -23,6 +23,10 @@ protocol ImprovementsPromptStoring: AnyObject {
 
 @MainActor
 final class UserDefaultsImprovementsPromptStore: ImprovementsPromptStoring {
+    // Avoid the synthesized isolated-deinit trampoline on older macOS concurrency runtimes.
+    // Releasing the defaults reference needs no actor-bound cleanup.
+    nonisolated deinit {}
+
     private enum Key {
         static let offeredAccounts = "whitenoise.mac.improvementsPromptOfferedAccountIdHexes"
     }

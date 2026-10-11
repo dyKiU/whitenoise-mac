@@ -15,6 +15,10 @@ nonisolated func nativeRuntimeObjectIdentity(_ runtime: any MarmotRuntime) -> Ob
 @MainActor
 @Observable
 final class SessionState {
+    // Avoid the synthesized isolated-deinit trampoline on older macOS concurrency runtimes.
+    // Account shutdown remains explicit in deactivate(); teardown adds no actor-bound work.
+    nonisolated deinit {}
+
     private(set) var accountScope: AccountScope?
     /// The app shell has two independent task owners (bootstrap and account-id observation), so
     /// cancelling either task cannot supersede an activation already suspended in old-scope

@@ -20,6 +20,10 @@ protocol ChatRestorationStoring: AnyObject {
 
 @MainActor
 final class UserDefaultsChatRestorationStore: ChatRestorationStoring {
+    // Avoid the synthesized isolated-deinit trampoline on older macOS concurrency runtimes.
+    // Releasing the defaults reference needs no actor-bound cleanup.
+    nonisolated deinit {}
+
     private enum Key {
         static let isEnabled = "whitenoise.mac.restoreLastSelectedChat"
         static let targetsByAccount = "whitenoise.mac.lastSelectedChatByAccountIdHex"
