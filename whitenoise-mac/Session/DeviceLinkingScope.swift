@@ -52,6 +52,13 @@
             try checkActive()
         }
 
+        // Broad chat sharing is a distinct explicit action; ordinary linking remains separate.
+        func continueLinkingAndShareChats(displayedRevision: UInt64) async throws {
+            try checkActive()
+            try await session.continueLinkingAndShareChats(displayedRevision: displayedRevision)
+            try checkActive()
+        }
+
         func enrollmentPacket(displayedRevision: UInt64) async throws -> Data {
             try checkActive()
             let packet = try await session.enrollmentPacket(displayedRevision: displayedRevision)
@@ -106,7 +113,7 @@
             guard active else { return }
             active = false
             latestSnapshot = nil
-            subscription.close()
+            subscription.closeStream()
             observation?.cancel()
             observation = nil
         }

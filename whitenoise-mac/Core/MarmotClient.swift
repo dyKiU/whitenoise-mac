@@ -23,6 +23,9 @@ nonisolated protocol MarmotRuntime: Sendable {
             -> [HistoryTransferRecipientFfi]
         func beginHistoryTransfer(accountRef: String, groupIdHex: String, recipientDevice: Data) async throws
             -> HistoryTransfer
+        func accountChatSharingTargets(accountRef: String) async throws -> AccountSharingTargetsFfi
+        func beginAccountChatSharing(accountRef: String, recipientDevice: Data) async throws -> AccountSharingApproval
+        func pendingAccountChatSharing(accountRef: String) async throws -> [AccountSharingApproval]
         func pendingHistoryRequests(accountRef: String) async throws -> [HistoryConsent]
         func beginSelectedChatCopy(accountRef: String, groupIdHex: String, linkedRosterSelector: Data) async throws
             -> SelectedChatCopy
@@ -465,6 +468,15 @@ nonisolated final class MarmotClient: MarmotRuntime, @unchecked Sendable {
         {
             try await marmot.beginHistoryTransfer(
                 accountRef: accountRef, groupIdHex: groupIdHex, recipientDevice: recipientDevice)
+        }
+        func accountChatSharingTargets(accountRef: String) async throws -> AccountSharingTargetsFfi {
+            try await marmot.accountChatSharingTargets(accountRef: accountRef)
+        }
+        func beginAccountChatSharing(accountRef: String, recipientDevice: Data) async throws -> AccountSharingApproval {
+            try await marmot.beginAccountChatSharing(accountRef: accountRef, recipientDevice: recipientDevice)
+        }
+        func pendingAccountChatSharing(accountRef: String) async throws -> [AccountSharingApproval] {
+            try await marmot.pendingAccountChatSharing(accountRef: accountRef)
         }
         func pendingHistoryRequests(accountRef: String) async throws -> [HistoryConsent] {
             try await marmot.pendingHistoryRequests(accountRef: accountRef)

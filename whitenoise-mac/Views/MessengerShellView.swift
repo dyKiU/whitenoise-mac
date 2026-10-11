@@ -46,17 +46,38 @@ struct MessengerShellView: View {
 
                         Group {
                             if workspace.isChatListVisible {
-                                ChatListDrawerView(
-                                    model: session.accountScope?.chatListModel,
-                                    historyNotices: session.accountScope?.historyNotices
-                                )
-                                // Deliberately un-animated: the width is dragged, so animating
-                                // it would re-wrap the non-lazy transcript on every frame of the
-                                // drag *and* again through the collapse snap — the same layout
-                                // storm the `isChatListVisible` transition below is scoped away
-                                // from. The snap is a single jump instead.
-                                .frame(width: workspace.chatListDrawerWidth, alignment: .leading)
-                                .transition(.move(edge: .leading).combined(with: .opacity))
+                                #if WN_EXPERIMENTAL_DEVICE_SYNC
+                                    ChatListDrawerView(
+                                        model: session.accountScope?.chatListModel,
+                                        historyNotices: session.accountScope?.historyNotices,
+                                        automaticChats: session.accountScope?.automaticChatList,
+                                        selectAutomaticChat: { group in
+                                            guard let scope = session.accountScope, !scope.isCancelled,
+                                                workspace.activeAccountId == scope.account.id
+                                            else { return }
+                                            workspace.cancelTimelineLoad()
+                                            workspace.stopTimelineListener()
+                                            scope.releaseSelectedConversation()
+                                            _ = scope.selectAutomaticConversation(groupIdHex: group)
+                                            workspace.selection = .chat(group)
+                                        }
+                                    )
+                                    .frame(width: workspace.chatListDrawerWidth, alignment: .leading)
+                                    .transition(.move(edge: .leading).combined(with: .opacity))
+                                #else
+                                    ChatListDrawerView(
+                                        model: session.accountScope?.chatListModel,
+                                        historyNotices: session.accountScope?.historyNotices
+                                    )
+                                    // Deliberately un-animated: the width is dragged, so animating
+                                    // it would re-wrap the non-lazy transcript on every frame of the
+                                    // drag *and* again through the collapse snap — the same layout
+                                    // storm the `isChatListVisible` transition below is scoped away
+                                    // from. The snap is a single jump instead.
+                                    .frame(width: workspace.chatListDrawerWidth, alignment: .leading)
+                                    .transition(.move(edge: .leading).combined(with: .opacity))
+
+                                #endif
 
                                 ChatListResizeHandle()
                                     .transition(.opacity)
@@ -155,19 +176,30 @@ private struct DetailPaneView: View {
                                 blockedUsersModel: scope.blockedUsers
                             )
                         } else {
-                            EmptyDetailView()
+                            #if WN_EXPERIMENTAL_DEVICE_SYNC
+                                if case .chat(let group) = workspace.selection,
+                                    let model = session.accountScope?.selectedAutomaticConversation,
+                                    model.groupIdHex == group
+                                {
+                                    AutomaticConversationView(model: model)
+                                        .id(ObjectIdentifier(model))
+                                } else {
+                                    EmptyDetailView()
+                                }
+                            #else
+                                EmptyDetailView()
+                            #endif
                         }
                     case .settings:
                         if let scope = session.accountScope {
                             #if WN_EXPERIMENTAL_DEVICE_SYNC
                                 SettingsPanelView(
                                     model: scope.settingsModel, deviceVerificationModel: scope.deviceVerification,
-                                    selectedChatTransferModel: scope.selectedChatTransfer,
-                                    acquireHistoryReview: { [weak scope] in
+                                    acquireAccountSharing: { [weak scope] in
                                         guard let scope, session.accountScope === scope, !scope.isCancelled else {
-                                            throw MarmotKitError.HistoryTransferClosed
+                                            throw MarmotKitError.AccountSharingClosed
                                         }
-                                        return try session.historyConsentReviewModel()
+                                        return try session.accountChatSharingReviewModel()
                                     })
                             #else
                                 SettingsPanelView(model: scope.settingsModel)
@@ -272,6 +304,9 @@ nonisolated enum TranscriptRow: Identifiable, Equatable {
     case message(TimelineMessageDisplayItem, showsUnreadDivider: Bool, context: TranscriptRowContext)
     case loadingNewer(isLoading: Bool)
     case pending(PendingOutgoingMessageRow)
+    #if WN_EXPERIMENTAL_DEVICE_SYNC
+        case pairedSource(PairedChatMessageFfi, context: TranscriptRowContext)
+    #endif
     case footer
 
     /// Loading indicators and the foot do not travel with the messages, so they never anchor the
@@ -279,6 +314,9 @@ nonisolated enum TranscriptRow: Identifiable, Equatable {
     var anchorsPosition: Bool {
         switch self {
         case .message, .pending: true
+        #if WN_EXPERIMENTAL_DEVICE_SYNC
+            case .pairedSource: true
+        #endif
         case .loadingOlder, .loadingNewer, .footer: false
         }
     }
@@ -289,6 +327,9 @@ nonisolated enum TranscriptRow: Identifiable, Equatable {
         case .message(let item, _, _): item.message.id
         case .loadingNewer: "transcript-loading-newer"
         case .pending(let row): "transcript-pending-\(row.id.uuidString)"
+        #if WN_EXPERIMENTAL_DEVICE_SYNC
+            case .pairedSource(let row, _): "paired:" + row.messageIdHex
+        #endif
         case .footer: "transcript-footer"
         }
     }
@@ -302,6 +343,10 @@ nonisolated enum TranscriptRow: Identifiable, Equatable {
                 && contextA == contextB
         case (.pending(let a), .pending(let b)):
             return a == b
+        #if WN_EXPERIMENTAL_DEVICE_SYNC
+            case (.pairedSource(let a, let contextA), .pairedSource(let b, let contextB)):
+                return a == b && contextA == contextB
+        #endif
         case (.footer, .footer):
             return true
         default:
@@ -386,6 +431,10 @@ private struct TranscriptRowCell: View {
                     timestampReferenceDate: timestampReferenceDate,
                     timestampLocale: locale
                 )
+            #if WN_EXPERIMENTAL_DEVICE_SYNC
+                case .pairedSource(let row, _):
+                    PairedChatMessageRow(message: row)
+            #endif
             case .footer:
                 Color.clear.frame(height: 28)
             }
@@ -475,7 +524,7 @@ private struct ConversationView: View {
         let paging = workspace.selectedTimelinePaging
         let isLoadingInitialPage = workspace.selectedTimelineIsLoadingInitialPage
         let pendingOutgoingRows = workspace.selectedPendingOutgoingMessageRows
-        let transcriptRows = TranscriptRow.rows(
+        let ordinaryTranscriptRows = TranscriptRow.rows(
             displayItems: displayItems,
             paging: paging,
             pendingOutgoingRows: pendingOutgoingRows,
@@ -488,6 +537,17 @@ private struct ConversationView: View {
                 referenceDay: Calendar.current.ordinality(of: .day, in: .era, for: timestampReferenceDate) ?? 0
             )
         )
+
+        #if WN_EXPERIMENTAL_DEVICE_SYNC
+            let pairedModel = session.accountScope?.selectedAutomaticConversation
+            let pairedMessages = pairedModel?.groupIdHex == chat.id ? pairedModel?.pairedMessages ?? [] : []
+            let transcriptRows = TranscriptRow.withPairedObservations(
+                ordinary: ordinaryTranscriptRows, paired: pairedMessages,
+                blockedAuthors: blockedUsersModel.blockedAccountIDs,
+                now: UInt64(max(0, timestampReferenceDate.timeIntervalSince1970)))
+        #else
+            let transcriptRows = ordinaryTranscriptRows
+        #endif
 
         ZStack {
             VStack(spacing: 0) {
@@ -502,7 +562,9 @@ private struct ConversationView: View {
                 GlassSeparator(axis: .horizontal)
 
                 Group {
-                    if messageIDs.isEmpty && pendingOutgoingRows.isEmpty {
+                    if messageIDs.isEmpty && pendingOutgoingRows.isEmpty
+                        && !transcriptRows.contains(where: { $0.anchorsPosition })
+                    {
                         VStack {
                             if isLoadingInitialPage {
                                 TimelineInitialLoadingView()

@@ -20,8 +20,13 @@
                                 title: String(localized: "Joining device key"), key: review.joiningKey)
                             Text("Existing devices")
                             Text(String(review.existingDeviceCount))
-                            Button("Approve") { perform(.approve, revision: review.revision) }
-                                .disabled(model.isWorking)
+                            Text(
+                                "Pairing shares all existing and future chats, chat history, and messaging between these devices."
+                            )
+                            Button("Approve pairing and share all chats") {
+                                perform(.approveAndShareChats, revision: review.revision)
+                            }
+                            .disabled(model.isWorking)
                         } else if model.isActive, let snapshot = model.snapshot,
                             snapshot.phase == .approvedAwaitingPacket
                         {

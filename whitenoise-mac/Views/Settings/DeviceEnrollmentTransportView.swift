@@ -15,7 +15,10 @@
                         if model.enrollmentSupported, model.isActive,
                             let snapshot = model.snapshot, snapshot.phase == .verificationCompleteEnrollmentPending
                         {
-                            Button("Continue") { perform(.continueLinking, revision: snapshot.revision) }
+                            Text(
+                                "Pairing shares all existing and future chats, chat history, and messaging between these devices."
+                            )
+                            Button("Pair and share all chats") { perform(.shareChats, revision: snapshot.revision) }
                             Button("Read outgoing packets") { perform(.exportPacket, revision: snapshot.revision) }
                             if let outgoing = model.outgoingPacket {
                                 Text(outgoing).font(.system(.caption, design: .monospaced)).textSelection(.enabled)

@@ -58,7 +58,7 @@ struct whitenoise_macApp: App {
                 ) {
                     await synchronizeAccountScope()
                 }
-                .task(id: workspace.selectedChat?.id) {
+                .task(id: workspace.selection) {
                     await synchronizeConversationProjection()
                 }
                 .task(id: workspace.isOffline) {
@@ -129,15 +129,34 @@ struct whitenoise_macApp: App {
 
     @MainActor
     private func synchronizeConversationProjection() async {
-        guard let scope = session.accountScope,
-            let chat = workspace.selectedChat,
-            workspace.activeAccountId == scope.account.id
-        else {
+        guard let scope = session.accountScope, workspace.activeAccountId == scope.account.id else {
             session.accountScope?.releaseSelectedConversation()
+            #if WN_EXPERIMENTAL_DEVICE_SYNC
+                session.accountScope?.releaseAutomaticConversation()
+            #endif
+            return
+        }
+        #if WN_EXPERIMENTAL_DEVICE_SYNC
+            if case .chat(let group) = workspace.selection, workspace.selectedChat == nil,
+                scope.automaticChatList?.pairedRows.contains(where: { $0.groupIdHex == group }) == true
+            {
+                scope.releaseSelectedConversation()
+                workspace.cancelTimelineLoad()
+                workspace.stopTimelineListener()
+                _ = scope.selectAutomaticConversation(groupIdHex: group)
+                return
+            }
+            scope.releaseAutomaticConversation()
+        #endif
+        guard let chat = workspace.selectedChat else {
+            scope.releaseSelectedConversation()
             return
         }
 
         let model = scope.selectConversation(groupIdHex: chat.id)
+        #if WN_EXPERIMENTAL_DEVICE_SYNC
+            _ = scope.selectAutomaticConversation(groupIdHex: chat.id)
+        #endif
         workspace.cancelTimelineLoad()
         workspace.stopTimelineListener()
         // Claim the chat's window for the projection, so legacy loads from any entry point

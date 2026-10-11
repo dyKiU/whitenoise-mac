@@ -23,6 +23,9 @@ final class AccountScope {
             addCancellation { model.invalidate() }
         }
 
+        private(set) var automaticChatList: AccountChatListViewModel?
+        private(set) var selectedAutomaticConversation: AccountConversationViewModel?
+
         let history: NativeHistoryAccountOwner
         @ObservationIgnored private var historySources: [String: (model: HistorySourceViewModel, cancellation: UUID)] =
             [:]
@@ -170,6 +173,11 @@ final class AccountScope {
         )
         self.productAnalytics = productAnalytics
         #if WN_EXPERIMENTAL_DEVICE_SYNC
+            if let observations = runtime as? any AccountChatObserving {
+                let model = AccountChatListViewModel(accountRef: account.accountRef, runtime: observations)
+                automaticChatList = model
+                addCancellation { model.invalidate() }
+            }
             addCancellation { [selectedChat] in selectedChat.invalidate() }
             addCancellation { [history] in history.invalidate() }
         #endif
@@ -177,6 +185,9 @@ final class AccountScope {
 
     func start(connectivityAvailable: Bool) {
         chatListModel.start()
+        #if WN_EXPERIMENTAL_DEVICE_SYNC
+            automaticChatList?.start()
+        #endif
         attentionModel.start()
         blockedUsers.start()
         onboarding.start()
@@ -274,6 +285,9 @@ final class AccountScope {
         mode: ConversationOpenModeFfi = .automatic,
         messageIdHex: String? = nil
     ) -> ConversationViewModel {
+        #if WN_EXPERIMENTAL_DEVICE_SYNC
+            releaseAutomaticConversation()
+        #endif
         if let selectedConversationModel, selectedConversationModel.groupIdHex == groupIdHex {
             return selectedConversationModel
         }
@@ -285,6 +299,27 @@ final class AccountScope {
         selectedConversationModel = model
         return model
     }
+
+    #if WN_EXPERIMENTAL_DEVICE_SYNC
+        /// Navigation holds source-qualified observations without constructing an MLS chat row.
+        func selectAutomaticConversation(groupIdHex: String) -> AccountConversationViewModel? {
+            guard !isCancelled, let observations = runtime as? any AccountChatObserving else { return nil }
+            if let selectedAutomaticConversation, selectedAutomaticConversation.groupIdHex == groupIdHex {
+                return selectedAutomaticConversation
+            }
+            releaseAutomaticConversation()
+            let model = AccountConversationViewModel(
+                accountRef: account.accountRef, groupIdHex: groupIdHex, runtime: runtime, observations: observations)
+            selectedAutomaticConversation = model
+            model.start()
+            return model
+        }
+
+        func releaseAutomaticConversation() {
+            selectedAutomaticConversation?.invalidate()
+            selectedAutomaticConversation = nil
+        }
+    #endif
 
     func releaseSelectedConversation() {
         guard let groupIdHex = selectedConversationModel?.groupIdHex else { return }
@@ -343,6 +378,9 @@ final class AccountScope {
 
     func cancelAll() async {
         isCancelled = true
+        #if WN_EXPERIMENTAL_DEVICE_SYNC
+            releaseAutomaticConversation()
+        #endif
         attachmentPolicyTask?.cancel()
         attachmentPolicyTask = nil
         let pending = Array(cancellations.values)

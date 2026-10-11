@@ -8,7 +8,7 @@ import Testing
     // Generated protocol doubles exercise native forwarding/lifetime, not SDK verification.
     nonisolated private final class ActionSubscription: DeviceLinkingSubscription, @unchecked Sendable {
         override func next() async throws -> DeviceLinkingSnapshotFfi { throw MarmotKitError.DeviceLinkingClosed }
-        override func close() {}
+        override func closeStream() {}
     }
 
     nonisolated private final class ActionSession: DeviceLinkingSession, @unchecked Sendable {

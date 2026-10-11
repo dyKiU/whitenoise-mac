@@ -10,6 +10,7 @@ import Testing
         private let lock = NSLock()
         private var reads: [UInt64] = []
         private var actions: [UInt64] = []
+        private var sharingActions: [UInt64] = []
         private var packets: [(UInt64, Data)] = []
         private var phase: DeviceLinkingApprovalPhaseFfi = .awaitingApproval
         private var invalid = 0
@@ -39,6 +40,7 @@ import Testing
             continuation?.resume()
         }
         var reviewedRevisions: [UInt64] { lock.withLock { reads } }
+        var sharingRevisions: [UInt64] { lock.withLock { sharingActions } }
         var approvedRevisions: [UInt64] { lock.withLock { actions } }
         var receivedPackets: [(UInt64, Data)] { lock.withLock { packets } }
         override func receiveEnrollmentPacket(displayedRevision: UInt64, packet: Data) async throws {
@@ -61,6 +63,10 @@ import Testing
         }
         override func approve(displayedRevision: UInt64) async throws {
             lock.withLock { actions.append(displayedRevision) }
+        }
+        override func approveAndShareChats(displayedRevision: UInt64) async throws {
+            lock.withLock { sharingActions.append(displayedRevision) }
+            if lock.withLock({ reject }) { throw MarmotKitError.DeviceLinkingStaleRevision }
         }
         override func cancel() async throws {
             lock.withLock { cancellations += 1 }
@@ -101,6 +107,40 @@ import Testing
             #expect(original.approvedRevisions.isEmpty)
             await state.deactivate()
         }
+        @Test func sharingApprovalRequiresExactCurrentReviewAndDistinctOriginalAction() async throws {
+            let original = ReviewApproval(noPointer: .init())
+            let (state, _, model) = try await heldModel(original)
+            defer { model.invalidate() }
+            try await model.refreshReview()
+            #expect(original.sharingRevisions.isEmpty)
+            await #expect(throws: MarmotKitError.DeviceLinkingStaleRevision) {
+                try await model.approveReviewedAndShareChats(displayedRevision: 8)
+            }
+            #expect(original.sharingRevisions.isEmpty)
+            try await model.approveReviewedAndShareChats(displayedRevision: 7)
+            #expect(original.sharingRevisions == [7])
+            #expect(original.approvedRevisions.isEmpty)
+            await state.deactivate()
+        }
+
+        @Test func sharingApprovalPreservesSdkRefusalAndRetiredOwnerFence() async throws {
+            let original = ReviewApproval(noPointer: .init())
+            let (state, _, model) = try await heldModel(original)
+            defer { model.invalidate() }
+            try await model.refreshReview()
+            original.configure(reject: true)
+            await #expect(throws: MarmotKitError.DeviceLinkingStaleRevision) {
+                try await model.approveReviewedAndShareChats(displayedRevision: 7)
+            }
+            #expect(original.sharingRevisions == [7])
+            model.invalidate()
+            await #expect(throws: MarmotKitError.DeviceLinkingClosed) {
+                try await model.approveReviewedAndShareChats(displayedRevision: 7)
+            }
+            #expect(original.sharingRevisions == [7])
+            await state.deactivate()
+        }
+
         @Test func staleDisplayedRevisionAndSdkFailureNeverApprove() async throws {
             let original = ReviewApproval(noPointer: .init())
             let (state, _, model) = try await heldModel(original)
