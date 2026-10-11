@@ -135,6 +135,38 @@ import Testing
             return (model, original, state)
         }
 
+        @Test func observedCanonicalRowBeforeAdmissionReturnsDoesNotLeaveDuplicatePendingBubble() async throws {
+            let original = PendingConversation(snapshot(sequence: 1))
+            let state = PendingSendState()
+            let runtime = FakeMarmotRuntime(accounts: [])
+            runtime.localSendAcceptanceForToken = { token in .init(clientToken: token, messageIdHex: state.eventId) }
+            runtime.localSendStatusForToken = { _ in try state.status() }
+            runtime.messageActionGateEnabled = true
+            let model = AccountConversationViewModel(
+                accountRef: "synthetic-account", groupIdHex: group, runtime: runtime,
+                observations: PendingFactory(original: original))
+            model.start()
+            defer {
+                runtime.releaseMessageActionGate()
+                model.invalidate()
+            }
+            #expect(await waitFor { model.snapshot != nil })
+            let sending = Task { try await model.sendText("Synthetic message") }
+            #expect(await waitFor { runtime.didReachMessageActionGate })
+            let token = try #require(model.pendingTexts.keys.first)
+            #expect(model.pendingTexts[token]?.acceptedMessageIdHex == nil)
+            original.emit(snapshot(sequence: 2, eventId: state.eventId))
+            #expect(await waitFor { model.snapshot?.sequence == 2 })
+            #expect(model.pairedMessages.map(\.messageIdHex) == [state.eventId])
+            runtime.releaseMessageActionGate()
+            let acceptance = try await sending.value
+            #expect(acceptance.clientToken == token)
+            #expect(acceptance.messageIdHex == state.eventId)
+            await model.refreshPendingStatus()
+            #expect(model.pendingTexts.isEmpty)
+            #expect(model.pairedMessages.map(\.messageIdHex) == [acceptance.messageIdHex])
+        }
+
         @Test func knownCanonicalImportReplacesQueuedBubbleWithoutClaimingSentBeforeReceipt() async throws {
             let (model, original, state) = try await ready()
             defer { model.invalidate() }
