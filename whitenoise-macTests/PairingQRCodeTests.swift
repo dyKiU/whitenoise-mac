@@ -1,4 +1,5 @@
 #if WN_EXPERIMENTAL_DEVICE_SYNC
+    import Compression
     import CoreImage
     import Foundation
     import MarmotKit
@@ -48,7 +49,7 @@
             let bytes = Data(repeating: 7, count: capacity)
             #expect(try PairingQRCode.decode(PairingQRCode.encode(bytes)) == bytes.base64EncodedString())
             #expect(throws: PairingQRCode.Failure.tooLarge) {
-                try PairingQRCode.encode(Data(repeating: 7, count: capacity + 1))
+                try PairingQRCode.encode(Data(repeating: 7, count: PairingQRCode.maximumPacketBytes + 1))
             }
             #expect(throws: PairingQRCode.Failure.tooLarge) {
                 try PairingQRCode.decode(String(repeating: "a", count: 2201))
@@ -64,6 +65,37 @@
                         of: image, format: .RGBA8,
                         colorSpace: CGColorSpaceCreateDeviceRGB()))
                 #expect(try PairingQRCode.readImage(data) == bytes.base64EncodedString())
+            }
+        }
+        @Test func realSetupSizedPacketCompressesAndScansWithoutChangingNativeBytes() throws {
+            let bytes = Data((0..<2016).map { UInt8(truncatingIfNeeded: $0 * 73 + 19) })
+            let payload = try PairingQRCode.encode(bytes)
+            #expect(payload.hasPrefix(PairingQRCode.compressedPrefix))
+            #expect(payload.utf8.count <= PairingQRCode.maximumTextBytes)
+            let image = try #require(QRCodeImageView.ciImage(for: payload, palette: .resolved(for: .light)))
+            let data = try #require(
+                CIContext().pngRepresentation(
+                    of: image, format: .RGBA8, colorSpace: CGColorSpaceCreateDeviceRGB()))
+            #expect(try PairingQRCode.readImage(data) == bytes.base64EncodedString())
+        }
+        @Test func compressedInputRefusesMalformedAndExpansionOverNativeBound() throws {
+            #expect(throws: PairingQRCode.Failure.self) {
+                try PairingQRCode.decode(PairingQRCode.compressedPrefix + "AQID")
+            }
+            let bytes = Data(repeating: 7, count: PairingQRCode.maximumPacketBytes)
+            #expect(try PairingQRCode.decode(PairingQRCode.encode(bytes)) == bytes.base64EncodedString())
+            // A valid deflate stream expanding one byte beyond the resource bound.
+            let oversized = Data(repeating: 7, count: PairingQRCode.maximumPacketBytes + 1)
+            var compressed = [UInt8](repeating: 0, count: 1000)
+            let size = oversized.withUnsafeBytes { source in
+                compression_encode_buffer(
+                    &compressed, compressed.count,
+                    source.bindMemory(to: UInt8.self).baseAddress!, oversized.count, nil, COMPRESSION_ZLIB)
+            }
+            #expect(size > 0)
+            #expect(throws: PairingQRCode.Failure.self) {
+                try PairingQRCode.decode(
+                    PairingQRCode.compressedPrefix + Data(compressed.prefix(size)).base64EncodedString())
             }
         }
         @Test func unreadableAndOversizeImagesAreRefused() {
