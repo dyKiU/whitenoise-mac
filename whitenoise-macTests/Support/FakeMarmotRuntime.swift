@@ -3192,7 +3192,8 @@ nonisolated final class FakeMarmotRuntime: MarmotRuntime, @unchecked Sendable {
         if let sendTextError {
             throw sendTextError
         }
-        return localSendAcceptanceForToken?(clientToken) ?? localSendAcceptance ?? LocalSendAcceptanceFfi(clientToken: clientToken, messageIdHex: "text")
+        return localSendAcceptanceForToken?(clientToken) ?? localSendAcceptance
+            ?? LocalSendAcceptanceFfi(clientToken: clientToken, messageIdHex: "text")
     }
 
     func replyToMessageWithClientToken(

@@ -41,12 +41,17 @@ import Testing
         func next() async throws -> AccountConversationWindowSnapshotFfi? {
             try await withCheckedThrowingContinuation { reply in
                 lock.lock()
-                if cancelled { lock.unlock(); reply.resume(returning: nil) }
-                else if !queue.isEmpty {
+                if cancelled {
+                    lock.unlock()
+                    reply.resume(returning: nil)
+                } else if !queue.isEmpty {
                     let value = queue.removeFirst()
                     lock.unlock()
                     reply.resume(returning: value)
-                } else { pending = reply; lock.unlock() }
+                } else {
+                    pending = reply
+                    lock.unlock()
+                }
             }
         }
         func emit(_ value: AccountConversationWindowSnapshotFfi) {
@@ -59,9 +64,15 @@ import Testing
             reply?.resume(returning: value)
         }
         func olderPage(sequence: UInt64, before: PairedChatMessageCursorFfi?) async throws
-            -> AccountConversationWindowSnapshotFfi { throw CancellationError() }
+            -> AccountConversationWindowSnapshotFfi
+        { throw CancellationError() }
         func cancel() {
-            let reply = lock.withLock { cancelled = true; let reply = pending; pending = nil; return reply }
+            let reply = lock.withLock {
+                cancelled = true
+                let reply = pending
+                pending = nil
+                return reply
+            }
             reply?.resume(returning: nil)
         }
     }
@@ -72,10 +83,9 @@ import Testing
             throw CancellationError()
         }
         func openAccountConversation(accountRef: String, groupIdHex: String, initialRows: UInt32) async throws
-            -> any AccountConversationObserving { original }
+            -> any AccountConversationObserving
+        { original }
     }
-
-
 
     @MainActor @Suite struct AutomaticPendingSendTests {
         private let group = "0102"
@@ -85,13 +95,19 @@ import Testing
                 protectedGeneration: 1, sourceEpoch: 1, sourceSequence: sequence,
                 sourceDigestHex: String(repeating: "d", count: 64))
             let header = PairedChatSummaryFfi(groupIdHex: group, name: "Synthetic", description: "", source: source)
-            let rows: [AccountConversationRowFfi] = eventId.map { id in
-                [.pairedSource(PairedChatMessageFfi(
-                    kind: 9, canonicalChat: true, messageIdHex: id, authorHex: String(repeating: "e", count: 64),
-                    createdAt: 1, expiresAt: nil, deleted: false, content: "Synthetic message",
-                    contentTokens: MarkdownDocumentFfi(blocks: [], truncated: false, blankLinesBefore: Data()),
-                    tags: [], mediaAttachments: [], source: source))]
-            } ?? []
+            let rows: [AccountConversationRowFfi] =
+                eventId.map { id in
+                    [
+                        .pairedSource(
+                            PairedChatMessageFfi(
+                                kind: 9, canonicalChat: true, messageIdHex: id,
+                                authorHex: String(repeating: "e", count: 64),
+                                createdAt: 1, expiresAt: nil, deleted: false, content: "Synthetic message",
+                                contentTokens: MarkdownDocumentFfi(
+                                    blocks: [], truncated: false, blankLinesBefore: Data()),
+                                tags: [], mediaAttachments: [], source: source))
+                    ]
+                } ?? []
             return AccountConversationWindowSnapshotFfi(
                 generation: "synthetic-generation", sequence: sequence, header: .pairedSource(header),
                 rows: rows, nextBefore: nil)
@@ -111,7 +127,8 @@ import Testing
             let runtime = FakeMarmotRuntime(accounts: [])
             runtime.localSendAcceptanceForToken = { token in .init(clientToken: token, messageIdHex: state.eventId) }
             runtime.localSendStatusForToken = { _ in try state.status() }
-            let model = AccountConversationViewModel(accountRef: "synthetic-account", groupIdHex: group, runtime: runtime,
+            let model = AccountConversationViewModel(
+                accountRef: "synthetic-account", groupIdHex: group, runtime: runtime,
                 observations: PendingFactory(original: original))
             model.start()
             #expect(await waitFor { model.snapshot != nil })
@@ -142,10 +159,11 @@ import Testing
             original.emit(snapshot(sequence: 2))
             #expect(await waitFor { model.snapshot?.sequence == 2 })
             #expect(await waitFor { state.callCount > calls })
-            #expect(await waitFor {
-                if case .rejected? = model.pendingTexts.values.first?.status { return true }
-                return false
-            })
+            #expect(
+                await waitFor {
+                    if case .rejected? = model.pendingTexts.values.first?.status { return true }
+                    return false
+                })
             #expect(model.pairedMessages.isEmpty)
         }
 
