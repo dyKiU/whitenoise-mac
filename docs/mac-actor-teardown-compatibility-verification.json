@@ -1,0 +1,62 @@
+{
+  "scope": "Older macOS actor-isolated destructor compatibility; explicit account/runtime shutdown, preferences, notification behavior and authority unchanged",
+  "baseline_commit": "39b8f056fc386c0cf0bef465b817120291a92433",
+  "host": "M1 macOS15.8(24H23), Xcode26.3(17C529)",
+  "sdk_source": "98707713a2cc02828c2d66ed858588991896b9b0",
+  "behavioral_red": {
+    "artifact": "../build/results/mac-qr-old39-UI-baseline-v1-summary.json",
+    "passed": 0,
+    "failed": 1,
+    "crash": "SessionState.__deallocating_deinit -> swift_task_deinitOnExecutorImpl -> TaskLocal::StopLookupScope invalid free"
+  },
+  "subsequent_actual_crashes": [
+    "CopyConfirmation",
+    "UserDefaultsChatRestorationStore",
+    "UserDefaultsImprovementsPromptStore",
+    "UserDefaultsQuickReactionStore"
+  ],
+  "dependent_compatibility_scope": [
+    "WorkspaceState outer destructor",
+    "UserDefaultsMediaDownloadDestinationStore",
+    "MacLocalNotificationCenter"
+  ],
+  "fix": "Empty explicit nonisolated deinit on eight affected session, clipboard and WorkspaceState dependency classes; no actor-bound cleanup added",
+  "affected": {
+    "artifact": "../build/results/mac-session-deinit-green-v6-summary.json",
+    "passed": 26,
+    "failed": 0,
+    "skipped": 0,
+    "total": 26,
+    "runner": "scripts/test-isolated.sh, WN_EXPERIMENTAL_DEVICE_SYNC=1, absolute reused MacTestIsolationM1 cache",
+    "covers": [
+      "AddProfileRoutingTests",
+      "PairingClipboardTests",
+      "AccountScopeTests",
+      "NativeDeviceLinkingLifetimeTests",
+      "ImprovementsPromptTests",
+      "TimelineTests copy confirmation timing and repeated copy",
+      "ChatListTests restoration preferences",
+      "MediaTests download destination grants"
+    ]
+  },
+  "static": {
+    "format": "Full source roots passed; repeated scoped lint required after final three dependencies",
+    "localizations": "Passed unchanged catalog",
+    "published_sanity": "Passed before push"
+  },
+  "product_sha256": {
+    "Session/SessionState.swift": "6ebc2b8bc3789f64e39bddec6847eef4b066ab00445481e17815d9458d3b0a87",
+    "Views/CopyToClipboardButton.swift": "4748766980a28b79df963f7830db3b7ffd6374f0bfe1bb8605b1a8b601c768cb",
+    "Core/WorkspaceState.swift": "e15550b1e7172bcddcd2bfd4aab260986d73a1f5421b1682e20691ea4ebb89b5",
+    "Core/ChatRestorationPreferences.swift": "244edebf48364cf1ccc67ccb7c2b471484fa4f079145b5d8f716947ab4d2192e",
+    "Core/ImprovementsPromptPreferences.swift": "13f3fbffacdf79d299678b61217935446e8dbcd8c75f43789e6bd53ae31415e7",
+    "Core/QuickReactionPreferences.swift": "2eae70205c43defe6dd94d9e843a116566a6de6863e949959b128f0b3b011e32",
+    "Core/Media/MediaDownloadDestination.swift": "e95e7e32ec6896059f97144351673dba7de236a0ad7da37eb5551b868a16faa9",
+    "Core/Notifications/MacLocalNotificationCenter.swift": "abd4c604d02cbbaa8dbebef9034bc63c2bf81e55c44c80abb936951d15838bcc"
+  },
+  "limits": [
+    "Full final integration suites and installed-app journey pending at passing-slice commit",
+    "M5 full protected-file qualification pending user unlock",
+    "Physical iPhone scan/SAS/enrollment deferred; phone must leave"
+  ]
+}

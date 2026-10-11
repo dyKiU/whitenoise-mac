@@ -6,6 +6,10 @@ import SwiftUI
 /// several elements (glyph, title, tint) from a single source of truth.
 @Observable
 final class CopyConfirmation {
+    // Avoid the synthesized isolated-deinit trampoline on older macOS concurrency runtimes.
+    // Teardown performs no actor-bound work; confirmation reset ownership is unchanged.
+    nonisolated deinit {}
+
     /// How long the confirmation stays up. Matches the iOS client's copy affordance.
     static let defaultDuration = Duration.seconds(1.5)
 
