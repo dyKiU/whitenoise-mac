@@ -1,6 +1,8 @@
 #if WN_EXPERIMENTAL_DEVICE_SYNC
     import Foundation
+    import CoreImage
     import MarmotKit
+    import SwiftUI
     import Testing
     @testable import whitenoise_mac
 
@@ -120,6 +122,21 @@
             #expect(model.currentStagedPacket == "AQ==")
             owner.invalidate()
             #expect(model.currentStagedPacket == nil)
+        }
+        @Test func actualRenderedMultipartImagesStageOnlyTheCompletePacket() async throws {
+            let bytes = Self.bytes()
+            let pages = try PairingQRCode.encodePages(bytes)
+            let model = PairingQRImportModel(capture: { { true } })
+            let context = CIContext()
+            for (index, page) in pages.reversed().enumerated() {
+                let image = try #require(QRCodeImageView.ciImage(for: page, palette: .resolved(for: .light)))
+                let png = try #require(
+                    context.pngRepresentation(
+                        of: image, format: .RGBA8, colorSpace: CGColorSpaceCreateDeviceRGB()))
+                try await model.importImage(png, ticket: model.beginImport())
+                if index < pages.count - 1 { #expect(model.currentStagedPacket == nil) }
+            }
+            #expect(model.currentStagedPacket == bytes.base64EncodedString())
         }
     }
 #endif

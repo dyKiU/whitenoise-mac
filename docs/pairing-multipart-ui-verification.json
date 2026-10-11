@@ -45,5 +45,19 @@
   "limits": [
     "Final full PR cohorts, installed Mac journey and physical iPhone pairing remain pending",
     "Real native ABC and approved enrollment QR proof is separate in docs/pairing-multipart-qr-verification.json"
-  ]
+  ],
+  "rendered_image_acceptance": {
+    "base": "ff21a82a0a692ad9d894d5e60be61e27a5b4fc94",
+    "prefix": "build/results/mac-multipart-image-v2",
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0,
+    "source_inputs": 544,
+    "log_sha256": "858f6541f6f57a51d68e9e64eb3fde4fcf00a46dd710ee33bf4f9e8ceb17f980",
+    "test_file_sha256": "c169f457d9294761c6592b6a6e3a5bbed9b722ec82075c55e78ef5cca28d9615",
+    "scope": "Actual project QR renderer PNGs, real CoreImage decoding and account-owned multipart import, reversed frames; no partial delivery",
+    "prior_compile_only": "v1 missing explicit SwiftUI import; no runtime tests; source/log preserved",
+    "product_changed": false,
+    "retained_affected_qualification": "83/0 from ff21; only this additional image test and imports changed"
+  }
 }
