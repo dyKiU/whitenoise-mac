@@ -1,0 +1,373 @@
+{
+  "base_commit": "a8b93d8d15c7e2abc8d9566aa7ea11593a33eaea",
+  "sdk_source": "de38be1295618728ef541e43bfc00ffb6cdb6a86",
+  "source_files": {
+    "whitenoise-mac/Core/PairingQRCode.swift": "08ed920f9a828c80199f87f83d93667f1275a4fc4072a22da7a53a5f67db364c",
+    "whitenoise-macTests/PairingMultipartQRCodeTests.swift": "91c0f56e45413229349128e0ba87cb38d1d49cef915efa25450d0e3e9f999553"
+  },
+  "contract": {
+    "prefix": "whitenoise-pairing:v3:part:",
+    "fields": [
+      "lowercase_sha256_original",
+      "canonical_total_bytes",
+      "canonical_zero_based_ordinal",
+      "canonical_frame_count",
+      "canonical_base64_raw_fragment"
+    ],
+    "fragment_bytes": 1536,
+    "max_frames": 32,
+    "max_original_bytes": 49152,
+    "max_text_utf8_bytes": 2200,
+    "deadline_seconds": 120,
+    "expiry": "fixed constructor ContinuousClock; no renewal; backwards time rejected",
+    "reset": "terminal owner/lifecycle retirement",
+    "duplicates": "exact idempotent; no completed-original reemit",
+    "ordering": "out-of-order accepted",
+    "digest": "transport integrity only; native original authenticates reconstructed bytes"
+  },
+  "preserved_single_qr_red": {
+    "prefix_m5": "/Users/pj/project/build/results/automatic-de38-real-qr-v2",
+    "challenge_bytes": 4678,
+    "round_trip": false,
+    "actual_runtime_exit": 1,
+    "failed_source_blob": "e91112edc6b87d2fb835e4dda075a173013d5424",
+    "cleanup_note": "Three runtimes closed; fixture also attempted second cancellations of completed AB originals. Final fixture removes those aliases after first cancellation."
+  },
+  "compile_only_iteration": {
+    "prefix_m5": "/Users/pj/project/build/results/automatic-de38-real-qr-v3",
+    "exit": 1,
+    "tests_executed": 0,
+    "reason": "duplicate enrollment local variable; corrected without protocol/codec change"
+  },
+  "pure_contract_results": [
+    {
+      "gate": "compile",
+      "exit_code": 0,
+      "seconds": 0.6,
+      "log": "/Users/pj/project/build/results/mac-multipart-qr-contract-v2-compile.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "inputs_unchanged": true,
+      "command": [
+        "xcrun",
+        "swiftc",
+        "-swift-version",
+        "5",
+        "-parse-as-library",
+        "-D",
+        "WN_EXPERIMENTAL_DEVICE_SYNC",
+        "-D",
+        "PAIRING_QR_STANDALONE_TESTS",
+        "-module-cache-path",
+        "/Users/pj/project/build/MacSyncProfileM5/ModuleCache.noindex",
+        "/Users/pj/project/whitenoise-mac-pairing-multipart/whitenoise-mac/Core/PairingQRCode.swift",
+        "/Users/pj/project/whitenoise-mac-pairing-multipart/whitenoise-macTests/PairingMultipartQRCodeTests.swift",
+        "-o",
+        "/Users/pj/project/build/mac-multipart-qr-contract-v2"
+      ]
+    },
+    {
+      "gate": "actual-contract",
+      "exit_code": 0,
+      "seconds": 0.52,
+      "log": "/Users/pj/project/build/results/mac-multipart-qr-contract-v2-actual-contract.log",
+      "log_sha256": "900a7050d161c69442a1aa842a22bfa7b83a8160d2ba3b9ec3343eadb06ca156",
+      "inputs_unchanged": true,
+      "command": [
+        "/Users/pj/project/build/mac-multipart-qr-contract-v2"
+      ]
+    }
+  ],
+  "pure_contract_passed": 10,
+  "actual_native_results": [
+    {
+      "gate": "compile",
+      "command": [
+        "/bin/bash",
+        "/Users/pj/project/whitenoisechat-automatic-acceptance/tools/native-sync-acceptance/build.sh",
+        "/Users/pj/project/mdk-automatic-apple-de38be12/crates/marmot-uniffi/output",
+        "/Users/pj/project/build/automatic-de38-real-qr-v4"
+      ],
+      "exit_code": 0,
+      "seconds": 7.9,
+      "log": "/Users/pj/project/build/results/automatic-de38-real-qr-v4-compile.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "inputs_unchanged": true
+    },
+    {
+      "gate": "actual-real-packets",
+      "command": [
+        "/Users/pj/project/build/automatic-de38-real-qr-v4",
+        "qr",
+        "/Users/pj/project/build/automatic-de38-real-qr-v4-state"
+      ],
+      "exit_code": 0,
+      "seconds": 16.49,
+      "log": "/Users/pj/project/build/results/automatic-de38-real-qr-v4-actual-real-packets.log",
+      "log_sha256": "44afb6e451f885621146eed9e95e20773415d26e17e602f9d006e1e7ee24c3af",
+      "inputs_unchanged": true
+    }
+  ],
+  "actual_native_counts_and_flags": [
+    {
+      "packet_role": "request",
+      "packet_bytes": 2024,
+      "text_bytes": 1110,
+      "frames": 1,
+      "within_2200": true,
+      "round_trip": true
+    },
+    {
+      "packet_role": "challenge",
+      "packet_bytes": 2867,
+      "text_bytes": 1594,
+      "frames": 1,
+      "within_2200": true,
+      "round_trip": true
+    },
+    {
+      "packet_role": "ab-proof",
+      "packet_bytes": 839,
+      "text_bytes": 1142,
+      "frames": 1,
+      "within_2200": true,
+      "round_trip": true
+    },
+    {
+      "packet_role": "ab-proof",
+      "packet_bytes": 819,
+      "text_bytes": 1114,
+      "frames": 1,
+      "within_2200": true,
+      "round_trip": true
+    },
+    {
+      "packet_role": "ab-proof",
+      "packet_bytes": 402,
+      "text_bytes": 558,
+      "frames": 1,
+      "within_2200": true,
+      "round_trip": true
+    },
+    {
+      "packet_role": "ab-proof",
+      "packet_bytes": 379,
+      "text_bytes": 530,
+      "frames": 1,
+      "within_2200": true,
+      "round_trip": true
+    },
+    {
+      "packet_role": "ab-proof",
+      "packet_bytes": 606,
+      "text_bytes": 830,
+      "frames": 1,
+      "within_2200": true,
+      "round_trip": true
+    },
+    {
+      "packet_role": "ab-proof",
+      "packet_bytes": 494,
+      "text_bytes": 682,
+      "frames": 1,
+      "within_2200": true,
+      "round_trip": true
+    },
+    {
+      "packet_role": "ab-proof",
+      "packet_bytes": 316,
+      "text_bytes": 446,
+      "frames": 1,
+      "within_2200": true,
+      "round_trip": true
+    },
+    {
+      "packet_role": "ab-proof",
+      "packet_bytes": 316,
+      "text_bytes": 446,
+      "frames": 1,
+      "within_2200": true,
+      "round_trip": true
+    },
+    {
+      "packet_role": "ab-confirmation",
+      "packet_bytes": 455,
+      "text_bytes": 630,
+      "frames": 1,
+      "within_2200": true,
+      "round_trip": true
+    },
+    {
+      "packet_role": "ab-confirmation",
+      "packet_bytes": 450,
+      "text_bytes": 622,
+      "frames": 1,
+      "within_2200": true,
+      "round_trip": true
+    },
+    {
+      "packet_role": "ab-confirmation",
+      "packet_bytes": 265,
+      "text_bytes": 378,
+      "frames": 1,
+      "within_2200": true,
+      "round_trip": true
+    },
+    {
+      "packet_role": "ab-confirmation",
+      "packet_bytes": 265,
+      "text_bytes": 378,
+      "frames": 1,
+      "within_2200": true,
+      "round_trip": true
+    },
+    {
+      "packet_role": "c-request",
+      "packet_bytes": 2029,
+      "text_bytes": 1118,
+      "frames": 1,
+      "within_2200": true,
+      "round_trip": true
+    },
+    {
+      "packet_role": "c-challenge",
+      "packet_bytes": 4690,
+      "text_bytes": 2149,
+      "frames": 4,
+      "within_2200": true,
+      "round_trip": true
+    },
+    {
+      "packet_role": "c-proof",
+      "packet_bytes": 839,
+      "text_bytes": 1142,
+      "frames": 1,
+      "within_2200": true,
+      "round_trip": true
+    },
+    {
+      "packet_role": "c-proof",
+      "packet_bytes": 819,
+      "text_bytes": 1114,
+      "frames": 1,
+      "within_2200": true,
+      "round_trip": true
+    },
+    {
+      "packet_role": "c-proof",
+      "packet_bytes": 402,
+      "text_bytes": 558,
+      "frames": 1,
+      "within_2200": true,
+      "round_trip": true
+    },
+    {
+      "packet_role": "c-proof",
+      "packet_bytes": 379,
+      "text_bytes": 530,
+      "frames": 1,
+      "within_2200": true,
+      "round_trip": true
+    },
+    {
+      "packet_role": "c-proof",
+      "packet_bytes": 606,
+      "text_bytes": 830,
+      "frames": 1,
+      "within_2200": true,
+      "round_trip": true
+    },
+    {
+      "packet_role": "c-proof",
+      "packet_bytes": 494,
+      "text_bytes": 682,
+      "frames": 1,
+      "within_2200": true,
+      "round_trip": true
+    },
+    {
+      "packet_role": "c-proof",
+      "packet_bytes": 316,
+      "text_bytes": 446,
+      "frames": 1,
+      "within_2200": true,
+      "round_trip": true
+    },
+    {
+      "packet_role": "c-proof",
+      "packet_bytes": 316,
+      "text_bytes": 446,
+      "frames": 1,
+      "within_2200": true,
+      "round_trip": true
+    },
+    {
+      "packet_role": "c-confirmation",
+      "packet_bytes": 455,
+      "text_bytes": 630,
+      "frames": 1,
+      "within_2200": true,
+      "round_trip": true
+    },
+    {
+      "packet_role": "c-confirmation",
+      "packet_bytes": 450,
+      "text_bytes": 622,
+      "frames": 1,
+      "within_2200": true,
+      "round_trip": true
+    },
+    {
+      "packet_role": "c-confirmation",
+      "packet_bytes": 265,
+      "text_bytes": 378,
+      "frames": 1,
+      "within_2200": true,
+      "round_trip": true
+    },
+    {
+      "packet_role": "c-confirmation",
+      "packet_bytes": 265,
+      "text_bytes": 378,
+      "frames": 1,
+      "within_2200": true,
+      "round_trip": true
+    },
+    {
+      "packet_role": "enrollment-capacity",
+      "packet_bytes": 8186,
+      "text_bytes": 2149,
+      "frames": 6,
+      "within_2200": true,
+      "round_trip": true
+    },
+    {
+      "packet_role": "enrollment-copy-transport",
+      "packet_bytes": 8186,
+      "qr_exposed": false
+    },
+    {
+      "positive_closes": 3,
+      "cleanup_passed": true
+    },
+    {
+      "gate": "native-real-packet-qr",
+      "passed": 1,
+      "failed": 0,
+      "request_authenticated": true,
+      "challenge_authenticated": true,
+      "third_device_settled": true,
+      "enrollment_authenticated": true
+    }
+  ],
+  "evidence_m1": "/Users/pjaeckel/project/whitenoisechat-openclaw/build/results/real-packet-multipart-qr",
+  "scope": [
+    "Actual A/B/C originals with broad firstpair and fresh B sibling approval; actual reconstructed enrollment receive/all3settled/3 positive closes.",
+    "Every actual setup/proof/confirmation packet and approved enrollment measured; reverse ordering+exact frame duplicates, no packets/keys/images/output text saved.",
+    "Legacy single v1/v2 retained; actual app codec compiled directly without UI or SDK changes."
+  ],
+  "limits": [
+    "App-host XCTest/full Mac suite and UI integration remain pending root combined candidate.",
+    "No physical camera scanning, installed/profile/app change or full backend qualification claim.",
+    "Native enrollment UI presently Copy/paste; measured6-frame capacity supports separate root UI work."
+  ]
+}
