@@ -1,4 +1,5 @@
 #if WN_EXPERIMENTAL_DEVICE_SYNC
+    import Compression
     import CoreImage
     import Foundation
     import ImageIO
@@ -7,24 +8,55 @@
     nonisolated enum PairingQRCode {
         static let prefix = "whitenoise-pairing:v1:"
         static let maximumTextBytes = 2200
+        static let compressedPrefix = "whitenoise-pairing:v2:deflate:"
+        static let maximumPacketBytes = 49_152
         static let maximumImageBytes = 4 * 1024 * 1024
         enum Failure: Error { case invalidPacket, tooLarge, unreadableImage }
 
         static func encode(_ bytes: Data) throws -> String {
             guard !bytes.isEmpty else { throw Failure.invalidPacket }
-            // Bound before allocating base64. QR M capacity is lower than the native wire bound.
-            guard bytes.count <= (maximumTextBytes - prefix.utf8.count) / 4 * 3 else { throw Failure.tooLarge }
-            let payload = prefix + bytes.base64EncodedString()
-            guard payload.utf8.count <= maximumTextBytes else { throw Failure.tooLarge }
-            return payload
+            guard bytes.count <= maximumPacketBytes else { throw Failure.tooLarge }
+            let capacity = (maximumTextBytes - prefix.utf8.count) / 4 * 3
+            if bytes.count <= capacity { return prefix + bytes.base64EncodedString() }
+            let compressedCapacity = (maximumTextBytes - compressedPrefix.utf8.count) / 4 * 3
+            return compressedPrefix + (try compressed(bytes, capacity: compressedCapacity)).base64EncodedString()
         }
         static func decode(_ payload: String) throws -> String {
             guard payload.utf8.count <= maximumTextBytes else { throw Failure.tooLarge }
-            guard payload.hasPrefix(prefix) else { throw Failure.invalidPacket }
-            let encoded = String(payload.dropFirst(prefix.count))
+            let compressed = payload.hasPrefix(compressedPrefix)
+            guard compressed || payload.hasPrefix(prefix) else { throw Failure.invalidPacket }
+            let label = compressed ? compressedPrefix : prefix
+            let encoded = String(payload.dropFirst(label.count))
             guard !encoded.isEmpty, let bytes = Data(base64Encoded: encoded), bytes.base64EncodedString() == encoded
             else { throw Failure.invalidPacket }
-            return encoded
+            return compressed ? try decompressed(bytes).base64EncodedString() : encoded
+        }
+
+        // Fixed output buffers bound allocation and refuse truncated decompression.
+        private static func compressed(_ bytes: Data, capacity: Int) throws -> Data {
+            var output = [UInt8](repeating: 0, count: capacity)
+            let count = bytes.withUnsafeBytes { source in
+                output.withUnsafeMutableBufferPointer { destination in
+                    compression_encode_buffer(
+                        destination.baseAddress!, capacity,
+                        source.bindMemory(to: UInt8.self).baseAddress!, bytes.count, nil, COMPRESSION_ZLIB)
+                }
+            }
+            guard count > 0 else { throw Failure.tooLarge }
+            return Data(output.prefix(count))
+        }
+        private static func decompressed(_ bytes: Data) throws -> Data {
+            var output = [UInt8](repeating: 0, count: maximumPacketBytes + 1)
+            let capacity = output.count
+            let count = bytes.withUnsafeBytes { source in
+                output.withUnsafeMutableBufferPointer { destination in
+                    compression_decode_buffer(
+                        destination.baseAddress!, capacity,
+                        source.bindMemory(to: UInt8.self).baseAddress!, bytes.count, nil, COMPRESSION_ZLIB)
+                }
+            }
+            guard count > 0, count <= maximumPacketBytes else { throw Failure.tooLarge }
+            return Data(output.prefix(count))
         }
         static func imageData(at url: URL) throws -> Data {
             let values = try url.resourceValues(forKeys: [.isRegularFileKey, .fileSizeKey])
