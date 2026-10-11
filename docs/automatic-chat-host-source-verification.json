@@ -82,10 +82,124 @@
     "whitenoise-macTests/AutomaticPairedListPagingTests.swift": "4fe20f7559ddb59f79891936dd0e23675ad24a3e8a3ae59f208ae61510e829d8"
   },
   "limits": [
-    "Catalog extraction/import still pending",
     "Full experimental/published PR suites pending on final UI candidate",
     "Real installed automatic app journey pending",
     "Mirrored attachments/edit/persisted drafts not qualified; ordinary lane unchanged"
   ],
-  "SDK_overrides_committed": false
+  "SDK_overrides_committed": false,
+  "localization": {
+    "platform": "mac",
+    "command": [
+      "xcrun",
+      "xcstringstool",
+      "sync",
+      "/Users/pj/project/build/automatic-mac-localizations-v2/Localizable.xcstrings",
+      "--stringsdata",
+      "/Users/pj/project/build/MacTestIsolationM5/Build/Intermediates.noindex/whitenoise-mac.build/Debug/whitenoise-mac.build/Objects-normal/arm64/AccountChatSharingView.stringsdata",
+      "/Users/pj/project/build/MacTestIsolationM5/Build/Intermediates.noindex/whitenoise-mac.build/Debug/whitenoise-mac.build/Objects-normal/arm64/DeviceEnrollmentApprovalView.stringsdata",
+      "/Users/pj/project/build/MacTestIsolationM5/Build/Intermediates.noindex/whitenoise-mac.build/Debug/whitenoise-mac.build/Objects-normal/arm64/DeviceEnrollmentTransportView.stringsdata",
+      "/Users/pj/project/build/MacTestIsolationM5/Build/Intermediates.noindex/whitenoise-mac.build/Debug/whitenoise-mac.build/Objects-normal/arm64/AutomaticConversationView.stringsdata",
+      "/Users/pj/project/build/MacTestIsolationM5/Build/Intermediates.noindex/whitenoise-mac.build/Debug/whitenoise-mac.build/Objects-normal/arm64/PairedChatMessageRow.stringsdata",
+      "/Users/pj/project/build/MacTestIsolationM5/Build/Intermediates.noindex/whitenoise-mac.build/Debug/whitenoise-mac.build/Objects-normal/arm64/AutomaticChatListSection.stringsdata",
+      "--skip-marking-strings-stale"
+    ],
+    "compiled_stringsdata": {
+      "/Users/pj/project/build/MacTestIsolationM5/Build/Intermediates.noindex/whitenoise-mac.build/Debug/whitenoise-mac.build/Objects-normal/arm64/AccountChatSharingView.stringsdata": "74007f61802d1c39b800f8b6166ed6b91693ff7457394398415cd4613367e77d",
+      "/Users/pj/project/build/MacTestIsolationM5/Build/Intermediates.noindex/whitenoise-mac.build/Debug/whitenoise-mac.build/Objects-normal/arm64/DeviceEnrollmentApprovalView.stringsdata": "1d06ccaf871971f6dbc2b1582a16168f22af9da247786f000db1fb7e53c7ab26",
+      "/Users/pj/project/build/MacTestIsolationM5/Build/Intermediates.noindex/whitenoise-mac.build/Debug/whitenoise-mac.build/Objects-normal/arm64/DeviceEnrollmentTransportView.stringsdata": "e18a09381c2083392cbc92c7291ff674954c2b62b691c67569e7f20a0b1b9c0f",
+      "/Users/pj/project/build/MacTestIsolationM5/Build/Intermediates.noindex/whitenoise-mac.build/Debug/whitenoise-mac.build/Objects-normal/arm64/AutomaticConversationView.stringsdata": "25b6292a7dd607e075b859ff223653c41a61896e23e22711d2e53d075c4142f2",
+      "/Users/pj/project/build/MacTestIsolationM5/Build/Intermediates.noindex/whitenoise-mac.build/Debug/whitenoise-mac.build/Objects-normal/arm64/PairedChatMessageRow.stringsdata": "959a2609e96688c9c33ffe590a974ba00fac442a20949fb14e2987bf9865d730",
+      "/Users/pj/project/build/MacTestIsolationM5/Build/Intermediates.noindex/whitenoise-mac.build/Debug/whitenoise-mac.build/Objects-normal/arm64/AutomaticChatListSection.stringsdata": "5b9a765b44c253ea8f3ffaa444f45c98cc015341c52c8d8ad5220122e192c1bb"
+    },
+    "translation_input_sha256": "08b8344009ccb9449602e3b14809138e9dcbc12d3a0a99fa6a93cefd5ad9385d",
+    "Apple_export_template": "/Users/pj/project/build/mac-verification-localizations/de.xcloc/Localized Contents/de.xliff",
+    "template_sha256": "3a53cf6f35b05849b8c11c14d338f2b8ecb700b34ca7a08e3039a1676d35add1",
+    "original_catalog_sha256": "e3b7130b4d81d7114ce68f11fa5582c115a411c7330cbf6941a2eab7efb29fcb",
+    "original_entries": 1284,
+    "added": [
+      "Approve pairing and share all chats",
+      "Approve sharing all chats",
+      "Load paired devices",
+      "No paired receiving devices.",
+      "Pair and share all chats",
+      "Pairing shares all existing and future chats, chat history, and messaging between these devices.",
+      "Request sharing with this device",
+      "Review chat sharing",
+      "Review sharing request",
+      "Share all chats with paired devices",
+      "Sharing action failed. Refresh or cancel.",
+      "Attachment not downloaded",
+      "Load older messages",
+      "Shared from a linked device",
+      "Pending"
+    ],
+    "imports": [
+      {
+        "language": "de",
+        "exit_code": 0,
+        "xliff_sha256": "d9c416dd9125fe844dfeb5016702c360e82df58954c8c086d1f95ab406222a82",
+        "log_sha256": "bb7d20d23bb97e138a5d64dd55ecf04f6169413dae0095f5962a87a93e9b8e27"
+      },
+      {
+        "language": "es",
+        "exit_code": 0,
+        "xliff_sha256": "04cedd6c3b042fb4af79ed2dd84fc97b907dd09f5e548561a24ccbb5bc797db5",
+        "log_sha256": "8d9e778eb33483a044418424bad1444cb40fae7461422218cbff45a3b07b7291"
+      },
+      {
+        "language": "fr",
+        "exit_code": 0,
+        "xliff_sha256": "afeae4bda50a3ef82f9c2bdd4a4c49bea27549c4a3d0ed8ea63deea74d31e89c",
+        "log_sha256": "16cd2dd43c382e190b5f4ac9776fc24a95a3a454be1051767ba9f2041b6cf234"
+      },
+      {
+        "language": "it",
+        "exit_code": 0,
+        "xliff_sha256": "3fe00dd734c8b23101db4d5606b36d7aa5c6e12c718f680aa0270f39f221d0bf",
+        "log_sha256": "5c5014676e46a4fb3b406928336c5794e09d812af6af80ef1180ef8d79da3241"
+      },
+      {
+        "language": "pt",
+        "exit_code": 0,
+        "xliff_sha256": "02dbe7d15edfcb1d94a053ad763f430514d5f6862bac35e71a7c7e0e3b85372e",
+        "log_sha256": "f1cb504ea8bd629ef4ce7f5fdcac9a101f66cb411bef88215de76d2eb486e451"
+      },
+      {
+        "language": "ru",
+        "exit_code": 0,
+        "xliff_sha256": "f9c3c38f48ff1f0f040ef4e0b4b572465805a1f7e7c6c17110e2dd937575983c",
+        "log_sha256": "f48ba352760efb983408748b0a19f573a842666dbc85464fe9ca96cad6aa567f"
+      },
+      {
+        "language": "tr",
+        "exit_code": 0,
+        "xliff_sha256": "576b35ed42cb650f11cb0511089f2b7bc870f12a4a40b4d86dd8777bf5947f64",
+        "log_sha256": "993529b216f18803898a53a3b3d2169090b9283a00808ba60ac1e1e5765c8d11"
+      },
+      {
+        "language": "zh-Hans",
+        "exit_code": 0,
+        "xliff_sha256": "d76d941986d0ab342a190ab73c6980c7d69f920c43be99a41c6934bc6ac08d54",
+        "log_sha256": "17ebf1da5c1aed304603707e4bcaa2a48a4c6796ab44397a2ad9baf88cf86923"
+      },
+      {
+        "language": "zh-Hant",
+        "exit_code": 0,
+        "xliff_sha256": "426173f2e36b9d2f6e7c3cba689971443e80a1c98f128f2d77a45014f29793a7",
+        "log_sha256": "b7d4efb01016a1ac02c5150204c31ed7fabf6b67f3526cc728b37c2f46311922"
+      }
+    ],
+    "all_original_values_order_and_raw_entries_preserved": true,
+    "preservation": "Whole Apple generated new entries only; no nested catalog edits",
+    "catalog_sha256": "9c4d6c3364196a7997fc2607ed9f3f7dd4fca87eeb04a6fc6707f38f12391d58",
+    "coverage": "1290/1290 translated all9 languages; strict0",
+    "UI": "3 views use actual localized literals/LocalizedStringKey so Apple compiledstringsdata contains keys",
+    "focused_after_UI_change": {
+      "passed": 17,
+      "failed": 0,
+      "skipped": 0,
+      "prefix": "build/results/automatic-host-mac-de38-localization-compile-v1"
+    },
+    "failed_preparation": "v1 sync refused before catalogwrite/import because4 dynamic L10n keys were not emitted; genuine UI literals then compiled v2 actual sync/import"
+  }
 }
