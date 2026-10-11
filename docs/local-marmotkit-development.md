@@ -83,3 +83,19 @@ and log hashes. Generated local overrides and binaries are excluded from the
 commit. These checks qualify native API adoption, not fresh pairing, ordinary
 recipient admission, message delivery or history. The iOS device/simulator
 framework build remains separate and in progress at this checkpoint.
+
+## Preserving the original invitation receiver during sign-in
+
+MDK `8af010399b44d9fdb09b823ef28cd91250d484b7` protects the existing public
+invitation keys when a user acknowledges sign-in after discovery finds another
+installation or cannot complete. The existing revision-bound onboarding call
+persists the account publication hold before proceeding; no new host API or
+app-side publication decision is needed. Confirmed empty discovery still permits
+ordinary primary-account publication.
+
+The Mac displays the preservation explanation only when the SDK reports ready
+with its key-package step skipped. Older published SDKs keep their own behavior.
+Signing into an additional installation does not pair it, supply existing MLS
+chat state, repair previously advertised keys or recover missing invitations.
+Native relay qualification and the exact installed cohort are recorded in the
+parent workspace's `doc/ios-public-chat-invitation-investigation.json`.

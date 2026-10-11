@@ -118,6 +118,15 @@ private struct AccountSetupStepRow: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
+            if step.step == .singleDevice, snapshot.ready,
+                snapshot.steps.contains(where: { $0.step == .keyPackage && $0.status == .skipped })
+            {
+                Text(L10n.string("Existing invitation keys stay unchanged. Pair devices to share chats."))
+                    .wnFont(.medium12)
+                    .foregroundStyle(WNColor.backgroundContentSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
             AccountSetupStepActions(step: step, snapshot: snapshot, model: model)
         }
         .padding(16)
