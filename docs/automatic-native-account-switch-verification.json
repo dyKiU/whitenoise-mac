@@ -1,0 +1,62 @@
+{
+  "base_commit": "746ad8edef5ba92f4a00db1ab5011ff3aef4c39c",
+  "sdk_source": "de38be1295618728ef541e43bfc00ffb6cdb6a86",
+  "sdk_artifact_manifest_sha256": "0b5b3d3bb93b47ebc74065e735504ffc928fd06d0424a3ccb5d07fe58ca18bd4",
+  "tested_capture": "c03f4e56500a714ad5f53a0ce849e3da310efd60",
+  "test_source_sha256": "1440d6d529ff7d19b4b330c5a754c5c2df91b942d0521858c7768df42f8a3e2a",
+  "gate": {
+    "prefix": "/Users/pj/project/build/results/automatic-host-switch-mac-v1",
+    "exit_code": 0,
+    "seconds": 206.98,
+    "actual_passed": 22,
+    "actual_failed": 0,
+    "actual_skipped": 0,
+    "actual_native_account_switch_tests": 1,
+    "source_inputs": 545,
+    "inputs_unchanged": true,
+    "command": [
+      "/opt/homebrew/bin/bash",
+      "scripts/test-isolated.sh",
+      "-jobs",
+      "1",
+      "-only-testing:whitenoise-macTests/GenuineAutomaticAccountSwitchTests",
+      "-only-testing:whitenoise-macTests/AccountScopeTests",
+      "-only-testing:whitenoise-macTests/AutomaticChatOwnershipTests",
+      "-only-testing:whitenoise-macTests/SourceQualifiedTimelineUnionTests",
+      "-only-testing:whitenoise-macTests/AutomaticPendingSendTests",
+      "-only-testing:whitenoise-macTests/AutomaticPairedListPagingTests"
+    ],
+    "artifacts": {
+      "build/results/automatic-host-switch-mac-v1-inputs.json": "48b2388eea6675f8b3a9b53d6ace0647afb83d9ad816eba5795e01e2e052388e",
+      "build/results/automatic-host-switch-mac-v1-results.json": "bffa74bf5af5827744f15fc3079e640b76d7122567252725849bb0a326968e6a",
+      "build/results/automatic-host-switch-mac-v1-summary.json": "46cb0bae8184d5931abce3784020065bedc304c72be1787e0e8b7b6538117bfb",
+      "build/results/automatic-host-switch-mac-v1.log": "b8ce9017c53f368f85df822035df8d1320f8132be65be91a5231eb38085a6501"
+    }
+  },
+  "static_checks": {
+    "swift_format_strict": "one changed Swift file with repository configuration passed",
+    "swift_parse": "passed",
+    "git_diff_check": "passed"
+  },
+  "qualified_behavior": [
+    "Real Marmot native accounts through SessionState.activate A\u2192B\u2192A, not fake account arrays/windows.",
+    "Actual paired row and canonical message first appear under A, disappear from held retired models on replacement, and return only through a fresh A scope.",
+    "B actual native list contains no paired rows; opening A observed group supplies no paired header/messages and cannot admit a send.",
+    "Retired first A and final deactivated A models refuse sends and keep no pending texts.",
+    "SessionState.deactivate precedes actual Marmot shutdownAndClose and storageIsClosed true."
+  ],
+  "fixture": {
+    "native_prerequisite": "build/results/automatic-host-switch-native-v1/result.json",
+    "native_passed": 1,
+    "native_failed": 0,
+    "native_positive_worker_closures": 5,
+    "root": "/Users/pj/project/build/automatic-host-switch-v1-b",
+    "credentials": "Original task encrypted callback read-only; fresh second native identity credentials retained only in checked Mutex memory. No Keychain or credential output."
+  },
+  "limits": [
+    "Mac scene background continues existing delivery; this test qualifies explicit deactivation, not background suspension.",
+    "Model/Session native acceptance, not public buttons or installed UI.",
+    "No restart claim for the memory-only second account.",
+    "Test-only source; prior product full cohorts retained. Final SDK/runtime promotion waits withdrawal fix and required final qualification."
+  ]
+}
