@@ -4,6 +4,11 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "$0")/.." && pwd)"
 derived_data="${WN_SYNC_DERIVED_DATA:-$repo_root/../build/MacSyncSidecar}"
 export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}"
+build_jobs="${WN_BUILD_JOBS:-1}"
+if [[ ! "$build_jobs" =~ ^[1-9][0-9]*$ ]]; then
+  echo 'WN_BUILD_JOBS must be a positive integer' >&2
+  exit 2
+fi
 
 source "$repo_root/scripts/local-device-sync-settings.sh"
 
@@ -13,6 +18,7 @@ xcodebuild build \
   -scheme whitenoise-mac -configuration Debug \
   -destination 'platform=macOS,arch=arm64' \
   -derivedDataPath "$derived_data" \
+  -jobs "$build_jobs" \
   WN_APP_BUNDLE_IDENTIFIER=dev.ipf.whitenoise.mac.syncdev \
   'WN_APP_PRODUCT_NAME=White Noise Sync Development' \
   'WN_APP_DISPLAY_NAME=White Noise Sync Development' \
