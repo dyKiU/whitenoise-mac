@@ -160,11 +160,27 @@ struct ChatListDrawerView: View {
     @Environment(\.locale) private var locale
     let model: ChatListViewModel?
     let historyNotices: HistoryNoticesViewModel?
+    #if WN_EXPERIMENTAL_DEVICE_SYNC
+        var automaticChats: AccountChatListViewModel? = nil
+        var selectAutomaticChat: (String) -> Void = { _ in }
+    #endif
 
     init(model: ChatListViewModel? = nil, historyNotices: HistoryNoticesViewModel? = nil) {
         self.model = model
         self.historyNotices = historyNotices
     }
+
+    #if WN_EXPERIMENTAL_DEVICE_SYNC
+        init(
+            model: ChatListViewModel?, historyNotices: HistoryNoticesViewModel?,
+            automaticChats: AccountChatListViewModel?, selectAutomaticChat: @escaping (String) -> Void
+        ) {
+            self.model = model
+            self.historyNotices = historyNotices
+            self.automaticChats = automaticChats
+            self.selectAutomaticChat = selectAutomaticChat
+        }
+    #endif
 
     private var isShowingSettings: Bool {
         if case .settings = workspace.selection { return true }
@@ -191,6 +207,16 @@ struct ChatListDrawerView: View {
                 let isShowingArchived = filter == .archived
                 let visibleChats = visibleChats(for: filter)
                 let isCollapsed = workspace.isChatListCollapsed
+                #if WN_EXPERIMENTAL_DEVICE_SYNC
+                    let query = workspace.searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+                    let hasAutomaticRows =
+                        filter == .active
+                        && (automaticChats?.pairedRows.contains { row in
+                            query.isEmpty || (PeerDisplayText.sanitize(row.name) ?? "").localizedStandardContains(query)
+                        } ?? false)
+                #else
+                    let hasAutomaticRows = false
+                #endif
 
                 if isCollapsed {
                     CollapsedChatListHeader(isShowingArchived: isShowingArchived)
@@ -206,6 +232,13 @@ struct ChatListDrawerView: View {
 
                 ScrollView {
                     LazyVStack(spacing: 3) {
+                        #if WN_EXPERIMENTAL_DEVICE_SYNC
+                            if filter == .active {
+                                AutomaticChatListSection(
+                                    model: automaticChats, searchText: workspace.searchText,
+                                    excludedGroupIds: Set(visibleChats.map(\.id)), select: selectAutomaticChat)
+                            }
+                        #endif
                         ForEach(visibleChats) { chat in
                             ChatSidebarRow(
                                 chat: chat,
@@ -229,11 +262,20 @@ struct ChatListDrawerView: View {
                     .padding(.vertical, 8)
                 }
                 .accessibilityIdentifier(isShowingArchived ? "chat.archived.list" : "chat.list")
+                #if WN_EXPERIMENTAL_DEVICE_SYNC
+                    .onScrollPhaseChange { _, phase in
+                        if phase == .interacting, filter == .active {
+                            Task { await automaticChats?.pairedUserScrollChanged(true) }
+                        } else if phase == .idle {
+                            Task { await automaticChats?.pairedUserScrollChanged(false) }
+                        }
+                    }
+                #endif
                 .overlay {
                     // The notice needs room for an icon over a line or two of prose; in the
                     // collapsed rail it would render as a column of hyphenated fragments. An
                     // empty rail is legible on its own, and widening it brings the wording back.
-                    if visibleChats.isEmpty, !isCollapsed {
+                    if visibleChats.isEmpty, !isCollapsed, !hasAutomaticRows {
                         if workspace.isSearchingSidebarMessages {
                             ProgressView()
                                 .controlSize(.small)

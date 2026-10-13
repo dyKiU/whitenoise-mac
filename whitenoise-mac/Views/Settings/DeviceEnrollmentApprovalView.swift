@@ -9,6 +9,13 @@
         @State private var task: Task<Void, Never>?
         @State private var readFailed = false
 
+        @State private var qrImport: PairingQRImportModel
+
+        init(model: DeviceEnrollmentApprovalViewModel?) {
+            self.model = model
+            _qrImport = State(initialValue: .init(capture: { { model?.isActive == true } }))
+        }
+
         var body: some View {
             Group {
                 if let model {
@@ -20,11 +27,20 @@
                                 title: String(localized: "Joining device key"), key: review.joiningKey)
                             Text("Existing devices")
                             Text(String(review.existingDeviceCount))
-                            Button("Approve") { perform(.approve, revision: review.revision) }
-                                .disabled(model.isWorking)
+                            Text(
+                                "Pairing shares all existing and future chats, chat history, and messaging between these devices."
+                            )
+                            Button("Approve pairing and share all chats") {
+                                perform(.approveAndShareChats, revision: review.revision)
+                            }
+                            .disabled(model.isWorking)
                         } else if model.isActive, let snapshot = model.snapshot,
                             snapshot.phase == .approvedAwaitingPacket
                         {
+                            PairingQRImportControl(
+                                model: qrImport, isActive: model.isActive && !model.isWorking, incoming: $incoming
+                            )
+                            .id(ObjectIdentifier(model))
                             TextField("Opaque packet from the other device", text: $incoming, axis: .vertical)
                                 .lineLimit(2...4)
                             Button("Receive packet") { perform(.receivePacket, revision: snapshot.revision) }
@@ -41,6 +57,7 @@
                         }
                         Button(L10n.string(model.cleanupError == nil ? "Cancel" : "Try again")) {
                             incoming = ""
+                            qrImport.cancel()
                             task?.cancel()
                             task = Task { try? await model.cancel() }
                         }
@@ -54,8 +71,14 @@
             .onDisappear {
                 task?.cancel()
                 incoming = ""
+                qrImport.cancel()
             }
-            .onChange(of: model?.isActive) { _, active in if active != true { incoming = "" } }
+            .onChange(of: model?.isActive) { _, active in
+                if active != true {
+                    incoming = ""
+                    qrImport.cancel()
+                }
+            }
         }
 
         private func refreshReview() {

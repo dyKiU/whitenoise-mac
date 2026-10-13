@@ -15,10 +15,6 @@
         @State private var selectedTarget: Data?
         @State private var actionFailed = false
         @State private var actionTask: Task<Void, Never>?
-        @State private var qrPayload: String?
-        @State private var qrTooLarge = false
-        @State private var isChoosingQRImage = false
-        @State private var qrImportTicket: UUID?
         @State private var qrImport: PairingQRImportModel
 
         init(model: DeviceVerificationViewModel) {
@@ -64,15 +60,13 @@
                         Text("Setup packet")
                         Text(setup).font(.system(.caption, design: .monospaced)).textSelection(.enabled)
                         Self.packetCopyButton(setup)
-                        Button("Show pairing QR code") { showQR(setup) }.disabled(!model.isActive)
+                        PairingQRExportButton(packet: setup, isActive: model.isActive)
+                            .id([Optional(ObjectIdentifier(model)), model.owner.map(ObjectIdentifier.init)])
                     }
-                    Button("Import pairing QR image") {
-                        incoming = ""
-                        qrImportTicket = qrImport.beginImport()
-                        isChoosingQRImage = true
-                    }
-                    .disabled(!model.isActive || model.isStarting)
-                    if qrTooLarge { Text("Packet is too large for QR. Use Copy instead.").foregroundStyle(.secondary) }
+                    PairingQRImportControl(
+                        model: qrImport, isActive: model.isActive && !model.isStarting, incoming: $incoming
+                    )
+                    .id([Optional(ObjectIdentifier(model)), model.owner.map(ObjectIdentifier.init)])
                     TextField("Opaque packet from the other device", text: $incoming, axis: .vertical)
                         .lineLimit(2...4)
                         .disabled(!model.isActive || model.isStarting)
@@ -141,8 +135,10 @@
                         ForEach(Array(outgoing.enumerated()), id: \.offset) { _, packet in
                             HStack {
                                 Self.packetCopyButton(packet.bytes.base64EncodedString())
-                                Button("Show pairing QR code") { showQR(packet.bytes.base64EncodedString()) }
-                                    .disabled(!model.isActive)
+                                PairingQRExportButton(
+                                    packet: packet.bytes.base64EncodedString(), isActive: model.isActive
+                                )
+                                .id([Optional(ObjectIdentifier(model)), model.owner.map(ObjectIdentifier.init)])
                                 Button("Delivered to the other device") {
                                     perform {
                                         try await model.acknowledgePacket(packet.acknowledgementId)
@@ -170,32 +166,6 @@
             }
             .sheet(isPresented: Binding(get: { approval != nil }, set: { if !$0 { approval = nil } })) {
                 if let approval { DeviceEnrollmentApprovalView(model: approval) }
-            }
-            .sheet(isPresented: Binding(get: { qrPayload != nil }, set: { if !$0 { qrPayload = nil } })) {
-                if let qrPayload { PairingQRCodeSheet(payload: qrPayload, close: { self.qrPayload = nil }) }
-            }
-            .fileImporter(isPresented: $isChoosingQRImage, allowedContentTypes: [.image]) { result in
-                guard let ticket = qrImportTicket else { return }
-                if case .failure(let error) = result {
-                    let cocoa = error as NSError
-                    if cocoa.domain == NSCocoaErrorDomain, cocoa.code == NSUserCancelledError {
-                        qrImport.cancel()
-                        qrImportTicket = nil
-                        return
-                    }
-                }
-                perform {
-                    let url = try result.get()
-                    let access = url.startAccessingSecurityScopedResource()
-                    defer { if access { url.stopAccessingSecurityScopedResource() } }
-                    let data = try PairingQRCode.imageData(at: url)
-                    try await qrImport.importImage(data, ticket: ticket)
-                    guard model.isActive, let value = qrImport.stagedPacket else {
-                        throw PairingQRCode.Failure.invalidPacket
-                    }
-                    incoming = value
-                    qrImportTicket = nil
-                }
             }
             .task {
                 guard model.verificationSupported, model.isActive else { return }
@@ -233,22 +203,7 @@
             L10n.string(confirming ? "Copied" : "Copy")
         }
 
-        private func showQR(_ encoded: String) {
-            qrPayload = nil
-            guard model.isActive, let bytes = Data(base64Encoded: encoded), bytes.base64EncodedString() == encoded
-            else { return }
-            do {
-                qrPayload = try PairingQRCode.encode(bytes)
-                qrTooLarge = false
-            } catch { qrTooLarge = true }
-        }
-        private func clearQR() {
-            qrPayload = nil
-            qrTooLarge = false
-            isChoosingQRImage = false
-            qrImportTicket = nil
-            qrImport.cancel()
-        }
+        private func clearQR() { qrImport.cancel() }
 
         private func decodedPacket() throws -> Data {
             let encoded = incoming.trimmingCharacters(in: .whitespacesAndNewlines)

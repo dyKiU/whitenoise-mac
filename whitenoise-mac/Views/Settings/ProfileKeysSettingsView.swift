@@ -26,8 +26,7 @@ struct ProfileKeysSettingsView: View {
     @Environment(WorkspaceState.self) private var workspace
     #if WN_EXPERIMENTAL_DEVICE_SYNC
         var deviceVerificationModel: DeviceVerificationViewModel? = nil
-        var selectedChatTransferModel: SelectedChatTransferViewModel? = nil
-        var acquireHistoryReview: (@MainActor () throws -> HistoryConsentReviewViewModel)? = nil
+        var acquireAccountSharing: (@MainActor () throws -> AccountChatSharingViewModel)? = nil
     #endif
 
     var body: some View {
@@ -43,13 +42,7 @@ struct ProfileKeysSettingsView: View {
                         DeviceVerificationView(model: deviceVerificationModel)
                             .id(ObjectIdentifier(deviceVerificationModel))
                     }
-                    if let selectedChatTransferModel {
-                        SelectedChatTransferView(model: selectedChatTransferModel)
-                            .id(ObjectIdentifier(selectedChatTransferModel))
-                    }
-                    if let acquireHistoryReview {
-                        HistoryConsentReviewEntryView(acquire: acquireHistoryReview)
-                    }
+                    if let acquireAccountSharing { AccountChatSharingEntryView(acquire: acquireAccountSharing) }
                 #endif
             } else {
                 SettingsSection {

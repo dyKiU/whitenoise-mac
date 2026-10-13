@@ -27,6 +27,9 @@ final class SessionState {
 
     #if WN_EXPERIMENTAL_DEVICE_SYNC
         private var retiringHistoryOwners: [NativeHistoryAccountOwner] = []
+        private let accountSharingLifetime = AccountSharingAccountLifetime()
+        private var accountChatSharingModel: AccountChatSharingViewModel?
+
         private var retiringSelectedChatOwners: [NativeSelectedChatAccountOwner] = []
 
         private(set) var deviceLinkingScope: DeviceLinkingScope?
@@ -392,6 +395,7 @@ final class SessionState {
             do { try await retryDeviceLinkingCleanup() } catch { firstError = error }
             do { try await retrySelectedChatCleanup() } catch { if firstError == nil { firstError = error } }
             do { try retryHistoryCleanup() } catch { if firstError == nil { firstError = error } }
+            do { try accountSharingLifetime.retryCleanup() } catch { if firstError == nil { firstError = error } }
             if let firstError { throw firstError }
         }
 
@@ -456,6 +460,9 @@ final class SessionState {
         }
 
         private func invalidateDeviceLinking() {
+            accountSharingLifetime.invalidate()
+            accountChatSharingModel?.invalidate()
+            accountChatSharingModel = nil
             deviceLinkingEpoch = UUID()
             pendingDeviceLinkingFactory?.task.cancel()
             invalidateDeviceLinkingApprovals()
@@ -640,3 +647,48 @@ final class SessionState {
         #endif
     }
 }
+
+#if WN_EXPERIMENTAL_DEVICE_SYNC
+    @MainActor extension SessionState {
+        func accountChatSharingReviewModel() throws -> AccountChatSharingViewModel {
+            guard let scope = accountScope, !scope.isCancelled else { throw MarmotKitError.AccountSharingClosed }
+            let generation = activationToken
+            let current: @MainActor () -> Bool = { [weak self, weak scope] in
+                guard let self, let scope else { return false }
+                return self.accountScope === scope && !scope.isCancelled && self.activationToken == generation
+            }
+            if let held = accountChatSharingModel, held.isActive { return held }
+            let runtime = scope.runtime
+            let account = scope.account.accountRef
+            let model = AccountChatSharingViewModel(
+                readTargets: { try await runtime.accountChatSharingTargets(accountRef: account) },
+                begin: { [weak self] device in
+                    guard let self, current() else { throw MarmotKitError.AccountSharingClosed }
+                    try await self.retryNativeCleanup()
+                    let owner = try self.accountSharingLifetime.currentOwner(isCurrent: current)
+                    let values = try await owner.acquire(reuseHeld: false) {
+                        [try await runtime.beginAccountChatSharing(accountRef: account, recipientDevice: device)]
+                    }
+                    guard let value = values.first, values.count == 1 else {
+                        throw MarmotKitError.AccountSharingNotReady
+                    }
+                    return value
+                },
+                readPending: { [weak self] in
+                    guard let self, current() else { throw MarmotKitError.AccountSharingClosed }
+                    try await self.retryNativeCleanup()
+                    let owner = try self.accountSharingLifetime.currentOwner(isCurrent: current)
+                    return try await owner.acquire {
+                        try await runtime.pendingAccountChatSharing(accountRef: account)
+                    }
+                }, isCurrent: current)
+            accountChatSharingModel = model
+            scope.addCancellation { [weak self, weak scope] in
+                model.invalidate()
+                guard let self, let scope, self.accountScope === scope else { return }
+                self.accountSharingLifetime.invalidate()
+            }
+            return model
+        }
+    }
+#endif

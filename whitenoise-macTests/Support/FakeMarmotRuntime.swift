@@ -211,6 +211,8 @@ nonisolated final class FakeMarmotRuntime: MarmotRuntime, @unchecked Sendable {
     var localSendStatusFallback: LocalSendStatusFfi?
     private(set) var sentTextClientTokens: [String] = []
     var localSendAcceptance: LocalSendAcceptanceFfi?
+    var localSendAcceptanceForToken: (@Sendable (String) -> LocalSendAcceptanceFfi)?
+    var localSendStatusForToken: (@Sendable (String) throws -> LocalSendStatusFfi?)?
     private(set) var createdGroupMemberRefs: [String] = []
     /// Every `createGroup` call in order, refused ones included — `createdGroupMemberRefs` records
     /// only the roster that went through, so it cannot show how a refusal was chased down.
@@ -877,6 +879,15 @@ nonisolated final class FakeMarmotRuntime: MarmotRuntime, @unchecked Sendable {
             -> HistoryTransfer
         {
             throw MarmotKitError.HistoryTransferUnsupported
+        }
+        func accountChatSharingTargets(accountRef: String) async throws -> AccountSharingTargetsFfi {
+            throw MarmotKitError.AccountSharingUnsupported
+        }
+        func beginAccountChatSharing(accountRef: String, recipientDevice: Data) async throws -> AccountSharingApproval {
+            throw MarmotKitError.AccountSharingUnsupported
+        }
+        func pendingAccountChatSharing(accountRef: String) async throws -> [AccountSharingApproval] {
+            throw MarmotKitError.AccountSharingUnsupported
         }
         func pendingHistoryRequests(accountRef: String) async throws -> [HistoryConsent] {
             throw MarmotKitError.HistoryTransferUnsupported
@@ -3197,7 +3208,8 @@ nonisolated final class FakeMarmotRuntime: MarmotRuntime, @unchecked Sendable {
         if let sendTextError {
             throw sendTextError
         }
-        return localSendAcceptance ?? LocalSendAcceptanceFfi(clientToken: clientToken, messageIdHex: "text")
+        return localSendAcceptanceForToken?(clientToken) ?? localSendAcceptance
+            ?? LocalSendAcceptanceFfi(clientToken: clientToken, messageIdHex: "text")
     }
 
     func replyToMessageWithClientToken(
@@ -3275,7 +3287,8 @@ nonisolated final class FakeMarmotRuntime: MarmotRuntime, @unchecked Sendable {
     }
 
     func localSendStatus(accountRef: String, groupIdHex: String, clientToken: String) throws -> LocalSendStatusFfi? {
-        localSendStatuses[clientToken] ?? localSendStatusFallback
+        if let localSendStatusForToken { return try localSendStatusForToken(clientToken) }
+        return localSendStatuses[clientToken] ?? localSendStatusFallback
     }
 
     func retryGroupConvergence(accountRef: String, groupIdHex: String) async throws -> SendSummaryFfi {

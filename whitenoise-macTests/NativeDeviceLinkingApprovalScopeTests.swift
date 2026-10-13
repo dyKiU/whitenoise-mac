@@ -56,7 +56,7 @@ import Testing
 
     // Immutable generated stream control.
     nonisolated private final class ScopeSubscription: DeviceLinkingSubscription, @unchecked Sendable {
-        override func close() {}
+        override func closeStream() {}
         override func next() async throws -> DeviceLinkingSnapshotFfi { throw MarmotKitError.DeviceLinkingClosed }
     }
 
