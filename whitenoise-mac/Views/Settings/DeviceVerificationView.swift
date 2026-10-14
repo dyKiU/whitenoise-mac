@@ -61,12 +61,14 @@
                         Text(setup).font(.system(.caption, design: .monospaced)).textSelection(.enabled)
                         Self.packetCopyButton(setup)
                         PairingQRExportButton(packet: setup, isActive: model.isActive)
-                            .id([Optional(ObjectIdentifier(model)), model.owner.map(ObjectIdentifier.init)])
+                            .id(
+                                QRControlIdentity.setup(ObjectIdentifier(model), model.owner.map(ObjectIdentifier.init))
+                            )
                     }
                     PairingQRImportControl(
                         model: qrImport, isActive: model.isActive && !model.isStarting, incoming: $incoming
                     )
-                    .id([Optional(ObjectIdentifier(model)), model.owner.map(ObjectIdentifier.init)])
+                    .id(QRControlIdentity.incoming(ObjectIdentifier(model), model.owner.map(ObjectIdentifier.init)))
                     TextField("Opaque packet from the other device", text: $incoming, axis: .vertical)
                         .lineLimit(2...4)
                         .disabled(!model.isActive || model.isStarting)
@@ -138,7 +140,9 @@
                                 PairingQRExportButton(
                                     packet: packet.bytes.base64EncodedString(), isActive: model.isActive
                                 )
-                                .id([Optional(ObjectIdentifier(model)), model.owner.map(ObjectIdentifier.init)])
+                                .id(
+                                    QRControlIdentity.outgoing(
+                                        ObjectIdentifier(model), model.owner.map(ObjectIdentifier.init)))
                                 Button("Delivered to the other device") {
                                     perform {
                                         try await model.acknowledgePacket(packet.acknowledgementId)
@@ -201,6 +205,13 @@
         }
         static func packetCopyLabel(confirming: Bool) -> String {
             L10n.string(confirming ? "Copied" : "Copy")
+        }
+
+        // Roles distinguish sibling controls while ownership changes still retire their local state.
+        private enum QRControlIdentity: Hashable {
+            case setup(ObjectIdentifier, ObjectIdentifier?)
+            case incoming(ObjectIdentifier, ObjectIdentifier?)
+            case outgoing(ObjectIdentifier, ObjectIdentifier?)
         }
 
         private func clearQR() { qrImport.cancel() }
