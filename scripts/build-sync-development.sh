@@ -27,5 +27,20 @@ xcodebuild build \
   CODE_SIGNING_ALLOWED=YES CODE_SIGNING_REQUIRED=YES DEVELOPMENT_TEAM='' \
   ${device_sync_settings[@]+"${device_sync_settings[@]}"}
 
+# The experimental camera belongs only to this isolated development product.
+# Keep production signing and SwiftPM resource target settings unchanged.
+if [[ "${WN_EXPERIMENTAL_DEVICE_SYNC:-0}" == 1 ]]; then
+  development_app="$derived_data/Build/Products/Debug/White Noise Sync Development.app"
+  python3 - "$development_app/Contents/Info.plist" <<'CAMERA_PLIST'
+import plistlib,sys
+from pathlib import Path
+path=Path(sys.argv[1]);info=plistlib.loads(path.read_bytes())
+info['NSCameraUsageDescription']='Scan a pairing QR code from your other device.'
+path.write_bytes(plistlib.dumps(info,fmt=plistlib.FMT_BINARY))
+CAMERA_PLIST
+  codesign --force --sign - --timestamp=none \
+    --entitlements "$repo_root/whitenoise-mac/whitenoise-mac.syncdev.entitlements" "$development_app"
+fi
+
 codesign --verify --deep --strict \
   "$derived_data/Build/Products/Debug/White Noise Sync Development.app"
