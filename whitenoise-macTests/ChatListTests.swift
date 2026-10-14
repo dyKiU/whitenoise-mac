@@ -3665,6 +3665,7 @@ struct ChatListTests: WorkspaceTestSupport {
         preview: SelectedChatPreviewFfi = .message
     ) -> PresentedChatRowFfi {
         PresentedChatRowFfi(
+            draftVersion: nil,
             preview: preview,
             actions: ChatListRowActionsFfi(
                 canMarkRead: row.hasUnread,

@@ -398,10 +398,79 @@ struct AccountTests: WorkspaceTestSupport {
         #expect(state.lastError == nil)
         #expect(state.phase == .ready)
         #expect(runtime.accountRelayArguments == [Self.newAccountRelayArguments])
-        // The profile the user typed replaces identity creation's kind 0 on every NIP-65 relay.
-        #expect(runtime.lastPublishedProfileDefaultRelays == MarmotClient.accountRelays)
+        // The typed name is identity creation's first kind 0, so nothing publishes after it.
+        #expect(runtime.initialProfileArguments.map(\.displayName) == ["Pepi"])
+        #expect(runtime.publishUserProfileCallCount == 0)
         #expect(state.isImprovementsPromptPresented)
         #expect(store.hasBeenOffered(toOwnerAccountIdHex: Self.improvementsPromptAccountIdHex))
+    }
+
+    /// MarmotKit 0.13: the name and about the user typed are identity creation's first kind 0,
+    /// so a sign-up without a photo never publishes the key-derived default first.
+    @MainActor
+    @Test func signUpWithoutAPhotoCreatesTheIdentityWithTheTypedProfileAndPublishesNothingElse() async throws {
+        let (state, runtime) = Self.improvementsPromptWorkspace(store: FakeImprovementsPromptStore())
+
+        await state.bootstrap()
+        state.showSignUp()
+        state.signUpDraft.displayName = "  Pepi  "
+        state.signUpDraft.about = "Hola"
+        await state.completeSignUp()
+
+        #expect(state.lastError == nil)
+        let initial = try #require(runtime.initialProfileArguments.first)
+        #expect(initial.displayName == "Pepi")
+        #expect(initial.about == "Hola")
+        #expect(initial.picture == nil)
+        #expect(runtime.publishUserProfileCallCount == 0)
+        #expect(state.publishedProfile?.displayName == "Pepi")
+        #expect(state.publishedProfile?.about == "Hola")
+    }
+
+    /// MDK documents that a setup resumed past its first local step ignores the supplied profile
+    /// and returns what its bootstrap publishes; the typed profile must still reach relays then.
+    @MainActor
+    @Test func signUpPublishesTheTypedProfileWhenIdentityCreationIgnoredIt() async throws {
+        let (state, runtime) = Self.improvementsPromptWorkspace(store: FakeImprovementsPromptStore())
+        runtime.ignoresInitialProfile = true
+
+        await state.bootstrap()
+        state.showSignUp()
+        state.signUpDraft.displayName = "Pepi"
+        await state.completeSignUp()
+
+        #expect(state.lastError == nil)
+        #expect(runtime.publishUserProfileCallCount == 1)
+        #expect(runtime.lastPublishedProfile?.displayName == "Pepi")
+        #expect(runtime.lastPublishedProfileDefaultRelays == MarmotClient.accountRelays)
+    }
+
+    /// A retry after `start()` failed skips identity creation, so it never sees the profile MDK
+    /// returned: it cannot know the typed one went out and must publish it itself.
+    @MainActor
+    @Test func signUpRetryAfterStartFailurePublishesTheTypedProfile() async throws {
+        let (state, runtime) = Self.improvementsPromptWorkspace(store: FakeImprovementsPromptStore())
+
+        await state.bootstrap()
+        state.showSignUp()
+        state.signUpDraft.displayName = "Pepi"
+        state.signUpDraft.about = "Hola"
+        runtime.startError = FakeMarmotRuntimeError.unused
+        await state.completeSignUp()
+
+        #expect(state.lastError != nil)
+        #expect(runtime.publishUserProfileCallCount == 0)
+
+        runtime.startError = nil
+        await state.completeSignUp()
+
+        #expect(state.lastError == nil)
+        #expect(state.phase == .ready)
+        // The retry reuses the identity it already minted rather than creating a second one.
+        #expect(runtime.initialProfileArguments.count == 1)
+        #expect(runtime.publishUserProfileCallCount == 1)
+        #expect(runtime.lastPublishedProfile?.displayName == "Pepi")
+        #expect(runtime.lastPublishedProfile?.about == "Hola")
     }
 
     /// Backing out of the sign-up pane *after* the identity was minted goes forward into the app
@@ -415,6 +484,8 @@ struct AccountTests: WorkspaceTestSupport {
         await state.bootstrap()
         state.showSignUp()
         state.signUpDraft.displayName = "Pepi"
+        // A resumed setup ignores the initial profile, so the typed one still has to publish.
+        runtime.ignoresInitialProfile = true
         runtime.publishUserProfileError = FakeMarmotRuntimeError.profilePublishFailed
         await state.completeSignUp()
 
@@ -2688,24 +2759,6 @@ struct AccountTests: WorkspaceTestSupport {
             #expect(path == marmotRoot.path)
         } catch {
             Issue.record("Expected MarmotStorageRootError, got \(error)")
-        }
-    }
-
-    @Test func accountRailAvatarExemptsSignedInAccountsFromRemoteImagePreference() throws {
-        // The rail lists the *viewer's own* identities, so it belongs with the profile editor
-        // and the account switcher on the exempt side of `RemoteImageDisplayPolicy`: leaving it
-        // on the default made the sidebar draw initials for the picture the viewer had just set
-        // and could see in Settings, which reads as "my avatar is broken" rather than as privacy.
-        // Unconditional now that the rail draws signed-in accounts only — the narrower
-        // `!account.signedOut` this used to carry has nothing left to exclude. The switcher's
-        // rows are fed the same filtered list and are unconditional for the same reason; the chat
-        // rows next to it are peers and must keep the default.
-        let railSource = try SourceContract.declaration("AccountRailAvatar")
-        #expect(railSource.contains("isOwnAccountImage: true"))
-
-        for row in ["ChatRowContent", "CollapsedChatRowContent"] {
-            let rowSource = try SourceContract.declaration(row)
-            #expect(!rowSource.contains("isOwnAccountImage"), "\(row) draws peers and must stay gated")
         }
     }
 

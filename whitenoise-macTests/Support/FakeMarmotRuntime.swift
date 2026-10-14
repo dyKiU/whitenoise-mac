@@ -94,6 +94,9 @@ nonisolated final class FakeMarmotRuntime: MarmotRuntime, @unchecked Sendable {
     var attachmentPermissionGeneration = "test-attachment-permission"
     private(set) var attachmentPermissionUpdates: [AttachmentAutomaticPermissionFfi] = []
     var attachmentHistoryPageResult: AttachmentPageReadFfi = .restartRequired
+    /// Served in order before falling back to `attachmentHistoryPageResult`, for multi-page reads.
+    var attachmentHistoryPageQueue: [AttachmentPageReadFfi] = []
+    private(set) var attachmentHistoryPageReadCount = 0
     var attachmentLocalAssetResults: [AttachmentLocalAssetFfi] = []
     var attachmentTransferSnapshots: [AttachmentTransferSnapshotFfi] = []
     var attachmentTransferDelayNanoseconds: UInt64 = 0
@@ -432,6 +435,7 @@ nonisolated final class FakeMarmotRuntime: MarmotRuntime, @unchecked Sendable {
     /// How many times the profile was actually pushed at the network. A deterministic witness for
     /// "Cancel published nothing", which the relay arrays cannot be: they start empty.
     private(set) var publishUserProfileCallCount = 0
+    private(set) var lastPublishedProfile: UserProfileMetadataFfi?
     private(set) var uploadedProfileImageData: Data?
     private(set) var uploadedProfileImageMediaType: String?
     private(set) var uploadedProfileImageBlossomServer: String?
@@ -1185,6 +1189,26 @@ nonisolated final class FakeMarmotRuntime: MarmotRuntime, @unchecked Sendable {
         return IdentityCreationResultFfi(account: createdAccount, profile: profile, readiness: setupReadiness)
     }
 
+    /// The profile each `createIdentityWithInitialProfile` call asked for, in order.
+    private(set) var initialProfileArguments: [UserProfileMetadataFfi] = []
+    /// Mimics a setup resumed past its first local step, which MDK says ignores the supplied
+    /// profile and returns whatever its bootstrap already publishes.
+    var ignoresInitialProfile = false
+
+    func createIdentityWithInitialProfile(
+        profile initialProfile: UserProfileMetadataFfi, defaultRelays: [String], bootstrapRelays: [String],
+        inboxRelays: [String]
+    ) async throws -> IdentityCreationResultFfi {
+        initialProfileArguments.append(initialProfile)
+        accountRelayArguments.append(
+            .init(defaultRelays: defaultRelays, bootstrapRelays: bootstrapRelays, inboxRelays: inboxRelays))
+        guard let createdAccount else { throw FakeMarmotRuntimeError.missingCreatedAccount }
+        await createIdentityGate.passIfArmed()
+        addOrReplaceAccount(createdAccount)
+        if !ignoresInitialProfile { profile = initialProfile }
+        return IdentityCreationResultFfi(account: createdAccount, profile: profile, readiness: setupReadiness)
+    }
+
     func releaseCreateIdentityGate() {
         createIdentityGate.release()
     }
@@ -1259,6 +1283,7 @@ nonisolated final class FakeMarmotRuntime: MarmotRuntime, @unchecked Sendable {
             throw publishUserProfileError
         }
         self.profile = profile
+        lastPublishedProfile = profile
         await publishUserProfileGate.passIfArmed()
         return profile
     }
@@ -1608,7 +1633,9 @@ nonisolated final class FakeMarmotRuntime: MarmotRuntime, @unchecked Sendable {
     func attachmentHistoryPage(
         accountRef: String, groupIdHex: String, limit: UInt32, cursor: AttachmentHistoryCursor?
     ) async throws -> AttachmentPageReadFfi {
-        attachmentHistoryPageResult
+        attachmentHistoryPageReadCount += 1
+        if !attachmentHistoryPageQueue.isEmpty { return attachmentHistoryPageQueue.removeFirst() }
+        return attachmentHistoryPageResult
     }
 
     func attachmentLocalAssets(
@@ -2616,6 +2643,7 @@ nonisolated final class FakeMarmotRuntime: MarmotRuntime, @unchecked Sendable {
                     .remoteImage(url: $0, cacheKey: row.groupIdHex)
                 } ?? .placeholder(stableSeed: row.groupIdHex, source: source)
             return PresentedChatRowFfi(
+                draftVersion: nil,
                 preview: preview,
                 actions: ChatListRowActionsFfi(
                     canMarkRead: row.hasUnread,

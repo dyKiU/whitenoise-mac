@@ -19,30 +19,27 @@ import UserNotifications
 
 @Suite(.serialized)
 struct PureValueTests {
-    @Test func ownAccountAvatarLoadsItsPictureWithTheRemoteImagePreferenceOff() {
-        // The bug this pins: "Load Remote Profile Images" is off by default, and the profile
-        // editor's 96pt avatar went through the same gate as a stranger's. Picking an image
-        // uploaded it and updated the draft, then drew initials anyway — no picture, no error,
-        // indistinguishable from a broken picker. Your own avatar is not remote content you were
-        // sent, so the preference must not reach it.
-        #expect(
-            RemoteImageDisplayPolicy.loadsRemoteImage(isOwnAccountImage: true, preferenceEnabled: false)
-        )
-        #expect(
-            RemoteImageDisplayPolicy.loadsRemoteImage(isOwnAccountImage: true, preferenceEnabled: true)
-        )
-    }
+    @MainActor
+    @Test func senderIdentityShowsOnlyOnIncomingGroupMessages() throws {
+        // A DM has one possible sender, so naming them above every bubble is noise; a group needs
+        // the name (and avatar) to tell members apart. Own messages never carry either.
+        let messages = performanceMessageItems(count: 2)
+        let outgoing = messages[0]
+        let incoming = messages[1]
+        try #require(outgoing.isOutgoing && !incoming.isOutgoing)
 
-    @Test func peerAvatarStillWaitsForTheRemoteImagePreference() {
-        // The other half of the rule, and the reason the exemption is a per-call-site flag rather
-        // than a default: a peer's `picture` is a URL they chose, so fetching it hands them the
-        // viewer's IP address and presence. That stays gated.
-        #expect(
-            !RemoteImageDisplayPolicy.loadsRemoteImage(isOwnAccountImage: false, preferenceEnabled: false)
+        let group = chatListOrderingTestItem(id: "group", title: "Group", date: nil)
+        let direct = ChatItem(
+            id: "dm", title: "Alice", subtitle: "", preview: "", updatedAt: nil, avatarSeed: "alice",
+            pictureURL: nil, unreadCount: 0, isDirect: true, pendingConfirmation: false,
+            selfMembership: .member
         )
-        #expect(
-            RemoteImageDisplayPolicy.loadsRemoteImage(isOwnAccountImage: false, preferenceEnabled: true)
-        )
+
+        #expect(MessageBubble.showsSenderIdentity(for: incoming, in: group))
+        #expect(!MessageBubble.showsSenderIdentity(for: outgoing, in: group))
+        #expect(!MessageBubble.showsSenderIdentity(for: incoming, in: direct))
+        #expect(!MessageBubble.showsSenderIdentity(for: outgoing, in: direct))
+        #expect(!MessageBubble.showsSenderIdentity(for: incoming, in: nil))
     }
 
     @MainActor

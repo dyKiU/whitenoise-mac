@@ -133,7 +133,6 @@ struct SignOutSheet: View {
                 seed: account.accountIdHex,
                 initials: account.initials,
                 sanitizedPictureURL: account.sanitizedPictureURL,
-                isOwnAccountImage: true,
                 size: 48,
                 isSelected: false
             )

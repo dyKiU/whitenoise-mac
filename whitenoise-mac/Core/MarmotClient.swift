@@ -41,6 +41,9 @@ nonisolated protocol MarmotRuntime: Sendable {
     func createIdentityWithProfile(
         defaultRelays: [String], bootstrapRelays: [String], inboxRelays: [String]
     ) async throws -> IdentityCreationResultFfi
+    func createIdentityWithInitialProfile(
+        profile: UserProfileMetadataFfi, defaultRelays: [String], bootstrapRelays: [String], inboxRelays: [String]
+    ) async throws -> IdentityCreationResultFfi
     func login(
         identity: String, defaultRelays: [String], bootstrapRelays: [String], inboxRelays: [String]
     ) async throws -> AccountSummaryFfi
@@ -528,6 +531,14 @@ nonisolated final class MarmotClient: MarmotRuntime, @unchecked Sendable {
     ) async throws -> IdentityCreationResultFfi {
         try await marmot.createIdentityWithProfile(
             defaultRelays: defaultRelays, bootstrapRelays: bootstrapRelays, inboxRelays: inboxRelays)
+    }
+
+    func createIdentityWithInitialProfile(
+        profile: UserProfileMetadataFfi, defaultRelays: [String], bootstrapRelays: [String], inboxRelays: [String]
+    ) async throws -> IdentityCreationResultFfi {
+        try await marmot.createIdentityWithInitialProfile(
+            profile: profile, defaultRelays: defaultRelays, bootstrapRelays: bootstrapRelays,
+            inboxRelays: inboxRelays)
     }
 
     func login(

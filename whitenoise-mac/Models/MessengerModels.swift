@@ -13,7 +13,7 @@ struct AccountItem: Identifiable, Hashable {
     let npub: String?
     let initials: String
     let pictureURL: String?
-    /// Pre-sanitized avatar URL; `ProfileImageAvatarView` still applies `loadRemoteImages`.
+    /// Pre-sanitized avatar URL (`RemoteImageURLPolicy`).
     let sanitizedPictureURL: URL?
     let localSigning: Bool
     let externalSigning: Bool
@@ -148,7 +148,7 @@ nonisolated struct ChatItem: Identifiable, Hashable {
     /// `private(set)` so the only in-place writer is `replacingPeerPresentation` below, which
     /// re-derives `sanitizedPictureURL` alongside it. The two must never disagree.
     private(set) var pictureURL: String?
-    /// Pre-sanitized avatar URL for chat rows/headers; the view still applies `loadRemoteImages`.
+    /// Pre-sanitized avatar URL for chat rows/headers (`RemoteImageURLPolicy`).
     private(set) var sanitizedPictureURL: URL?
     /// Locally held avatar bytes, drawn ahead of any URL: the decrypted encrypted-Blossom group
     /// image, or — for any chat built from a prepared row — MDK's retained copy of the avatar it
@@ -657,6 +657,17 @@ struct GroupMemberItem: Identifiable, Hashable {
         }
         return DisplayText.short(npub, head: 12, tail: 8)
     }
+}
+
+/// The picture a group-info member row draws. Kept apart from `GroupMemberItem` because the roster
+/// is a snapshot taken when the pane loads, while avatars keep arriving after it — a profile
+/// resolves, a message brings a sender's bytes — and the row should pick them up in place.
+struct GroupMemberAvatar: Hashable {
+    /// Bytes MDK already holds for this member, drawn ahead of the URL; see `ContactAvatarPayload`.
+    var imagePayload: DownloadedMediaPayload?
+    /// The kind:0 picture, fetched when there are no retained bytes. The viewer's own row takes
+    /// the active account's URL rather than the roster's.
+    var sanitizedPictureURL: URL?
 }
 
 struct GroupDetailsSnapshot: Hashable {
@@ -1710,11 +1721,13 @@ nonisolated struct OutgoingMediaPasteboardAttachment: Equatable, Sendable {
 
 @MainActor
 enum OutgoingMediaPasteboardReader {
+    /// GIF first: a copied GIF usually also offers a TIFF or PNG of its first frame, and taking
+    /// that one would send a still.
     private static let preferredImagePasteboardTypes: [NSPasteboard.PasteboardType] = [
+        NSPasteboard.PasteboardType(UTType.gif.identifier),
         NSPasteboard.PasteboardType(UTType.png.identifier),
         NSPasteboard.PasteboardType(UTType.jpeg.identifier),
         NSPasteboard.PasteboardType(UTType.tiff.identifier),
-        NSPasteboard.PasteboardType(UTType.gif.identifier),
     ]
     private static let legacyFilenamesPasteboardType = NSPasteboard.PasteboardType("NSFilenamesPboardType")
 
@@ -1984,6 +1997,9 @@ nonisolated enum OutgoingMediaDraftProcessor {
     }
 
     private static func imageAttachment(from data: Data, fileName: String?) throws -> PendingMediaAttachment {
+        if let gif = gifAttachment(from: data, fileName: fileName) {
+            return gif
+        }
         guard let source = CGImageSourceCreateWithData(data as CFData, nil) else {
             throw Failure.unsupportedImage
         }
@@ -2004,6 +2020,30 @@ nonisolated enum OutgoingMediaDraftProcessor {
             mediaType: "image/jpeg",
             data: encoded,
             dim: "\(image.width)x\(image.height)"
+        )
+    }
+
+    /// A GIF stays a GIF: flattening it to a JPEG kept only its first frame. One that is
+    /// malformed, out of bounds, or still over the byte cap once re-encoded falls back to the
+    /// still-image path, so the user gets a photo rather than an error.
+    private static func gifAttachment(from data: Data, fileName: String?) -> PendingMediaAttachment? {
+        guard AttachmentGIF.hasSignature(data),
+            let encoded = AttachmentGIF.reencoded(data, maxPixelEdge: Int(maxLongEdge)),
+            encoded.data.count <= maxImageAttachmentBytes
+        else { return nil }
+        var name = sanitizedFileName(
+            fileName,
+            fallbackStem: "animation-\(Int(Date().timeIntervalSince1970))",
+            fallbackExtension: "gif"
+        )
+        if !name.lowercased().hasSuffix(".gif") {
+            name = "\((name as NSString).deletingPathExtension).gif"
+        }
+        return PendingMediaAttachment(
+            fileName: name,
+            mediaType: AttachmentGIF.mediaType,
+            data: encoded.data,
+            dim: "\(encoded.width)x\(encoded.height)"
         )
     }
 
@@ -3588,8 +3628,7 @@ struct NewChatRecipient: Equatable {
     let pictureURL: String?
     /// Pre-sanitized once from the peer-controlled raw URL so recipient rows only read it.
     let sanitizedPictureURL: URL?
-    /// MDK's retained copy of the peer's avatar, drawn ahead of `sanitizedPictureURL`. The core
-    /// fetched it, so it draws whatever the "Load Remote Profile Images" preference says.
+    /// MDK's retained copy of the peer's avatar, drawn ahead of `sanitizedPictureURL`.
     let imagePayload: DownloadedMediaPayload?
     /// The published bio. Line breaks are kept — it is prose, not a label — but bidi controls are
     /// stripped so a peer cannot reorder the text around it.
