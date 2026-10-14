@@ -8,6 +8,7 @@
     @Observable
     final class DeviceLinkingScope: DeviceVerificationSession {
         let accountRef: String
+        @ObservationIgnored private var automaticBootstrap: Data?
         private(set) var latestSnapshot: DeviceLinkingSnapshotFfi?
         private(set) var cleanupError: Error?
         private(set) var observationError: Error?
@@ -40,22 +41,38 @@
             guard active else { throw MarmotKitError.DeviceLinkingClosed }
         }
 
+        /// Activate only after the exact original has been adopted by this live account scope.
+        func activateAutomaticPairing(displayBootstrap: Bool) async throws {
+            try checkActive()
+            let code = try await session.automaticPairingCode()
+            try checkActive()
+            automaticBootstrap = displayBootstrap ? Data(code.utf8) : Data()
+        }
+
         func setupPacket() throws -> Data {
             try checkActive()
-            return session.setupPacket()
+            return automaticBootstrap ?? session.setupPacket()
         }
 
         // Explicit enrollment actions remain on the original account-owned SDK object.
         func continueLinking(displayedRevision: UInt64) async throws {
             try checkActive()
-            try await session.continueLinking(displayedRevision: displayedRevision)
+            if automaticBootstrap != nil {
+                try await session.continueAutomaticLinking(displayedRevision: displayedRevision, shareChats: false)
+            } else {
+                try await session.continueLinking(displayedRevision: displayedRevision)
+            }
             try checkActive()
         }
 
         // Broad chat sharing is a distinct explicit action; ordinary linking remains separate.
         func continueLinkingAndShareChats(displayedRevision: UInt64) async throws {
             try checkActive()
-            try await session.continueLinkingAndShareChats(displayedRevision: displayedRevision)
+            if automaticBootstrap != nil {
+                try await session.continueAutomaticLinking(displayedRevision: displayedRevision, shareChats: true)
+            } else {
+                try await session.continueLinkingAndShareChats(displayedRevision: displayedRevision)
+            }
             try checkActive()
         }
 
@@ -112,6 +129,7 @@
         func invalidate() {
             guard active else { return }
             active = false
+            automaticBootstrap = nil
             latestSnapshot = nil
             subscription.closeStream()
             observation?.cancel()
