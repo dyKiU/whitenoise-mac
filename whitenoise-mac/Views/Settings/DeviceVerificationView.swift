@@ -1,11 +1,13 @@
 #if WN_EXPERIMENTAL_DEVICE_SYNC
     import Foundation
     import MarmotKit
+    import OSLog
     import SwiftUI
     import UniformTypeIdentifiers
 
     /// Verification transport with separate original-owner enrollment panes.
     struct DeviceVerificationView: View {
+        private static let diagnostics = Logger(subsystem: "dev.ipf.whitenoise.mac", category: "DeviceVerification")
         let model: DeviceVerificationViewModel
         @State private var enrollment: DeviceEnrollmentViewModel?
         @State private var approval: DeviceEnrollmentApprovalViewModel?
@@ -230,7 +232,13 @@
             actionFailed = false
             actionTask = Task {
                 do { try await action() } catch {
-                    if !Task.isCancelled, model.isActive { actionFailed = true }
+                    if !Task.isCancelled, model.isActive {
+                        actionFailed = true
+                        let category: DeviceVerificationFailure =
+                            error is VerificationInputError ? .invalidPacket : DeviceVerificationFailure(error)
+                        Self.diagnostics.error(
+                            "Verification action failed category=\(category.rawValue, privacy: .public)")
+                    }
                 }
             }
         }
