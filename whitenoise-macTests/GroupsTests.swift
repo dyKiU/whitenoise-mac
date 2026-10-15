@@ -4967,6 +4967,20 @@ struct GroupsTests: WorkspaceTestSupport {
         await state.createNewChat()
 
         #expect(runtime.createdGroupMemberRefs.isEmpty)
+        #expect(runtime.createGroupAttempts.isEmpty)
+        #expect(runtime.promoteAdminDetailedCallCount == 0)
+        #expect(state.selection == .chat("direct-group"))
+        #expect(!state.isNewChatComposerVisible)
+
+        state.showNewChat()
+        await state.startDirectChat(
+            with: NewChatRecipient(
+                sourceQuery: "npub1alice", memberRef: "npub1alice", accountIdHex: aliceId,
+                npub: "npub1alice", displayName: "Alice", pictureURL: nil))
+
+        #expect(runtime.createdGroupMemberRefs.isEmpty)
+        #expect(runtime.createGroupAttempts.isEmpty)
+        #expect(runtime.promoteAdminDetailedCallCount == 0)
         #expect(state.selection == .chat("direct-group"))
         #expect(!state.isNewChatComposerVisible)
     }
