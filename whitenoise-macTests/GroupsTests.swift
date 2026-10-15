@@ -694,6 +694,47 @@ struct GroupsTests: WorkspaceTestSupport {
         #expect(!ContactGroupAction.actions(for: after).contains(.promote))
     }
 
+    /// Removing a member from their profile takes them out of the roster, and the profile then
+    /// goes back to group info; a refused removal leaves both in place with the reason showing.
+    @MainActor
+    @Test func groupMemberProfileClosesAfterARemovalButNotAfterARefusal() async throws {
+        let account = desktopAccount()
+        let runtime = FakeMarmotRuntime(accounts: [account])
+        runtime.installGroupDetails(groupDetailsFixture(selfAccountIdHex: account.accountIdHex))
+        let state = WorkspaceState(clientFactory: { runtime })
+        await state.bootstrap()
+
+        let groupChat = try #require(state.activeChats.first { $0.id == "group" })
+        state.selectChat(groupChat)
+        await state.showGroupDetails(for: groupChat)
+        let member = try #require(state.groupDetailsSnapshot?.members.first { !$0.isSelf && $0.canRemove })
+        await state.showContactDetails(for: member)
+
+        runtime.removeMembersError = FakeMarmotRuntimeError.unused
+        await state.removeGroupMember(member)
+
+        #expect(state.lastError != nil)
+        #expect(state.groupDetailsSnapshot?.members.contains { $0.id == member.id } == true)
+        #expect(
+            !ContactGroupAction.closesProfile(
+                afterRemoving: member.id,
+                openProfileAccountIdHex: state.contactDetailsTarget?.accountIdHex,
+                in: state.groupDetailsSnapshot
+            ))
+
+        runtime.removeMembersError = nil
+        await state.removeGroupMember(member)
+
+        #expect(state.lastError == nil)
+        #expect(state.groupDetailsSnapshot?.members.contains { $0.id == member.id } == false)
+        #expect(
+            ContactGroupAction.closesProfile(
+                afterRemoving: member.id,
+                openProfileAccountIdHex: state.contactDetailsTarget?.accountIdHex,
+                in: state.groupDetailsSnapshot
+            ))
+    }
+
     @MainActor
     @Test func groupMemberContactDetailsListDirectChatButNotTheOpenGroup() async throws {
         let account = desktopAccount()
@@ -1846,6 +1887,59 @@ struct GroupsTests: WorkspaceTestSupport {
         #expect(alice.npub == runtime.npub(accountIdHex: aliceHex))
         #expect(alice.subtitle.hasPrefix("npub1"))
         #expect(alice.pictureURL == "https://example.com/alice.png")
+    }
+
+    /// The fill pass awaits an FFI hop, and a nickname edit relabels the visible row in place
+    /// without superseding the refresh. Writing the pre-hop directory back after the hop would
+    /// revert the nickname the user just typed.
+    @MainActor
+    @Test func composeContactFillKeepsANicknameSetWhileItRuns() async throws {
+        let account = desktopAccount()
+        let bobHex = String(repeating: "b", count: 64)
+        let runtime = FakeMarmotRuntime(accounts: [account])
+        var shared = messageGroup()
+        shared.groupIdHex = String(repeating: "e", count: 64)
+        shared.name = "Book club"
+        runtime.installGroupDetails(
+            GroupDetailsFfi(
+                group: shared,
+                members: [
+                    GroupMemberDetailsFfi(
+                        memberIdHex: account.accountIdHex, account: "Desktop Account", local: true,
+                        isAdmin: true, isSelf: true, npub: "npub1self", displayName: "Desktop Account"),
+                    GroupMemberDetailsFfi(
+                        memberIdHex: bobHex, account: nil, local: false,
+                        isAdmin: false, isSelf: false, npub: "npub1p0p", displayName: "Bob"),
+                ]
+            )
+        )
+        runtime.installProfile(
+            accountIdHex: bobHex,
+            profile: UserProfileMetadataFfi(
+                name: "bob", displayName: "Bob", about: nil,
+                picture: "https://example.com/bob.png", nip05: nil, lud16: nil)
+        )
+        let clock = MutableClock(now: Date(timeIntervalSince1970: 1_000_000))
+        let state = WorkspaceState(nowProvider: { clock.now }, clientFactory: { runtime })
+        await state.bootstrap()
+        // Bootstrap's enrichment cached Bob's profile; age it out so his picture is the fill
+        // pass's own `userProfile` lookup, which the gate can hold.
+        clock.now = clock.now.addingTimeInterval(WorkspaceState.peerProfileCacheTTL + 1)
+        runtime.userProfileGateEnabled = true
+        let refresh = Task { await state.refreshComposeContacts() }
+        await Self.waitUntil { runtime.didReachUserProfileGate }
+        #expect(runtime.didReachUserProfileGate)
+        #expect(state.composeContacts.first { $0.accountIdHex == bobHex }?.pictureURL == nil)
+
+        state.setContactNickname("Bobby", forContactAccountIdHex: bobHex)
+        #expect(state.composeContacts.first { $0.accountIdHex == bobHex }?.displayName == "Bobby")
+
+        runtime.releaseUserProfileGate()
+        await refresh.value
+
+        let bob = try #require(state.composeContacts.first { $0.accountIdHex == bobHex })
+        #expect(bob.displayName == "Bobby")
+        #expect(bob.pictureURL == "https://example.com/bob.png")
     }
 
     @MainActor
@@ -4626,6 +4720,43 @@ struct GroupsTests: WorkspaceTestSupport {
         // still unreachable, so showing it again is accurate rather than stale.
         state.newChatQuery = ""
         #expect(state.visibleStartChatInvitePrompt?.accountIdHex == Self.bobAccountIdHex)
+    }
+
+    /// Both people in a direct chat are its admins. MDK founds the chat with only its creator as
+    /// admin, so the creator promotes the peer straight after creating it.
+    @MainActor
+    @Test func startingADirectChatMakesThePeerAnAdminToo() async throws {
+        let account = desktopAccount()
+        let runtime = FakeMarmotRuntime(accounts: [account])
+        let state = WorkspaceState(clientFactory: { runtime })
+
+        await state.bootstrap()
+        state.showNewChat()
+        await state.startDirectChat(with: Self.bobDraftRecipient())
+
+        #expect(runtime.createdGroupMemberRefs == ["npub1p0p"])
+        #expect(runtime.promoteAdminDetailedCallCount == 1)
+        #expect(runtime.promotedAdminRef == "npub1p0p")
+        #expect(state.selection == .chat("created-group"))
+    }
+
+    /// The promotion is a second commit after the chat already exists, so its refusal must not
+    /// read as a failure to start the chat: the creator can still promote from chat info.
+    @MainActor
+    @Test func aRefusedPeerPromotionStillOpensTheDirectChat() async throws {
+        let account = desktopAccount()
+        let runtime = FakeMarmotRuntime(accounts: [account])
+        runtime.promoteAdminError = FakeMarmotRuntimeError.unused
+        let state = WorkspaceState(clientFactory: { runtime })
+
+        await state.bootstrap()
+        state.showNewChat()
+        await state.startDirectChat(with: Self.bobDraftRecipient())
+
+        #expect(runtime.promoteAdminDetailedCallCount == 1)
+        #expect(state.selection == .chat("created-group"))
+        #expect(state.lastError == nil)
+        #expect(state.visibleStartChatInvitePrompt == nil)
     }
 
     @MainActor

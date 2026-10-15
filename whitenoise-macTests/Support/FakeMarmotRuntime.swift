@@ -443,6 +443,7 @@ nonisolated final class FakeMarmotRuntime: MarmotRuntime, @unchecked Sendable {
     /// self-demote precedes the leave it unblocks rather than merely accompanying it.
     private(set) var groupMutationOrder: [String] = []
     var promoteAdminError: Error?
+    var removeMembersError: Error?
     /// Suppresses the management-state recomputation a promotion normally triggers, so a test can
     /// pose as a core that still reports this account as the blocked sole admin after the promote
     /// committed.
@@ -2307,6 +2308,7 @@ nonisolated final class FakeMarmotRuntime: MarmotRuntime, @unchecked Sendable {
     {
         removeMembersDetailedCallCount += 1
         await groupMutationGate.passIfArmed()
+        if let removeMembersError { throw removeMembersError }
         removedMemberRefs = memberRefs
         guard var details = groupDetailsById[groupIdHex] else {
             throw FakeMarmotRuntimeError.unused
@@ -2692,7 +2694,7 @@ nonisolated final class FakeMarmotRuntime: MarmotRuntime, @unchecked Sendable {
             }
             let avatar: SelectedAvatarFfi =
                 avatarURL.map {
-                    .remoteImage(url: $0, cacheKey: row.groupIdHex)
+                    .remoteImage(url: $0, cacheKey: "avatar-cache-\(row.groupIdHex)")
                 } ?? .placeholder(stableSeed: row.groupIdHex, source: source)
             return PresentedChatRowFfi(
                 draftVersion: nil,

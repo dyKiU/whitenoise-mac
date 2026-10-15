@@ -557,22 +557,25 @@ extension WorkspaceState {
         guard !pictures.isEmpty || !fetched.npubs.isEmpty else { return }
         guard composeContactsGeneration == generation, activeAccountId == accountId else { return }
 
-        var byHex = byHex
-        for (hex, contact) in byHex {
-            let picture = pictures[hex]
-            let npub = fetched.npubs[hex]
-            guard picture != nil || npub != nil else { continue }
-            byHex[hex] = contact.filling(npub: npub, pictureURL: picture)
+        // Fill the live list, not `byHex`: a nickname edited during the hop relabels
+        // `composeContacts` in place without bumping the generation, so writing the pre-hop
+        // copy back would revert it. Neither field is a sort key, so the order stands.
+        composeContacts = composeContacts.map { contact in
+            let picture = pictures[contact.accountIdHex]
+            let npub = fetched.npubs[contact.accountIdHex]
+            guard picture != nil || npub != nil else { return contact }
+            return contact.filling(npub: npub, pictureURL: picture)
         }
-        composeContacts = sortedComposeContacts(byHex)
     }
 
     /// Fold the accounts this identity follows into a compose refresh, keeping only the keys
-    /// no chat or group roster already supplied. Returns the merged directory, or nil when a
-    /// newer refresh or an account switch superseded this one. Someone you follow but have never messaged
+    /// no chat or group roster already supplied. Someone you follow but have never messaged
     /// is otherwise absent from this list entirely, which makes a first DM a paste-an-npub
     /// exercise. They carry no `lastActivity`, so `sortedComposeContacts` files them below
     /// every real conversation.
+    ///
+    /// - Returns: The merged directory, or nil when a newer refresh or an account switch
+    ///   superseded this one.
     private func mergeFollowedComposeContacts(
         into byHex: [String: ComposeContact],
         generation: UInt64,
@@ -702,6 +705,16 @@ extension WorkspaceState {
                 name: "",
                 memberRefs: [memberRef],
                 description: nil
+            )
+            // Both people in a direct chat are its admins, so either can add someone or manage
+            // roles. MDK founds a group with its creator as the only admin and takes no admin list
+            // at creation, so the peer is promoted straight after. Best effort: the chat works
+            // without it and the creator can still make them an admin from chat info, so a
+            // refusal does not turn a created chat into a failed one.
+            _ = try? await client.promoteAdminDetailed(
+                accountRef: activeAccount.accountRef,
+                groupIdHex: groupIdHex,
+                memberRef: memberRef
             )
             await reloadChats(forceFreshSnapshot: true)
             guard activeAccountId == accountId, conversationMetadataEpoch == accountEpoch, !Task.isCancelled else {
