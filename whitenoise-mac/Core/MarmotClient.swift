@@ -196,6 +196,8 @@ nonisolated protocol MarmotRuntime: Sendable {
         -> AccountRelayListsFfi
     func setAccountNip65Relays(accountRef: String, relays: [String], bootstrapRelays: [String]) async throws
         -> AccountRelayListsFfi
+    func existingDirectConversation(accountRef: String, peerAccountId: String) async throws
+        -> DirectConversationDestination?
     func createGroup(accountRef: String, name: String, memberRefs: [String], description: String?) async throws
         -> String
     func acceptGroupInvite(accountRef: String, groupIdHex: String) async throws -> AppGroupRecordFfi
@@ -1071,6 +1073,14 @@ nonisolated final class MarmotClient: MarmotRuntime, @unchecked Sendable {
             relays: relays,
             bootstrapRelays: bootstrapRelays
         )
+    }
+
+    func existingDirectConversation(accountRef: String, peerAccountId: String) async throws
+        -> DirectConversationDestination?
+    {
+        return try await marmot.existingDirectConversation(
+            accountRef: accountRef, peerAccountId: peerAccountId
+        ).map(DirectConversationDestination.localMls)
     }
 
     func createGroup(accountRef: String, name: String, memberRefs: [String], description: String?) async throws

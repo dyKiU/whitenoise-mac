@@ -137,9 +137,7 @@ struct whitenoise_macApp: App {
             return
         }
         #if WN_EXPERIMENTAL_DEVICE_SYNC
-            if case .chat(let group) = workspace.selection, workspace.selectedChat == nil,
-                scope.automaticChatList?.pairedRows.contains(where: { $0.groupIdHex == group }) == true
-            {
+            if case .chat(let group) = workspace.selection, workspace.selectedChat == nil {
                 scope.releaseSelectedConversation()
                 workspace.cancelTimelineLoad()
                 workspace.stopTimelineListener()

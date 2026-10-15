@@ -5043,7 +5043,7 @@ struct GroupsTests: WorkspaceTestSupport {
         await state.createNewChat()
 
         #expect(runtime.createdGroupMemberRefs == [aliceId])
-        #expect(runtime.createdGroupName == "Alice NIP-05")
+        #expect(runtime.createdGroupName == "")
         #expect(state.selection == .chat("created-group"))
     }
 

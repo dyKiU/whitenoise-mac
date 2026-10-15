@@ -224,6 +224,11 @@ nonisolated final class FakeMarmotRuntime: MarmotRuntime, @unchecked Sendable {
     /// the workspace from here to see what the UI would have been rendering *while* a press is still
     /// working through the roster.
     var onMemberResolutionAttempt: (@Sendable () async -> Void)?
+    var existingDirectConversationsByPeer: [String: DirectConversationDestination] = [:]
+    var existingDirectConversationError: Error?
+    var onDirectConversationLookup: (@Sendable () async -> Void)?
+    private(set) var existingDirectConversationQueries: [(account: String, peer: String)] = []
+
     private(set) var createdGroupName: String?
     private(set) var createdGroupDescription: String?
     /// Member refs the core would refuse for want of a published KeyPackage. `createGroup` mirrors
@@ -1072,6 +1077,14 @@ nonisolated final class FakeMarmotRuntime: MarmotRuntime, @unchecked Sendable {
         otherDisplayName: String,
         otherProfile: UserProfileMetadataFfi
     ) {
+        existingDirectConversationsByPeer[otherAccountIdHex.lowercased()] = .localMls(
+            .init(
+                groupIdHex: group.groupIdHex,
+                reusable: !group.pendingConfirmation && group.selfMembership == .member
+                    && !group.leaveRequestPending && !group.disbanding,
+                lifecycleState: .stable, selfMembership: group.selfMembership,
+                pendingConfirmation: group.pendingConfirmation, leaveRequestPending: group.leaveRequestPending,
+                disbanding: group.disbanding, archived: group.archived, activitySortAt: 0))
         profilesByAccountId[otherAccountIdHex] = otherProfile
         let details = GroupDetailsFfi(
             group: group,
@@ -2030,6 +2043,15 @@ nonisolated final class FakeMarmotRuntime: MarmotRuntime, @unchecked Sendable {
             await onRemoveAccountMidFlight(accountRef)
         }
         storedAccounts.removeAll { $0.label == accountRef }
+    }
+
+    func existingDirectConversation(accountRef: String, peerAccountId: String) async throws
+        -> DirectConversationDestination?
+    {
+        existingDirectConversationQueries.append((accountRef, peerAccountId))
+        await onDirectConversationLookup?()
+        if let existingDirectConversationError { throw existingDirectConversationError }
+        return existingDirectConversationsByPeer[peerAccountId.lowercased()]
     }
 
     func createGroup(accountRef: String, name: String, memberRefs: [String], description: String?) async throws
