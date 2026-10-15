@@ -488,11 +488,15 @@ private struct RetainedAttachmentControlMenu: View {
     }
 }
 
-private extension AttachmentTransferStatusFfi {
+extension AttachmentTransferStatusFfi {
     var isWorking: Bool {
         switch state {
         case .queued, .downloading, .verifyingCiphertext, .decrypting, .verifyingPlaintext:
             true
+        #if WN_EXPERIMENTAL_DEVICE_SYNC
+            case .storageBlocked:
+                false
+        #endif
         case .unavailable, .notRequested, .ready, .retryScheduled, .failed, .cancelled, .paused,
             .removed, .policyBlocked, .previouslyAcquiredUnavailable, .completedUnretained,
             .retryExhausted:
@@ -502,6 +506,10 @@ private extension AttachmentTransferStatusFfi {
 
     var canRetry: Bool {
         switch state {
+        #if WN_EXPERIMENTAL_DEVICE_SYNC
+            case .storageBlocked:
+                true
+        #endif
         case .failed, .cancelled, .paused, .policyBlocked, .previouslyAcquiredUnavailable,
             .completedUnretained, .retryExhausted:
             true
@@ -513,6 +521,10 @@ private extension AttachmentTransferStatusFfi {
 
     var canRemove: Bool {
         switch state {
+        #if WN_EXPERIMENTAL_DEVICE_SYNC
+            case .storageBlocked:
+                true
+        #endif
         case .unavailable, .notRequested, .removed:
             false
         case .queued, .downloading, .verifyingCiphertext, .decrypting, .verifyingPlaintext, .ready,
