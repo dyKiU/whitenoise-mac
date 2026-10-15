@@ -86,10 +86,11 @@
                 XCTAssertNil(localAfter, "Direct lookup must not claim local MLS membership")
                 try await client.marmot.shutdownAndClose()
                 try writeObservation(["runtime_closed": true], named: "paired-direct-closed.json", bridge: bridge)
-                try writeObservation([
-                    "paired_destination": true, "same_group": true, "lookup_count": 3,
-                    "no_local_membership": true, "no_new_ordinary_chat": true, "runtime_closed": true,
-                ], named: "paired-direct-complete.json", bridge: bridge)
+                try writeObservation(
+                    [
+                        "paired_destination": true, "same_group": true, "lookup_count": 3,
+                        "no_local_membership": true, "no_new_ordinary_chat": true, "runtime_closed": true,
+                    ], named: "paired-direct-complete.json", bridge: bridge)
             } catch {
                 try await client.marmot.shutdownAndClose()
                 try writeObservation(["runtime_closed": true], named: "paired-direct-closed.json", bridge: bridge)
