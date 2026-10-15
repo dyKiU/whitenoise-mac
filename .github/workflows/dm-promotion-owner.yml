@@ -1,0 +1,55 @@
+name: Scoped DM promotion ownership regression
+on:
+  push:
+    branches: [ci/upstream-dm-promotion-owner-20261015]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: dm-promotion-owner-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  runtime:
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/marmotkit-cache
+      - uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/promotion-owner/DerivedData
+          key: dm-promotion-${{ runner.os }}-${{ hashFiles('Vendored/MarmotKit/Package.swift', 'whitenoise-mac.xcodeproj/project.pbxproj') }}-${{ github.sha }}
+          restore-keys: |
+            dm-promotion-${{ runner.os }}-${{ hashFiles('Vendored/MarmotKit/Package.swift', 'whitenoise-mac.xcodeproj/project.pbxproj') }}-
+      - name: Verify disk reserve
+        run: |
+          df -h .
+          test "$(df -Pk . | awk 'NR==2 {print $4}')" -ge 8388608
+      - name: Exact runtime ownership baseline
+        env:
+          PROMOTION_PHASE: red
+        run: python3 scripts/ci/check-dm-promotion-owner.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: promotion-runtime-${{ github.sha }}
+          path: promotion-proof/result.json
+  format:
+    runs-on: macos-26
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Export canonical formatting
+        run: |
+          mkdir format-proof
+          python3 -m py_compile scripts/ci/check-dm-promotion-owner.py
+          xcrun swift-format format --configuration .swift-format --in-place whitenoise-macTests/DirectChatPromotionOwnershipTests.swift
+          git diff --binary > format-proof/formatting.patch
+          test ! -s format-proof/formatting.patch
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: promotion-format-${{ github.sha }}
+          path: format-proof/formatting.patch

@@ -32,6 +32,7 @@ import Testing
             await state.startDirectChat(with: recipient)
             #expect(state.selection == .chat(paired.groupIdHex))
             #expect(runtime.createGroupAttempts.isEmpty)
+            #expect(runtime.promoteAdminDetailedCallCount == 0)
             #expect(state.activeChats.isEmpty)
             #expect(runtime.existingDirectConversationQueries.last?.peer == peer)
         }
@@ -46,6 +47,7 @@ import Testing
             await state.createNewChat()
             #expect(state.selection == .chat(paired.groupIdHex))
             #expect(runtime.createGroupAttempts.isEmpty)
+            #expect(runtime.promoteAdminDetailedCallCount == 0)
             #expect(state.activeChats.isEmpty)
         }
     #endif
