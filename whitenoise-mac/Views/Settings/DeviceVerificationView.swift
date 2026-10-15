@@ -3,7 +3,6 @@
     import MarmotKit
     import OSLog
     import SwiftUI
-    import UniformTypeIdentifiers
 
     /// Verification transport with separate original-owner enrollment panes.
     struct DeviceVerificationView: View {
@@ -11,22 +10,12 @@
         let model: DeviceVerificationViewModel
         @State private var enrollment: DeviceEnrollmentViewModel?
         @State private var approval: DeviceEnrollmentApprovalViewModel?
-        @State private var incoming = ""
         @State private var setup = ""
-        @State private var selectedTarget: Data?
+        @State private var isWorking = false
         @State private var actionFailed = false
         @State private var actionTask: Task<Void, Never>?
         @State private var camera: PairingCameraScanModel?
-        @State private var qrImport: PairingQRImportModel
-
-        init(model: DeviceVerificationViewModel) {
-            self.model = model
-            _qrImport = State(
-                initialValue: PairingQRImportModel(capture: {
-                    let owner = model.owner
-                    return { model.isActive && model.owner === owner }
-                }))
-        }
+        init(model: DeviceVerificationViewModel) { self.model = model }
 
         var body: some View {
             SettingsSection(title: String(localized: "Device verification")) {
@@ -37,29 +26,24 @@
                         Text("Verification only. Device enrollment is not available in this build.")
                             .foregroundStyle(.secondary)
                     }
-                    if model.enrollmentSupported {
+                    if model.enrollmentSupported, !model.targets.isEmpty {
                         Button("Review enrollment") { perform { approval = try await model.enrollmentApproval() } }
                             .disabled(!model.isActive)
                     }
                     if model.owner == nil {
-                        Button("Start verification") {
+                        Button("Show pairing QR code") {
                             perform {
                                 try await model.begin()
                                 setup = try model.setupPacket().base64EncodedString()
                             }
                         }
-                        .disabled(model.isStarting || !model.isActive)
-                        if !model.targets.isEmpty {
-                            Picker("Existing device group", selection: $selectedTarget) {
-                                Text("Choose a target").tag(Optional<Data>.none)
-                                ForEach(Array(model.targets.enumerated()), id: \.offset) { index, target in
-                                    Text("Target \(index + 1)").tag(Optional(target.selector))
-                                }
-                            }
-                        }
+                        .disabled(model.isStarting || isWorking || !model.isActive)
                     }
-                    if !setup.isEmpty {
-                        PairingQRExportButton(packet: setup, isActive: model.isActive)
+                    if !setup.isEmpty,
+                        model.snapshot?.phase == nil || model.snapshot?.phase == .awaitingSetup
+                            || model.snapshot?.phase == .awaitingPeer
+                    {
+                        PairingQRExportButton(packet: setup, isActive: model.isActive, showOnAppear: true)
                             .id(
                                 QRControlIdentity.setup(ObjectIdentifier(model), model.owner.map(ObjectIdentifier.init))
                             )
@@ -70,43 +54,13 @@
                                 isCurrent: { model.isActive && model.owner == nil && !model.isStarting },
                                 onScan: { packet in
                                     guard model.isActive, model.owner == nil, !model.isStarting else { return }
-                                    incoming = packet
                                     camera = nil
+                                    perform { try await model.scanAndSync(request: decodedPacket(packet)) }
                                 })
                         } label: {
-                            Label(L10n.string("Scan"), systemImage: "qrcode.viewfinder")
+                            Label("Scan and sync", systemImage: "qrcode.viewfinder")
                         }
-                        .disabled(!model.isActive || model.isStarting)
-                        PairingQRImportControl(
-                            model: qrImport, isActive: model.isActive && !model.isStarting, incoming: $incoming
-                        )
-                        .id(QRControlIdentity.incoming(ObjectIdentifier(model), nil))
-                    }
-                    if model.owner == nil {
-                        if model.offersFirstDeviceSetupAttempt {
-                            Button("Approve first-device setup") {
-                                perform {
-                                    try await model.approveFirstDeviceSetup(request: decodedPacket())
-                                    setup = try model.setupPacket().base64EncodedString()
-                                    incoming = ""
-                                }
-                            }
-                            .disabled(incoming.isEmpty || model.isStarting || !model.isActive)
-                        } else if !model.targets.isEmpty {
-                            Button("Approve setup") {
-                                perform {
-                                    guard let selectedTarget else { throw VerificationInputError.invalidPacket }
-                                    try await model.approve(request: decodedPacket(), target: selectedTarget)
-                                    setup = try model.setupPacket().base64EncodedString()
-                                    incoming = ""
-                                }
-                            }
-                            .disabled(incoming.isEmpty || selectedTarget == nil || model.isStarting || !model.isActive)
-                        }
-                        if !model.hasLoadedTargets && !model.isReadingTargets && actionFailed {
-                            Button("Try again") { perform { try await model.loadTargets() } }
-                                .disabled(model.isStarting || !model.isActive)
-                        }
+                        .disabled(!model.isActive || model.isStarting || isWorking)
                     } else {
                         if let snapshot = model.snapshot, let decimals = snapshot.decimals,
                             snapshot.phase == .comparisonAvailable || snapshot.phase == .awaitingPeerVerification
@@ -118,11 +72,21 @@
                                 // Capture the snapshot rendered by this button, never a newer revision.
                                 perform { try await model.confirm(displayedRevision: snapshot.revision) }
                             }
-                            .disabled(snapshot.phase != .comparisonAvailable)
+                            .disabled(snapshot.phase != .comparisonAvailable || isWorking || !model.isActive)
                         }
-                        if model.snapshot?.phase == .verificationCompleteEnrollmentPending {
+                        if let snapshot = model.snapshot, snapshot.phase == .verificationCompleteEnrollmentPending {
                             if model.enrollmentSupported {
-                                Button("Device enrollment") { perform { enrollment = try model.enrollmentTransport() } }
+                                Text(
+                                    "Pairing shares all existing and future chats, chat history, and messaging between these devices."
+                                )
+                                Button("Pair and share all chats") {
+                                    perform {
+                                        let original = try model.enrollmentTransport()
+                                        enrollment = original
+                                        try await original.performTransportAction(
+                                            .shareChats, displayedRevision: snapshot.revision)
+                                    }
+                                }.disabled(isWorking || !model.isActive)
                             } else {
                                 Text("Verification complete. Enrollment remains unavailable.")
                             }
@@ -132,19 +96,17 @@
                     if let snapshot = model.snapshot {
                         if snapshot.phase == .enrollmentComplete {
                             Text("Done")
-                        } else if snapshot.decimals == nil {
+                        } else if snapshot.phase == .cancelled || snapshot.phase == .expired
+                            || snapshot.phase == .failed
+                        {
+                            Text("Verification action failed. Retry or cancel.").foregroundStyle(.red)
+                        } else if snapshot.decimals == nil && snapshot.phase != .verificationCompleteEnrollmentPending {
                             ProgressView(L10n.string("Waiting"))
                         }
                     }
-                    Button(L10n.string("Cancel")) {
-                        perform {
-                            setup = ""
-                            incoming = ""
-                            clearQR()
-                            try await model.cancel()
-                        }
-                    }
-                    .disabled(!model.isActive)
+                    if isWorking { ProgressView(L10n.string("Waiting")) }
+                    Button(L10n.string("Cancel")) { cancel() }
+                        .disabled(!model.isActive)
                     if actionFailed { Text("Verification action failed. Retry or cancel.").foregroundStyle(.red) }
                 }
             }
@@ -159,9 +121,6 @@
                     })
             ) {
                 if let camera { PairingCameraScannerSheet(model: camera) }
-            }
-            .sheet(isPresented: Binding(get: { enrollment != nil }, set: { if !$0 { enrollment = nil } })) {
-                if let enrollment { DeviceEnrollmentTransportView(model: enrollment) }
             }
             .sheet(isPresented: Binding(get: { approval != nil }, set: { if !$0 { approval = nil } })) {
                 if let approval { DeviceEnrollmentApprovalView(model: approval) }
@@ -182,15 +141,16 @@
                     enrollment = nil
                     approval = nil
                     setup = ""
-                    incoming = ""
-                    selectedTarget = nil
                     actionFailed = false
                     clearQR()
                 }
             }
             .onChange(of: model.owner.map(ObjectIdentifier.init)) { _, _ in clearQR() }
             .onChange(of: model.snapshot?.phase) { _, phase in
-                if phase == .cancelled || phase == .expired || phase == .failed { clearQR() }
+                if phase == .cancelled || phase == .expired || phase == .failed {
+                    setup = ""
+                    clearQR()
+                }
             }
         }
 
@@ -207,17 +167,15 @@
         // Roles distinguish sibling controls while ownership changes still retire their local state.
         private enum QRControlIdentity: Hashable {
             case setup(ObjectIdentifier, ObjectIdentifier?)
-            case incoming(ObjectIdentifier, ObjectIdentifier?)
         }
 
         private func clearQR() {
-            qrImport.cancel()
             camera?.close()
             camera = nil
         }
 
-        private func decodedPacket() throws -> Data {
-            let encoded = incoming.trimmingCharacters(in: .whitespacesAndNewlines)
+        private func decodedPacket(_ packet: String) throws -> Data {
+            let encoded = packet.trimmingCharacters(in: .whitespacesAndNewlines)
             // Native resource bound only. The original SDK authenticates the packet and protocol.
             guard encoded.utf8.count <= 65_536, !encoded.isEmpty,
                 let bytes = Data(base64Encoded: encoded), bytes.base64EncodedString() == encoded
@@ -227,10 +185,22 @@
             return bytes
         }
 
-        private func perform(_ action: @escaping @MainActor () async throws -> Void) {
+        private func cancel() {
             actionTask?.cancel()
-            actionFailed = false
+            setup = ""
+            enrollment = nil
+            clearQR()
             actionTask = Task {
+                do { try await model.cancel() } catch { if !Task.isCancelled { actionFailed = true } }
+            }
+        }
+
+        private func perform(_ action: @escaping @MainActor () async throws -> Void) {
+            guard !isWorking else { return }
+            actionFailed = false
+            isWorking = true
+            actionTask = Task {
+                defer { isWorking = false }
                 do { try await action() } catch {
                     if !Task.isCancelled, model.isActive {
                         actionFailed = true

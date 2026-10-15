@@ -6,27 +6,30 @@
     struct PairingQRExportButton: View {
         let packet: String
         let isActive: Bool
+        var showOnAppear = false
         @State private var pages: [String]?
         @State private var tooLarge = false
 
         var body: some View {
-            Button("Show pairing QR code") {
-                guard isActive, let bytes = Data(base64Encoded: packet), bytes.base64EncodedString() == packet else {
-                    return
+            Button("Show pairing QR code", action: show)
+                .disabled(!isActive)
+                .sheet(isPresented: Binding(get: { pages != nil }, set: { if !$0 { pages = nil } })) {
+                    if let pages { PairingQRCodeSheet(payloads: pages, close: { self.pages = nil }) }
                 }
-                do {
-                    pages = try PairingQRCode.encodePages(bytes)
-                    tooLarge = false
-                } catch { tooLarge = true }
-            }
-            .disabled(!isActive)
-            .sheet(isPresented: Binding(get: { pages != nil }, set: { if !$0 { pages = nil } })) {
-                if let pages { PairingQRCodeSheet(payloads: pages, close: { self.pages = nil }) }
-            }
-            .onDisappear { pages = nil }
-            .onChange(of: isActive) { _, active in if !active { pages = nil } }
-            .onChange(of: packet) { _, _ in pages = nil }
+                .task { if showOnAppear { show() } }
+                .onDisappear { pages = nil }
+                .onChange(of: isActive) { _, active in if !active { pages = nil } }
+                .onChange(of: packet) { _, _ in pages = nil }
             if tooLarge { Text("Packet is too large for QR. Use Copy instead.").foregroundStyle(.secondary) }
+        }
+        private func show() {
+            guard isActive, let bytes = Data(base64Encoded: packet), bytes.base64EncodedString() == packet else {
+                return
+            }
+            do {
+                pages = try PairingQRCode.encodePages(bytes)
+                tooLarge = false
+            } catch { tooLarge = true }
         }
     }
 
