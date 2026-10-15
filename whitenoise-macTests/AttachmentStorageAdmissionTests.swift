@@ -14,6 +14,7 @@ import Testing
             #expect(status.canRetry)
             #expect(status.canRemove)
             #expect(status.received == 16)
+            #expect(!status.state.needsRearmToDownload)
         }
     }
 #endif
