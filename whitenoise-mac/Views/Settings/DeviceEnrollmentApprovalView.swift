@@ -5,15 +5,11 @@
     /// Review metadata stays on the original account-owned approval; display never grants consent.
     struct DeviceEnrollmentApprovalView: View {
         let model: DeviceEnrollmentApprovalViewModel?
-        @State private var incoming = ""
         @State private var task: Task<Void, Never>?
         @State private var readFailed = false
 
-        @State private var qrImport: PairingQRImportModel
-
         init(model: DeviceEnrollmentApprovalViewModel?) {
             self.model = model
-            _qrImport = State(initialValue: .init(capture: { { model?.isActive == true } }))
         }
 
         var body: some View {
@@ -34,17 +30,8 @@
                                 perform(.approveAndShareChats, revision: review.revision)
                             }
                             .disabled(model.isWorking)
-                        } else if model.isActive, let snapshot = model.snapshot,
-                            snapshot.phase == .approvedAwaitingPacket
-                        {
-                            PairingQRImportControl(
-                                model: qrImport, isActive: model.isActive && !model.isWorking, incoming: $incoming
-                            )
-                            .id(ObjectIdentifier(model))
-                            TextField("Opaque packet from the other device", text: $incoming, axis: .vertical)
-                                .lineLimit(2...4)
-                            Button("Receive packet") { perform(.receivePacket, revision: snapshot.revision) }
-                                .disabled(model.isWorking)
+                        } else if model.isActive, model.snapshot?.phase == .approvedAwaitingPacket {
+                            ProgressView(L10n.string("Waiting"))
                         } else if model.isActive, model.snapshot?.phase == .awaitingSettlement {
                             Text("Waiting")
                         } else if model.isActive, model.snapshot?.phase == .settled {
@@ -56,8 +43,6 @@
                             Text("Enrollment action failed. Retry or cancel.").foregroundStyle(.red)
                         }
                         Button(L10n.string(model.cleanupError == nil ? "Cancel" : "Try again")) {
-                            incoming = ""
-                            qrImport.cancel()
                             task?.cancel()
                             task = Task { try? await model.cancel() }
                         }
@@ -67,17 +52,26 @@
                     Text("Verification complete. Enrollment remains unavailable.")
                 }
             }
-            .task { refreshReview() }
+            .task {
+                refreshReview()
+                while !Task.isCancelled, model?.isActive == true {
+                    do {
+                        try await Task.sleep(for: .milliseconds(500))
+                        if let model, !model.isWorking {
+                            try await model.refresh()
+                            if model.snapshot?.phase == .awaitingApproval, model.reviewDisplay == nil {
+                                try await model.refreshForDisplay()
+                            }
+                            readFailed = false
+                        }
+                    } catch is CancellationError { return } catch { if !Task.isCancelled { readFailed = true } }
+                }
+            }
             .onDisappear {
                 task?.cancel()
-                incoming = ""
-                qrImport.cancel()
             }
             .onChange(of: model?.isActive) { _, active in
-                if active != true {
-                    incoming = ""
-                    qrImport.cancel()
-                }
+                if active != true { task?.cancel() }
             }
         }
 
@@ -93,11 +87,9 @@
         }
         private func perform(_ action: DeviceEnrollmentApprovalViewModel.ReviewAction, revision: UInt64) {
             guard let model, model.isActive, !model.isWorking else { return }
-            let packet = incoming
             task = Task {
                 do {
-                    try await model.performReviewAction(action, displayedRevision: revision, input: packet)
-                    if model.isActive, !Task.isCancelled { incoming = "" }
+                    try await model.performReviewAction(action, displayedRevision: revision)
                 } catch {
                     // The original model retains the typed error for retry or exact cleanup.
                 }

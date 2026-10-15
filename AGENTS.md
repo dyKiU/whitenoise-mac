@@ -91,6 +91,8 @@ Build the separate Mac sidecar with `scripts/build-sync-development.sh` and a
 task-specific `WN_SYNC_DERIVED_DATA` path. App-only `WN_APP_*` settings keep the
 SwiftPM privacy resource bundle name intact. The script signs locally with the
 project's sandbox entitlements, verifies signing, and performs no installation.
+The explicit experimental sidecar adds camera access and its usage description
+through `whitenoise-mac.syncdev.entitlements`; production signing stays unchanged.
 The sidecar registers `marmot-syncdev`, preserving production URL registration;
 development deep-link flow verification remains pending. By default it uses
 published MarmotKit 0.12.0. Explicit `WN_EXPERIMENTAL_DEVICE_SYNC=1` enables the
@@ -288,8 +290,10 @@ and experimental e6. It does not cover pairing UI or scene suspension.
 
 
 The experimental Settings verification pane takes its account-owned model explicitly
-through the shell. Keep opaque packet bytes and comparison display local to that
-owner, confirm the displayed revision, and acknowledge packet delivery explicitly.
+through the shell. Keep the initial bootstrap and comparison display local to that
+owner and confirm the displayed revision. The SDK exchanges encrypted packets and
+authenticated processing receipts automatically; normal UI never asks the user to
+receive or acknowledge individual packets.
 Do not add enrollment actions while the SDK capability is unavailable. Localization
 for this pane used Apple stringsdata/XLIFF export-import, preserving all prior
 catalog entries; retain that tool provenance when extending it. Final source passed
@@ -345,3 +349,11 @@ Full recipient-pane PR qualification at signed `ed16012` passes experimental
 executed no tests because of individually diagnosed stale FFI PCMs; both are
 preserved separately. See `docs/history-recipient-review-full-pr-verification.json`.
 Genuine installed original approval and imported reader acceptance remain open.
+
+One-scan development pairing uses the compact native bootstrap and automatic
+SDK-owned encrypted relay exchange. Activate only after exact account/runtime
+factory adoption; a late result must be cancelled before it can export a scanner
+response. Keep visual SAS comparison, bilateral enrollment/chat-sharing approval
+and each existing device's explicit review. Transport receipts never replace
+approval. The normal UI offers no per-packet export/import/receive/ACK/finalize
+controls; the existing low-level SDK APIs remain available for controlled tests.

@@ -29,6 +29,13 @@
                 release = nil
             }
         }
+        @Test func compactBootstrapNeedsExactlyOneQRPage() throws {
+            let bytes = Data(("WNPAIR1:" + String(repeating: "a", count: 1016)).utf8)
+            let pages = try PairingQRCode.encodePages(bytes)
+            #expect(pages.count == 1)
+            #expect(try PairingQRCode.decode(pages[0]) == bytes.base64EncodedString())
+        }
+
         @Test func purposeTaggedQRPreservesExactOpaqueBytes() throws {
             let bytes = Data((0..<256).map(UInt8.init))
             let payload = try PairingQRCode.encode(bytes)

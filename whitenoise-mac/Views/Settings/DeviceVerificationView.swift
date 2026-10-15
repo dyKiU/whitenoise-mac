@@ -13,10 +13,10 @@
         @State private var approval: DeviceEnrollmentApprovalViewModel?
         @State private var incoming = ""
         @State private var setup = ""
-        @State private var outgoing: [DeviceLinkingOutgoingPacketFfi] = []
         @State private var selectedTarget: Data?
         @State private var actionFailed = false
         @State private var actionTask: Task<Void, Never>?
+        @State private var camera: PairingCameraScanModel?
         @State private var qrImport: PairingQRImportModel
 
         init(model: DeviceVerificationViewModel) {
@@ -59,21 +59,29 @@
                         }
                     }
                     if !setup.isEmpty {
-                        Text("Setup packet")
-                        Text(setup).font(.system(.caption, design: .monospaced)).textSelection(.enabled)
-                        Self.packetCopyButton(setup)
                         PairingQRExportButton(packet: setup, isActive: model.isActive)
                             .id(
                                 QRControlIdentity.setup(ObjectIdentifier(model), model.owner.map(ObjectIdentifier.init))
                             )
                     }
-                    PairingQRImportControl(
-                        model: qrImport, isActive: model.isActive && !model.isStarting, incoming: $incoming
-                    )
-                    .id(QRControlIdentity.incoming(ObjectIdentifier(model), model.owner.map(ObjectIdentifier.init)))
-                    TextField("Opaque packet from the other device", text: $incoming, axis: .vertical)
-                        .lineLimit(2...4)
+                    if model.owner == nil {
+                        Button {
+                            camera = PairingCameraScanModel(
+                                isCurrent: { model.isActive && model.owner == nil && !model.isStarting },
+                                onScan: { packet in
+                                    guard model.isActive, model.owner == nil, !model.isStarting else { return }
+                                    incoming = packet
+                                    camera = nil
+                                })
+                        } label: {
+                            Label(L10n.string("Scan"), systemImage: "qrcode.viewfinder")
+                        }
                         .disabled(!model.isActive || model.isStarting)
+                        PairingQRImportControl(
+                            model: qrImport, isActive: model.isActive && !model.isStarting, incoming: $incoming
+                        )
+                        .id(QRControlIdentity.incoming(ObjectIdentifier(model), nil))
+                    }
                     if model.owner == nil {
                         if model.offersFirstDeviceSetupAttempt {
                             Button("Approve first-device setup") {
@@ -83,7 +91,7 @@
                                     incoming = ""
                                 }
                             }
-                            .disabled(model.isStarting || !model.isActive)
+                            .disabled(incoming.isEmpty || model.isStarting || !model.isActive)
                         } else if !model.targets.isEmpty {
                             Button("Approve setup") {
                                 perform {
@@ -93,30 +101,13 @@
                                     incoming = ""
                                 }
                             }
-                            .disabled(selectedTarget == nil || model.isStarting || !model.isActive)
+                            .disabled(incoming.isEmpty || selectedTarget == nil || model.isStarting || !model.isActive)
                         }
                         if !model.hasLoadedTargets && !model.isReadingTargets && actionFailed {
                             Button("Try again") { perform { try await model.loadTargets() } }
                                 .disabled(model.isStarting || !model.isActive)
                         }
                     } else {
-                        HStack {
-                            Button("Receive setup") {
-                                perform {
-                                    try await model.receiveSetupPacket(decodedPacket())
-                                    incoming = ""
-                                }
-                            }
-                            Button("Receive packet") {
-                                perform {
-                                    try await model.receivePacket(decodedPacket())
-                                    incoming = ""
-                                }
-                            }
-                            Button("Read outgoing packets") {
-                                perform { outgoing = try await model.outgoingPackets() }
-                            }
-                        }
                         if let snapshot = model.snapshot, let decimals = snapshot.decimals,
                             snapshot.phase == .comparisonAvailable || snapshot.phase == .awaitingPeerVerification
                         {
@@ -136,29 +127,19 @@
                                 Text("Verification complete. Enrollment remains unavailable.")
                             }
                         }
-                        ForEach(Array(outgoing.enumerated()), id: \.offset) { _, packet in
-                            HStack {
-                                Self.packetCopyButton(packet.bytes.base64EncodedString())
-                                PairingQRExportButton(
-                                    packet: packet.bytes.base64EncodedString(), isActive: model.isActive
-                                )
-                                .id(
-                                    QRControlIdentity.outgoing(
-                                        ObjectIdentifier(model), model.owner.map(ObjectIdentifier.init)))
-                                Button("Delivered to the other device") {
-                                    perform {
-                                        try await model.acknowledgePacket(packet.acknowledgementId)
-                                        outgoing.removeAll { $0.acknowledgementId == packet.acknowledgementId }
-                                    }
-                                }
-                            }
+
+                    }
+                    if let snapshot = model.snapshot {
+                        if snapshot.phase == .enrollmentComplete {
+                            Text("Done")
+                        } else if snapshot.decimals == nil {
+                            ProgressView(L10n.string("Waiting"))
                         }
                     }
                     Button(L10n.string("Cancel")) {
                         perform {
                             setup = ""
                             incoming = ""
-                            outgoing = []
                             clearQR()
                             try await model.cancel()
                         }
@@ -166,6 +147,18 @@
                     .disabled(!model.isActive)
                     if actionFailed { Text("Verification action failed. Retry or cancel.").foregroundStyle(.red) }
                 }
+            }
+            .sheet(
+                isPresented: Binding(
+                    get: { camera != nil },
+                    set: {
+                        if !$0 {
+                            camera?.close()
+                            camera = nil
+                        }
+                    })
+            ) {
+                if let camera { PairingCameraScannerSheet(model: camera) }
             }
             .sheet(isPresented: Binding(get: { enrollment != nil }, set: { if !$0 { enrollment = nil } })) {
                 if let enrollment { DeviceEnrollmentTransportView(model: enrollment) }
@@ -175,7 +168,10 @@
             }
             .task {
                 guard model.verificationSupported, model.isActive else { return }
-                do { try await model.loadTargets() } catch { if model.isActive { actionFailed = true } }
+                do {
+                    try await model.loadTargets()
+                    if model.owner != nil { setup = try model.setupPacket().base64EncodedString() }
+                } catch { if model.isActive { actionFailed = true } }
             }
             .onDisappear {
                 actionTask?.cancel()
@@ -187,7 +183,6 @@
                     approval = nil
                     setup = ""
                     incoming = ""
-                    outgoing = []
                     selectedTarget = nil
                     actionFailed = false
                     clearQR()
@@ -213,16 +208,21 @@
         private enum QRControlIdentity: Hashable {
             case setup(ObjectIdentifier, ObjectIdentifier?)
             case incoming(ObjectIdentifier, ObjectIdentifier?)
-            case outgoing(ObjectIdentifier, ObjectIdentifier?)
         }
 
-        private func clearQR() { qrImport.cancel() }
+        private func clearQR() {
+            qrImport.cancel()
+            camera?.close()
+            camera = nil
+        }
 
         private func decodedPacket() throws -> Data {
             let encoded = incoming.trimmingCharacters(in: .whitespacesAndNewlines)
             // Native resource bound only. The original SDK authenticates the packet and protocol.
             guard encoded.utf8.count <= 65_536, !encoded.isEmpty,
                 let bytes = Data(base64Encoded: encoded), bytes.base64EncodedString() == encoded
+            else { throw VerificationInputError.invalidPacket }
+            guard bytes.count <= 1024, String(data: bytes, encoding: .utf8)?.hasPrefix("WNPAIR1:") == true
             else { throw VerificationInputError.invalidPacket }
             return bytes
         }

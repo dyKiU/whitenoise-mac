@@ -400,14 +400,40 @@ final class SessionState {
         }
 
         func beginDeviceLinkingSession() async throws -> DeviceLinkingScope {
-            try await adoptDeviceLinkingFactory { runtime, accountRef in
+            let owner = try await adoptDeviceLinkingFactory { runtime, accountRef in
                 try await runtime.beginDeviceLinkingSession(accountRef: accountRef)
+            }
+            do {
+                try await owner.activateAutomaticPairing(displayBootstrap: true)
+                return owner
+            } catch {
+                // Clear this adopted owner on activation failure; a retired
+                // result must never cancel a different current account scope.
+                if deviceLinkingScope === owner {
+                    try await cancelDeviceLinking()
+                } else {
+                    try await owner.cancel()
+                }
+                throw error
             }
         }
 
         func approveDeviceLinkingSession(request: Data, target: Data?) async throws -> DeviceLinkingScope {
-            try await adoptDeviceLinkingFactory { runtime, accountRef in
+            let owner = try await adoptDeviceLinkingFactory { runtime, accountRef in
                 try await runtime.approveDeviceLinkingSession(accountRef: accountRef, request: request, target: target)
+            }
+            do {
+                try await owner.activateAutomaticPairing(displayBootstrap: false)
+                return owner
+            } catch {
+                // Clear this adopted owner on activation failure; a retired
+                // result must never cancel a different current account scope.
+                if deviceLinkingScope === owner {
+                    try await cancelDeviceLinking()
+                } else {
+                    try await owner.cancel()
+                }
+                throw error
             }
         }
 
