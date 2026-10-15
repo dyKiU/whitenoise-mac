@@ -165,8 +165,9 @@ extension WorkspaceState {
         // guard while suspended and each reach `createGroup`, creating duplicate chats.
         lastError = nil
         startChatInvitePrompt = nil
+        let accountEpoch = conversationMetadataEpoch
         isCreatingChat = true
-        defer { isCreatingChat = false }
+        defer { if conversationMetadataEpoch == accountEpoch { isCreatingChat = false } }
 
         // Capture the creating account on entry so a mid-await A→B account switch (e.g. via
         // a notification tap while `createGroup`/`reloadChats` are suspended) cannot graft
@@ -194,24 +195,39 @@ extension WorkspaceState {
             }
         }
         guard let primary = recipients.first else { return }
-        let isDirect = recipients.count == 1
+        let isDirect = recipients.count == 1 && newChatName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
 
         do {
+            guard activeAccountId == accountId, conversationMetadataEpoch == accountEpoch, !Task.isCancelled else {
+                return
+            }
             if isDirect,
-                let existing = await existingDirectChat(
+                let existing = try await existingDirectChat(
                     with: primary.accountIdHex,
                     account: activeAccount,
                     client: client
-                )
+                ), existing.reusable
             {
-                if existing.isArchived {
-                    guard await setChatArchived(existing.chat, archived: false) else { return }
+                guard activeAccountId == accountId, conversationMetadataEpoch == accountEpoch, !Task.isCancelled else {
+                    return
                 }
-                guard activeAccountId == accountId else { return }
-                selection = .chat(existing.chat.id)
+                if existing.archived {
+                    _ = try await client.setGroupArchived(
+                        accountRef: activeAccount.accountRef, groupIdHex: existing.groupIdHex, archived: false)
+                }
+                if !existing.isPaired { await reloadChats(forceFreshSnapshot: true) }
+                guard activeAccountId == accountId, conversationMetadataEpoch == accountEpoch, !Task.isCancelled else {
+                    return
+                }
+                selection = .chat(existing.groupIdHex)
                 closeNewChatComposer()
-                beginTimelineInitialLoadIfNeeded(groupIdHex: existing.chat.id)
-                await loadMessages(groupIdHex: existing.chat.id)
+                if !existing.isPaired {
+                    beginTimelineInitialLoadIfNeeded(groupIdHex: existing.groupIdHex)
+                    await loadMessages(groupIdHex: existing.groupIdHex)
+                }
+                return
+            }
+            guard activeAccountId == accountId, conversationMetadataEpoch == accountEpoch, !Task.isCancelled else {
                 return
             }
 
@@ -221,7 +237,7 @@ extension WorkspaceState {
                 isDirect
                 ? primary.title
                 : recipients.map(\.title).joined(separator: ", ")
-            let groupName = trimmedName.isEmpty ? fallbackTitle : trimmedName
+            let groupName = isDirect ? "" : (trimmedName.isEmpty ? fallbackTitle : trimmedName)
             let groupIdHex = try await client.createGroup(
                 accountRef: activeAccount.accountRef,
                 name: groupName,
@@ -229,10 +245,12 @@ extension WorkspaceState {
                 description: trimmedDescription.isEmpty ? nil : trimmedDescription
             )
             await reloadChats(forceFreshSnapshot: true)
-            guard activeAccountId == accountId else { return }
+            guard activeAccountId == accountId, conversationMetadataEpoch == accountEpoch, !Task.isCancelled else {
+                return
+            }
             insertCreatedChatIfNeeded(
                 groupIdHex: groupIdHex,
-                title: groupName,
+                title: isDirect ? primary.title : groupName,
                 avatarSeed: primary.accountIdHex,
                 pictureURL: isDirect ? primary.pictureURL : nil,
                 isDirect: isDirect
@@ -242,7 +260,9 @@ extension WorkspaceState {
             beginTimelineInitialLoadIfNeeded(groupIdHex: groupIdHex)
             await loadMessages(groupIdHex: groupIdHex)
         } catch {
-            guard activeAccountId == accountId else { return }
+            guard activeAccountId == accountId, conversationMetadataEpoch == accountEpoch, !Task.isCancelled else {
+                return
+            }
             applyChatCreationFailure(error, recipients: recipients, surface: isDirect ? .directChat : .groupDraft)
         }
     }
@@ -251,26 +271,9 @@ extension WorkspaceState {
         with targetAccountIdHex: String,
         account: AccountItem,
         client: any MarmotRuntime
-    ) async -> (chat: ChatItem, isArchived: Bool)? {
-        let target = targetAccountIdHex.lowercased()
-        let expectedMembers = Set([account.accountIdHex.lowercased(), target])
-        let candidates = activeChats.map { ($0, false) } + archivedChats.map { ($0, true) }
-
-        for (chat, isArchived) in candidates where chat.isDirect {
-            guard !Task.isCancelled else { return nil }
-            guard
-                let members = await cachedGroupMembers(
-                    groupIdHex: chat.id,
-                    account: account,
-                    client: client
-                )
-            else { continue }
-            let memberIds = Set(members.map { $0.memberIdHex.lowercased() })
-            if memberIds == expectedMembers {
-                return (chat, isArchived)
-            }
-        }
-        return nil
+    ) async throws -> DirectConversationDestination? {
+        try await client.existingDirectConversation(
+            accountRef: account.accountRef, peerAccountId: targetAccountIdHex.lowercased())
     }
 
     var hasInProgressNewChatComposition: Bool {
@@ -560,36 +563,48 @@ extension WorkspaceState {
         return prefixMatches + containedMatches
     }
 
-    func existingDirectChat(peerAccountIdHex: String) -> ChatItem? {
-        guard let activeAccountId else { return nil }
-        let match: (ChatItem) -> Bool = { $0.isDirect && $0.avatarSeed == peerAccountIdHex }
-        if let chat = (chatsByAccount[activeAccountId] ?? []).first(where: match) {
-            return chat
-        }
-        return (archivedChatsByAccount[activeAccountId] ?? []).first(where: match)
-    }
-
     /// Open the existing direct chat with this person, or create one and select it. Direct
     /// chats are created with an empty group name; the chat list titles them from the peer
     /// profile.
     func startDirectChat(with recipient: NewChatRecipient) async {
-        if let existing = existingDirectChat(peerAccountIdHex: recipient.accountIdHex) {
-            selectChat(existing)
-            return
-        }
         guard let client, let activeAccount, !isCreatingChat else { return }
         lastError = nil
         startChatInvitePrompt = nil
+        let accountEpoch = conversationMetadataEpoch
         isCreatingChat = true
         creatingDirectChatIdHex = recipient.accountIdHex
         defer {
-            isCreatingChat = false
-            creatingDirectChatIdHex = nil
+            if conversationMetadataEpoch == accountEpoch {
+                isCreatingChat = false
+                creatingDirectChatIdHex = nil
+            }
         }
         // Capture the creating account so a mid-await account switch cannot graft the new
         // chat onto another account's UI state (see whitenoise-mac#229).
         let accountId = activeAccount.id
         do {
+            let existing = try await existingDirectChat(
+                with: recipient.accountIdHex, account: activeAccount, client: client)
+            guard activeAccountId == accountId, conversationMetadataEpoch == accountEpoch, !Task.isCancelled else {
+                return
+            }
+            if let existing, existing.reusable {
+                if existing.archived {
+                    _ = try await client.setGroupArchived(
+                        accountRef: activeAccount.accountRef, groupIdHex: existing.groupIdHex, archived: false)
+                }
+                if !existing.isPaired { await reloadChats(forceFreshSnapshot: true) }
+                guard activeAccountId == accountId, conversationMetadataEpoch == accountEpoch, !Task.isCancelled else {
+                    return
+                }
+                selection = .chat(existing.groupIdHex)
+                closeNewChatComposer()
+                if !existing.isPaired {
+                    beginTimelineInitialLoadIfNeeded(groupIdHex: existing.groupIdHex)
+                    await loadMessages(groupIdHex: existing.groupIdHex)
+                }
+                return
+            }
             let memberRef = recipient.memberRef.isEmpty ? recipient.accountIdHex : recipient.memberRef
             let groupIdHex = try await client.createGroup(
                 accountRef: activeAccount.accountRef,
@@ -598,7 +613,9 @@ extension WorkspaceState {
                 description: nil
             )
             await reloadChats(forceFreshSnapshot: true)
-            guard activeAccountId == accountId else { return }
+            guard activeAccountId == accountId, conversationMetadataEpoch == accountEpoch, !Task.isCancelled else {
+                return
+            }
             insertCreatedChatIfNeeded(
                 groupIdHex: groupIdHex,
                 title: recipient.title,
@@ -611,7 +628,9 @@ extension WorkspaceState {
             beginTimelineInitialLoadIfNeeded(groupIdHex: groupIdHex)
             await loadMessages(groupIdHex: groupIdHex)
         } catch {
-            guard activeAccountId == accountId else { return }
+            guard activeAccountId == accountId, conversationMetadataEpoch == accountEpoch, !Task.isCancelled else {
+                return
+            }
             applyChatCreationFailure(error, recipients: [recipient], surface: .directChat)
         }
     }
