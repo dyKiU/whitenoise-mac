@@ -58,7 +58,8 @@
 
         func testClosedMatchingPrivateRootIsAcceptedOnlyInsideExplicitCIBase() throws {
             let value = try fixture()
-            XCTAssertTrue(try HostedNativeFixtureRoot.accepts(value.root, prefix: "native-", environment: value.environment))
+            XCTAssertTrue(
+                try HostedNativeFixtureRoot.accepts(value.root, prefix: "native-", environment: value.environment))
             var environment = value.environment
             environment.removeValue(forKey: "GITHUB_ACTIONS")
             XCTAssertFalse(try HostedNativeFixtureRoot.accepts(value.root, prefix: "native-", environment: environment))
@@ -76,17 +77,20 @@
             ]
             for mismatch in mismatches {
                 try writeProvenance(value, overrides: mismatch)
-                XCTAssertFalse(try HostedNativeFixtureRoot.accepts(value.root, prefix: "native-", environment: value.environment))
+                XCTAssertFalse(
+                    try HostedNativeFixtureRoot.accepts(value.root, prefix: "native-", environment: value.environment))
             }
         }
 
         func testBroadPermissionsOrMissingMarkerAreRefused() throws {
             let value = try fixture()
             try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: value.root.path)
-            XCTAssertFalse(try HostedNativeFixtureRoot.accepts(value.root, prefix: "native-", environment: value.environment))
+            XCTAssertFalse(
+                try HostedNativeFixtureRoot.accepts(value.root, prefix: "native-", environment: value.environment))
             try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: value.root.path)
             try FileManager.default.removeItem(at: value.root.appendingPathComponent(".native-acceptance"))
-            XCTAssertThrowsError(try HostedNativeFixtureRoot.accepts(value.root, prefix: "native-", environment: value.environment))
+            XCTAssertThrowsError(
+                try HostedNativeFixtureRoot.accepts(value.root, prefix: "native-", environment: value.environment))
         }
     }
 #endif

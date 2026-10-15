@@ -50,7 +50,8 @@
                 try owned(provenanceFile, mode: 0o600, type: .typeRegular),
                 try owned(credentials, mode: 0o700, type: .typeDirectory),
                 try owned(credentials.appendingPathComponent("credentials.key"), mode: 0o600, type: .typeRegular),
-                try owned(credentials.appendingPathComponent("signing-credentials.sealed"), mode: 0o600, type: .typeRegular),
+                try owned(
+                    credentials.appendingPathComponent("signing-credentials.sealed"), mode: 0o600, type: .typeRegular),
                 try Data(contentsOf: marker) == Data("native-sdk83-test-only-v1\n".utf8)
             else { return false }
             let bytes = try Data(contentsOf: provenanceFile)
