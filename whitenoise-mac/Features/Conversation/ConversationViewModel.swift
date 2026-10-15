@@ -91,6 +91,10 @@ final class ConversationViewModel {
     /// The poll row as the last installed snapshot projected it, to tell a reprojection of that
     /// row from a snapshot that left it unchanged.
     @ObservationIgnored private var pollVotesRecord: TimelineMessageRecordFfi?
+    /// The open reaction details popover's model, if any. Re-read on every installed revision,
+    /// because the window carries only a bounded reactor preview: a changed reactor list need not
+    /// change the row.
+    private(set) var reactionDetails: MessageReactionsViewModel?
 
     @ObservationIgnored private let runtime: any MarmotRuntime
     @ObservationIgnored private let productAnalytics: ProductAnalyticsRecorder?
@@ -139,6 +143,8 @@ final class ConversationViewModel {
     /// The conversation is going away: its window, and the custom emoji images still loading.
     func stop() {
         stopWindow()
+        reactionDetails?.cancel()
+        reactionDetails = nil
         customEmojiImages.cancelAll()
     }
 
@@ -340,8 +346,7 @@ final class ConversationViewModel {
         }
     }
 
-    /// Sends a new poll. MDK accepts polls only in group conversations; the caller decides
-    /// whether this conversation is one.
+    /// Sends a new poll. MDK 0.13 accepts polls in direct conversations as well as groups.
     func createPoll(_ submission: PollDraft.Submission) async throws {
         _ = try await runtime.createPoll(
             accountRef: account.accountRef,
@@ -410,6 +415,31 @@ final class ConversationViewModel {
         pollVotes?.cancel()
         pollVotes = nil
         pollVotesRecord = nil
+    }
+
+    /// Opens the reaction details popover for one message, discarding the model (and any read in
+    /// flight) of a popover opened for another message.
+    func showReactionDetails(messageIdHex: String) {
+        guard reactionDetails?.messageIdHex != messageIdHex else { return }
+        reactionDetails?.cancel()
+        let model = MessageReactionsViewModel(
+            accountRef: account.accountRef,
+            groupIdHex: groupIdHex,
+            messageIdHex: messageIdHex,
+            viewerAccountIdHex: account.accountIdHex,
+            runtime: runtime
+        )
+        // Started before the popover is presented, so its first frame shows the read in flight.
+        model.start()
+        reactionDetails = model
+    }
+
+    /// Closes the popover for `messageIdHex`. A close for a message whose popover was already
+    /// replaced by another one leaves that other one alone.
+    func dismissReactionDetails(messageIdHex: String) {
+        guard reactionDetails?.messageIdHex == messageIdHex else { return }
+        reactionDetails?.cancel()
+        reactionDetails = nil
     }
 
     func localSendStatus(clientToken: String) async throws -> LocalSendStatusFfi? {
@@ -535,6 +565,7 @@ final class ConversationViewModel {
         }
         clearProjectedPollSelections(in: replacement)
         reprojectPollVotes(in: replacement)
+        reactionDetails?.refresh()
         error = nil
         isLoading = false
         if presents, let snapshotObserver {

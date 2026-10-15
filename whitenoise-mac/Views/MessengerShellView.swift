@@ -173,7 +173,8 @@ private struct DetailPaneView: View {
                                 chatListModel: scope.chatListModel,
                                 attachmentModel: scope.attachmentModel(groupIdHex: chat.id),
                                 safetyModel: scope.safetyModel(groupIdHex: chat.id),
-                                blockedUsersModel: scope.blockedUsers
+                                blockedUsersModel: scope.blockedUsers,
+                                avatarAssets: scope.avatarAssets
                             )
                         } else {
                             #if WN_EXPERIMENTAL_DEVICE_SYNC
@@ -506,6 +507,9 @@ private struct ConversationView: View {
     let attachmentModel: AttachmentViewModel
     let safetyModel: GroupSafetyViewModel
     let blockedUsersModel: BlockedUsersViewModel
+    /// Avatar bytes for the snapshot's identities, so the mention picker draws the same pictures
+    /// the transcript does.
+    let avatarAssets: AvatarAssetStore
 
     private var isBlockedDirectPeer: Bool {
         chat.directPeerAccountIdHex.map {
@@ -845,7 +849,8 @@ private struct ConversationView: View {
     private func mentionCandidates(for context: ComposerMentionContext) -> [ComposerMentionCandidate] {
         workspace.mentionCandidates(
             matching: context.query,
-            projectedIdentities: model.snapshot?.identities ?? []
+            projectedIdentities: model.snapshot?.identities ?? [],
+            avatarBytesByReference: avatarAssets.bytesByReference
         )
     }
 
@@ -963,8 +968,8 @@ private struct ConversationView: View {
                             try await model.sendText(media.wireText)
                             Task { await jumpToNewest() }
                         },
-                        // MDK accepts polls only in group conversations, never direct messages.
-                        onCreatePoll: chat.isDirect ? nil : { isPollComposerPresented = true }
+                        // MDK 0.13 accepts polls in direct conversations as well as groups.
+                        onCreatePoll: { isPollComposerPresented = true }
                     )
                 }
 

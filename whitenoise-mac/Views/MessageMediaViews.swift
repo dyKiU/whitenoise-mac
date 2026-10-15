@@ -125,6 +125,7 @@ struct ConversationMessageRow: View {
                 message: message,
                 safetyModel: safetyModel,
                 customEmojiImages: conversationModel.customEmojiImages,
+                conversationModel: conversationModel,
                 showsDebugMetadata: showsDebugMetadata,
                 timestampReferenceDate: timestampReferenceDate,
                 timestampLocale: timestampLocale,
@@ -247,6 +248,8 @@ struct MessageBubble: View {
     let message: MessageItem
     let safetyModel: GroupSafetyViewModel
     let customEmojiImages: CustomEmojiImageStore
+    /// Owns the reaction details popover's model, so its read follows the conversation's window.
+    let conversationModel: ConversationViewModel
     let showsDebugMetadata: Bool
     let timestampReferenceDate: Date
     let timestampLocale: Locale
@@ -317,6 +320,9 @@ struct MessageBubble: View {
                     emojiImages: reactionEmojiImages
                 ) { emoji in
                     reactionViewerEmoji = emoji
+                    // The read starts before the popover's first frame, so a truncated preview
+                    // shows the read in flight rather than an empty list.
+                    conversationModel.showReactionDetails(messageIdHex: message.id)
                     isReactionViewerPresented = true
                 }
                 .task(id: message.reactions) {
@@ -329,11 +335,19 @@ struct MessageBubble: View {
                 .padding(.horizontal, 10)
                 .padding(.top, reactionChipPlacement.topPadding(contentSpacing: Self.contentSpacing))
                 .popover(isPresented: $isReactionViewerPresented, arrowEdge: .bottom) {
-                    MessageReactionDetailsView(
-                        message: message,
-                        selectedEmoji: $reactionViewerEmoji,
-                        emojiImages: reactionEmojiImages
-                    )
+                    if let model = conversationModel.reactionDetails, model.messageIdHex == message.id {
+                        MessageReactionDetailsView(
+                            model: model,
+                            projected: MessageReactionDetails(projectedFrom: message),
+                            selectedEmoji: $reactionViewerEmoji,
+                            dependencies: reactionDetailsDependencies
+                        )
+                    }
+                }
+                .onChange(of: isReactionViewerPresented) { _, isPresented in
+                    if !isPresented {
+                        conversationModel.dismissReactionDetails(messageIdHex: message.id)
+                    }
                 }
             }
 
@@ -485,6 +499,18 @@ struct MessageBubble: View {
 
     private var usesStickerStyle: Bool {
         stickerEmoji != nil || customStickerEmoji != nil
+    }
+
+    private var reactionDetailsDependencies: MessageReactionDetailsDependencies {
+        MessageReactionDetailsDependencies(
+            reactor: { [workspace] in workspace.reactionReactorDisplay(accountIdHex: $0) },
+            emojiImage: { [customEmojiImages] in customEmojiImages.reactionImage(for: $0) },
+            loadEmojiImages: { [customEmojiImages] in customEmojiImages.loadReactions($0) },
+            requestProfiles: { [workspace] in workspace.requestPeerProfileRefresh($0) },
+            removeOwnReaction: { [workspace, message] reaction in
+                Task { await workspace.removeReaction(reaction, from: message) }
+            }
+        )
     }
 
     private var reactionEmojiImages: [String: NSImage] {
@@ -774,8 +800,21 @@ struct MessageBubble: View {
             return "clock"
         case .delivered:
             return "checkmark"
+        case .warning:
+            return "exclamationmark.triangle.fill"
         case .failed:
             return "exclamationmark.circle.fill"
+        }
+    }
+
+    private static func deliveryMarkerColor(for indicator: MessageDeliveryIndicator, otherwise: Color) -> Color {
+        switch indicator {
+        case .failed:
+            WNColor.backgroundContentDestructiveSecondary
+        case .warning:
+            WNColor.intentionWarningContent
+        case .none, .sending, .delivered:
+            otherwise
         }
     }
 
@@ -788,8 +827,8 @@ struct MessageBubble: View {
     /// ("Did not reach group" vs. "Not delivered") that the old tombstone body spelled out.
     /// Empty in every other state, which shows no tooltip.
     private var deliveryFailureHelp: String {
-        guard deliveryIndicator == .failed else { return "" }
-        return message.statusLabel(for: .failed) ?? ""
+        guard deliveryIndicator == .failed || deliveryIndicator == .warning else { return "" }
+        return message.statusLabel(for: deliveryIndicator) ?? ""
     }
 
     /// The timestamp/delivery footer. One token in both directions, as on the other clients:
@@ -815,12 +854,9 @@ struct MessageBubble: View {
                 .monospacedDigit()
             if let systemImage = Self.deliveryMarkerSystemImage(for: deliveryIndicator) {
                 Image(systemName: systemImage)
-                    // Only a real failure earns the alarm color; an in-flight send stays in the
-                    // metadata's own tint next to the timestamp.
-                    .foregroundStyle(
-                        deliveryIndicator == .failed
-                            ? WNColor.backgroundContentDestructiveSecondary : metadataColor
-                    )
+                    // Only a real failure earns the alarm color, and a message some members may lack
+                    // the warning color; an in-flight send stays in the metadata's own tint.
+                    .foregroundStyle(Self.deliveryMarkerColor(for: deliveryIndicator, otherwise: metadataColor))
                     .help(deliveryFailureHelp)
             }
         }

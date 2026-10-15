@@ -512,6 +512,37 @@ struct GroupsTests: WorkspaceTestSupport {
         #expect(state.commonGroupsForContact.isEmpty)
     }
 
+    /// A member's profile opened from group info offers Make Admin, and after the promotion the
+    /// same open profile reads the live roster and offers Remove Admin instead.
+    @MainActor
+    @Test func groupMemberProfileMakesThemAdminAndRelabelsInPlace() async throws {
+        let account = desktopAccount()
+        let runtime = FakeMarmotRuntime(accounts: [account])
+        runtime.installGroupDetails(groupDetailsFixture(selfAccountIdHex: account.accountIdHex))
+        let state = WorkspaceState(clientFactory: { runtime })
+        await state.bootstrap()
+
+        let groupChat = try #require(state.activeChats.first { $0.id == "group" })
+        state.selectChat(groupChat)
+        await state.showGroupDetails(for: groupChat)
+        let member = try #require(state.groupDetailsSnapshot?.members.first { !$0.isSelf })
+        await state.showContactDetails(for: member)
+        let accountIdHex = try #require(state.contactDetailsTarget?.accountIdHex)
+
+        let before = try #require(ContactGroupAction.member(accountIdHex: accountIdHex, in: state.groupDetailsSnapshot))
+        #expect(ContactGroupAction.actions(for: before).contains(.promote))
+        #expect(!ContactGroupAction.actions(for: before).contains(.demote))
+
+        await state.promoteGroupMember(before)
+
+        #expect(runtime.promoteAdminDetailedCallCount == 1)
+        #expect(state.contactDetailsTarget?.accountIdHex == accountIdHex)
+        let after = try #require(ContactGroupAction.member(accountIdHex: accountIdHex, in: state.groupDetailsSnapshot))
+        #expect(after.isAdmin)
+        #expect(ContactGroupAction.actions(for: after).contains(.demote))
+        #expect(!ContactGroupAction.actions(for: after).contains(.promote))
+    }
+
     @MainActor
     @Test func groupMemberContactDetailsListDirectChatButNotTheOpenGroup() async throws {
         let account = desktopAccount()
@@ -1077,6 +1108,61 @@ struct GroupsTests: WorkspaceTestSupport {
         #expect(!state.followStatusReadFailed)
     }
 
+    /// A nickname set from a DM's chat info has to land on the pane it was set from — its header
+    /// and member roster — and on the sidebar row, exactly as one set from the contact profile.
+    @MainActor
+    @Test func aNicknameSetFromDirectChatInfoRelabelsTheOpenPaneAndTheChatRow() async throws {
+        let account = desktopAccount()
+        let aliceIdHex = "alice1234567890alice1234567890alice1234567890alice1234567890"
+        let runtime = FakeMarmotRuntime(accounts: [account])
+        runtime.installDirectGroup(
+            directGroup(),
+            alongside: [],
+            selfAccountIdHex: account.accountIdHex,
+            otherAccountIdHex: aliceIdHex,
+            otherDisplayName: "Alice",
+            otherProfile: UserProfileMetadataFfi(
+                name: "alice",
+                displayName: "Alice",
+                about: nil,
+                picture: nil,
+                nip05: nil,
+                lud16: nil
+            )
+        )
+        let state = WorkspaceState(clientFactory: { runtime })
+        await state.bootstrap()
+
+        let directChat = try #require(state.activeChats.first { $0.id == "direct-group" })
+        state.selectChat(directChat)
+        await state.showGroupDetails(for: directChat)
+        let opened = try #require(state.groupDetailsSnapshot)
+        #expect(opened.headerTitle(rememberedPeerName: nil) == "Alice")
+
+        state.setContactNickname("Ali", forContactAccountIdHex: aliceIdHex)
+
+        let nicknamed = try #require(state.groupDetailsSnapshot)
+        #expect(nicknamed.headerTitle(rememberedPeerName: nil) == "Ali")
+        let peer = try #require(nicknamed.members.first { $0.id == aliceIdHex })
+        #expect(peer.displayName == "Ali")
+        #expect(peer.publishedDisplayName == "Alice")
+        #expect(state.activeChats.first { $0.id == "direct-group" }?.title == "Ali")
+
+        // The next reload of the pane must not hand the published name back.
+        await state.showGroupDetails(for: try #require(state.activeChats.first { $0.id == "direct-group" }))
+        #expect(state.groupDetailsSnapshot?.headerTitle(rememberedPeerName: nil) == "Ali")
+        #expect(state.activeChats.first { $0.id == "direct-group" }?.title == "Ali")
+
+        state.setContactNickname(nil, forContactAccountIdHex: aliceIdHex)
+
+        let cleared = try #require(state.groupDetailsSnapshot)
+        #expect(cleared.headerTitle(rememberedPeerName: nil) == "Alice")
+        let restored = try #require(cleared.members.first { $0.id == aliceIdHex })
+        #expect(restored.displayName == "Alice")
+        #expect(restored.publishedDisplayName == nil)
+        #expect(state.activeChats.first { $0.id == "direct-group" }?.title == "Alice")
+    }
+
     @MainActor
     @Test func directChatInfoResolvesThePeerFollowState() async throws {
         // Chat info is the profile a 1:1 conversation opens, so it carries the follow control
@@ -1485,6 +1571,110 @@ struct GroupsTests: WorkspaceTestSupport {
         #expect(carol.lastActivity == nil)
         // No `lastActivity` files a followed stranger below every real conversation.
         #expect(state.composeContacts.last?.accountIdHex == carolHex)
+    }
+
+    /// A prepared DM row seeds its avatar with MDK's cache key, not the peer. Keying compose
+    /// contacts on that seed listed the same person twice: once under the group id with their
+    /// picture, once from a shared group's roster under their npub with none.
+    @MainActor
+    @Test func composeContactsListADirectPeerOnceWithTheirNpubAndPicture() async throws {
+        let account = desktopAccount()
+        let aliceHex = String(repeating: "a", count: 64)
+        let bobHex = String(repeating: "b", count: 64)
+        let runtime = FakeMarmotRuntime(accounts: [account])
+        var dm = directGroup()
+        dm.groupIdHex = String(repeating: "d", count: 64)
+        var shared = messageGroup()
+        shared.groupIdHex = String(repeating: "e", count: 64)
+        shared.name = "Book club"
+        runtime.installDirectGroup(
+            dm,
+            alongside: [shared],
+            selfAccountIdHex: account.accountIdHex,
+            otherAccountIdHex: aliceHex,
+            otherDisplayName: "Alice",
+            otherProfile: UserProfileMetadataFfi(
+                name: "alice",
+                displayName: "Alice",
+                about: nil,
+                picture: "https://example.com/alice.png",
+                nip05: nil,
+                lud16: nil
+            )
+        )
+        runtime.installProfile(
+            accountIdHex: bobHex,
+            profile: UserProfileMetadataFfi(
+                name: "bob",
+                displayName: "Bob",
+                about: nil,
+                picture: "https://example.com/bob.png",
+                nip05: nil,
+                lud16: nil
+            )
+        )
+        runtime.installGroupDetailsRecord(
+            GroupDetailsFfi(
+                group: shared,
+                members: [
+                    GroupMemberDetailsFfi(
+                        memberIdHex: account.accountIdHex, account: "Desktop Account", local: true,
+                        isAdmin: true, isSelf: true, npub: "npub1self", displayName: "Desktop Account"),
+                    GroupMemberDetailsFfi(
+                        memberIdHex: aliceHex, account: nil, local: false,
+                        isAdmin: false, isSelf: false, npub: "npub1alyce", displayName: "Alice"),
+                    GroupMemberDetailsFfi(
+                        memberIdHex: bobHex, account: nil, local: false,
+                        isAdmin: false, isSelf: false, npub: "npub1p0p", displayName: "Bob"),
+                ]
+            )
+        )
+        let state = WorkspaceState(clientFactory: { runtime })
+        await state.bootstrap()
+        let dmRow = try #require(state.activeChats.first { $0.id == dm.groupIdHex })
+        #expect(dmRow.directPeerAccountIdHex == aliceHex)
+
+        await state.refreshComposeContacts()
+
+        #expect(state.composeContacts.map(\.accountIdHex).sorted() == [aliceHex, bobHex])
+        let alice = try #require(state.composeContacts.first { $0.accountIdHex == aliceHex })
+        #expect(alice.npub == "npub1alyce")
+        #expect(alice.pictureURL == "https://example.com/alice.png")
+        // Bob is only ever in a group roster, which carries no picture of its own.
+        let bob = try #require(state.composeContacts.first { $0.accountIdHex == bobHex })
+        #expect(bob.npub == "npub1p0p")
+        #expect(bob.pictureURL == "https://example.com/bob.png")
+    }
+
+    /// A DM peer who shares no group has no roster entry to lend an npub, so without the fill
+    /// pass their row's subtitle is raw hex.
+    @MainActor
+    @Test func composeContactsResolveAnNpubForADirectOnlyPeer() async throws {
+        let account = desktopAccount()
+        let aliceHex = String(repeating: "a", count: 64)
+        let runtime = FakeMarmotRuntime(accounts: [account])
+        var dm = directGroup()
+        dm.groupIdHex = String(repeating: "d", count: 64)
+        runtime.installDirectGroup(
+            dm,
+            selfAccountIdHex: account.accountIdHex,
+            otherAccountIdHex: aliceHex,
+            otherDisplayName: "Alice",
+            otherProfile: UserProfileMetadataFfi(
+                name: "alice", displayName: "Alice", about: nil,
+                picture: "https://example.com/alice.png", nip05: nil, lud16: nil)
+        )
+        let state = WorkspaceState(clientFactory: { runtime })
+        await state.bootstrap()
+
+        await state.refreshComposeContacts()
+
+        #expect(state.composeContacts.count == 1)
+        let alice = try #require(state.composeContacts.first)
+        #expect(alice.accountIdHex == aliceHex)
+        #expect(alice.npub == runtime.npub(accountIdHex: aliceHex))
+        #expect(alice.subtitle.hasPrefix("npub1"))
+        #expect(alice.pictureURL == "https://example.com/alice.png")
     }
 
     @MainActor

@@ -1909,11 +1909,7 @@ final class WorkspaceState {
                     canDemote: action?.canDemote ?? false
                 )
             }
-            .sorted { lhs, rhs in
-                if lhs.isSelf != rhs.isSelf { return lhs.isSelf }
-                if lhs.isAdmin != rhs.isAdmin { return lhs.isAdmin }
-                return lhs.displayName.localizedCaseInsensitiveCompare(rhs.displayName) == .orderedAscending
-            }
+            .sorted(by: GroupMemberItem.areInRosterOrder)
         let avatarURL = firstNonBlank([details.group.avatarUrl])
         let customName = PeerDisplayText.sanitize(details.group.name)
 

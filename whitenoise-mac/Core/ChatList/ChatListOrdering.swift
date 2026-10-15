@@ -67,12 +67,16 @@ nonisolated enum ChatListOrdering {
         ChatItem(
             id: chat.id,
             title: current.title,
+            // A nicknamed title only reverts through `publishedTitle`; dropping it here left the
+            // nickname stuck on the row once it was cleared.
+            publishedTitle: current.publishedTitle,
             subtitle: current.subtitle,
             preview: chat.preview,
             previewAttachmentKind: chat.previewAttachmentKind,
             previewAttribution: chat.previewAttribution,
             updatedAt: chat.updatedAt,
             avatarSeed: current.avatarSeed,
+            directPeerAccountIdHex: current.directPeerAccountIdHex,
             pictureURL: current.pictureURL,
             groupImagePayload: current.groupImagePayload,
             groupImageHashHex: current.groupImageHashHex,
@@ -81,7 +85,6 @@ nonisolated enum ChatListOrdering {
             manuallyMarkedUnread: chat.manuallyMarkedUnread,
             unreadMentionCount: chat.unreadMentionCount,
             isDirect: chat.hasAuthoritativeConversationKind ? chat.isDirect : current.isDirect,
-            directPeerAccountIdHex: current.directPeerAccountIdHex,
             hasAuthoritativeConversationKind: chat.hasAuthoritativeConversationKind,
             isAuthoritativeGroup: chat.isAuthoritativeGroup,
             muted: chat.muted,

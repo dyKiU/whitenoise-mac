@@ -144,7 +144,15 @@ nonisolated struct ChatItem: Identifiable, Hashable {
     /// account. Travels with `preview` for the same reason `previewAttachmentKind` does.
     let previewAttribution: ChatPreviewAttribution?
     let updatedAt: Date?
+    /// Only a seed for the placeholder avatar: a prepared row fills it with MDK's avatar cache
+    /// key, which is neither the peer nor the group. Never read a person's identity from it.
     private(set) var avatarSeed: String
+    /// The other party's account hex, for a direct chat whose peer has actually resolved.
+    ///
+    /// Nil for a group, before roster enrichment lands, and permanently for a note-to-self chat,
+    /// which has no other member. Contact affordances key off this so they never offer to act on
+    /// a group id or an avatar cache key as though it were a person.
+    let directPeerAccountIdHex: String?
     /// `private(set)` so the only in-place writer is `replacingPeerPresentation` below, which
     /// re-derives `sanitizedPictureURL` alongside it. The two must never disagree.
     private(set) var pictureURL: String?
@@ -232,10 +240,6 @@ nonisolated struct ChatItem: Identifiable, Hashable {
             ? L10n.string("Has invited you to a secure chat", locale: locale)
             : L10n.string("You have been invited to a secure chat", locale: locale)
     }
-
-    /// The resolved direct peer's identity, independent of the avatar's cache key or seed.
-    /// Contact actions and nickname updates must address the peer, not an image asset.
-    private(set) var directPeerAccountIdHex: String?
 
     /// The person a direct chat is titled after, or nil when its title names nobody.
     ///
@@ -372,6 +376,7 @@ nonisolated struct ChatItem: Identifiable, Hashable {
         previewAttribution: ChatPreviewAttribution? = nil,
         updatedAt: Date?,
         avatarSeed: String,
+        directPeerAccountIdHex: String? = nil,
         pictureURL: String?,
         sanitizedPictureURL: URL? = nil,
         groupImagePayload: DownloadedMediaPayload? = nil,
@@ -381,7 +386,6 @@ nonisolated struct ChatItem: Identifiable, Hashable {
         manuallyMarkedUnread: Bool = false,
         unreadMentionCount: Int = 0,
         isDirect: Bool = false,
-        directPeerAccountIdHex: String? = nil,
         isBlockedDirectPeer: Bool = false,
         hasAuthoritativeConversationKind: Bool = false,
         isAuthoritativeGroup: Bool = false,
@@ -401,6 +405,10 @@ nonisolated struct ChatItem: Identifiable, Hashable {
         self.previewAttribution = previewAttribution
         self.updatedAt = updatedAt
         self.avatarSeed = avatarSeed
+        // A hand-built direct row passes the peer's hex as its seed, so that is the fallback;
+        // the group id is what a peerless one passes, and names nobody.
+        self.directPeerAccountIdHex =
+            isDirect ? (directPeerAccountIdHex ?? (avatarSeed == id ? nil : avatarSeed)) : nil
         self.pictureURL = pictureURL
         self.sanitizedPictureURL =
             sanitizedPictureURL ?? RemoteImageURLPolicy.sanitizedURL(from: pictureURL)
@@ -411,10 +419,6 @@ nonisolated struct ChatItem: Identifiable, Hashable {
         self.manuallyMarkedUnread = manuallyMarkedUnread
         self.unreadMentionCount = unreadMentionCount
         self.isDirect = isDirect
-        self.directPeerAccountIdHex =
-            isDirect
-            ? directPeerAccountIdHex ?? (!hasAuthoritativeConversationKind && avatarSeed != id ? avatarSeed : nil)
-            : nil
         self.isBlockedDirectPeer = isBlockedDirectPeer
         self.hasAuthoritativeConversationKind = hasAuthoritativeConversationKind
         self.isAuthoritativeGroup = isAuthoritativeGroup
@@ -499,7 +503,6 @@ extension ChatItem {
 
         title = nickname ?? selectedTitle
         publishedTitle = nickname == nil ? nil : selectedTitle
-        directPeerAccountIdHex = isDirect ? presented.presentation.peerId : nil
         self.avatarSeed = avatarSeed
         self.pictureURL = pictureURL
         sanitizedPictureURL = RemoteImageURLPolicy.sanitizedURL(from: pictureURL)
@@ -582,10 +585,15 @@ nonisolated enum ChatPreviewAttachmentKind: Hashable, Sendable {
 /// before settling — most visibly for media, whose larger event spends longer in the publish
 /// round-trip. `.sending` covers the in-flight window; the bubble only escalates to `.failed`
 /// once the send has been outstanding past `MessageItem.pendingDeliveryGrace`.
+///
+/// `.warning` is a message convergence invalidated after the fact (a losing branch, beyond the
+/// anchor): it went out, but some of the group may not have it. Painting that red read as "unsent",
+/// so red is kept for `.failed` — an own send that really did not publish.
 nonisolated enum MessageDeliveryIndicator: Hashable, Sendable {
     case none
     case sending
     case delivered
+    case warning
     case failed
 }
 
@@ -628,9 +636,10 @@ nonisolated struct ChatPeerProfile: Hashable, Sendable {
 struct GroupMemberItem: Identifiable, Hashable {
     let id: String
     /// The viewer's private nickname for this member when one is set, else the published name.
-    let displayName: String
+    /// `private(set)` so the only in-place writer is `applyingNickname`.
+    private(set) var displayName: String
     /// The published name `displayName` overrides; nil when no nickname applies.
-    let publishedDisplayName: String?
+    private(set) var publishedDisplayName: String?
     /// What the member calls themselves, nickname or not; nil when they published nothing. Not
     /// a label: a nameless member's `displayName` falls back to their shortened npub, which is
     /// no more their name than a nickname is.
@@ -656,6 +665,23 @@ struct GroupMemberItem: Identifiable, Hashable {
             return accountLabel
         }
         return DisplayText.short(npub, head: 12, tail: 8)
+    }
+
+    /// A copy labelled with `nickname`, or with the published name again when it is nil. The
+    /// published name survives either way, so a rename followed by a clear restores it exactly.
+    func applyingNickname(_ nickname: String?) -> GroupMemberItem {
+        let published = publishedDisplayName ?? displayName
+        var copy = self
+        copy.displayName = nickname ?? published
+        copy.publishedDisplayName = nickname == nil ? nil : published
+        return copy
+    }
+
+    /// The roster's order: you first, then admins, then everyone else by the name shown.
+    static func areInRosterOrder(_ lhs: GroupMemberItem, _ rhs: GroupMemberItem) -> Bool {
+        if lhs.isSelf != rhs.isSelf { return lhs.isSelf }
+        if lhs.isAdmin != rhs.isAdmin { return lhs.isAdmin }
+        return lhs.displayName.localizedCaseInsensitiveCompare(rhs.displayName) == .orderedAscending
     }
 }
 
@@ -692,7 +718,8 @@ struct GroupDetailsSnapshot: Hashable {
     let archived: Bool
     let pendingConfirmation: Bool
     let selfMembership: ChatSelfMembership
-    let members: [GroupMemberItem]
+    /// `private(set)` so the only in-place writer is `relabelingMember`.
+    private(set) var members: [GroupMemberItem]
     let isSelfAdmin: Bool
     let isLastAdmin: Bool
     let canInvite: Bool
@@ -755,6 +782,27 @@ struct GroupDetailsSnapshot: Hashable {
 
     var memberCountLabel: String {
         L10n.plural("%lld members", Int64(members.count))
+    }
+
+    /// A copy whose roster labels `memberIdHex` with `nickname` (or with their published name
+    /// again when it is nil), or nil when that member is not on the roster or already reads so.
+    ///
+    /// The snapshot bakes nicknames in when it is loaded, so the open pane — whose header a direct
+    /// chat names after its one other member — would otherwise keep the old label until reopened.
+    /// Your own row never takes a nickname, matching `GroupMemberDetailsFfi.nickname(from:)`.
+    func relabelingMember(_ memberIdHex: String, nickname: String?) -> GroupDetailsSnapshot? {
+        let target = ContactNicknames.normalizedHex(memberIdHex)
+        guard
+            let index = members.firstIndex(where: {
+                !$0.isSelf && ContactNicknames.normalizedHex($0.id) == target
+            })
+        else { return nil }
+        let relabeled = members[index].applyingNickname(nickname)
+        guard relabeled != members[index] else { return nil }
+        var copy = self
+        copy.members[index] = relabeled
+        copy.members.sort(by: GroupMemberItem.areInRosterOrder)
+        return copy
     }
 
     var disappearingMessagesEnabled: Bool { disappearingMessageSecs > 0 }
@@ -2720,6 +2768,8 @@ nonisolated struct MessageItem: Identifiable, Hashable {
             return L10n.string("Sending")
         case .delivered:
             return L10n.string("Sent")
+        case .warning:
+            return L10n.string("May not have reached everyone")
         case .failed:
             return invalidationStatus != nil
                 ? L10n.string("Did not reach group") : L10n.string("Not delivered")
@@ -2874,8 +2924,10 @@ nonisolated struct MessageItem: Identifiable, Hashable {
         self.timeLabel = timeLabel
         let statusLabel: String?
         if presentation.isChatBubble {
-            if invalidationStatus != nil {
+            if isOutgoing && invalidationStatus == Self.localPublishFailedStatus {
                 statusLabel = L10n.string("Did not reach group")
+            } else if invalidationStatus != nil {
+                statusLabel = L10n.string("May not have reached everyone")
             } else if isOutgoing && Self.nonBlank(sourceMessageIdHex) == nil {
                 statusLabel = L10n.string("Not delivered")
             } else {
@@ -3037,13 +3089,23 @@ nonisolated struct MessageItem: Identifiable, Hashable {
     /// telling the user is still going out invites a second click on a first attempt that has not
     /// finished.
     ///
-    /// Invalidated rows qualify too — they wear the same marker, so refusing them here would be the
-    /// app showing a failure and then declining to do the one thing a failure asks for. The retry
-    /// is `retryGroupConvergence`, which re-drives what the core is holding for the conversation.
+    /// A `local_publish_failed` row qualifies too — it wears the same marker, so refusing it here
+    /// would be the app showing a failure and then declining to do the one thing a failure asks
+    /// for. The retry is `retryGroupConvergence`, which re-drives what the core is holding for the
+    /// conversation. Convergence-invalidated rows wear `.warning` and offer no retry: the message
+    /// did go out, and offering to resend it would read as the failure the marker no longer claims.
     func canRetryDelivery(at now: Date) -> Bool {
         guard presentation.isChatBubble, isOutgoing, !isDeleted else { return false }
         return deliveryIndicator(at: now) == .failed
     }
+
+    /// The core's own verdict that this send never left the device — the one invalidation that is
+    /// a real send failure rather than convergence retiring a message some members may still have.
+    nonisolated var isLocalPublishFailure: Bool {
+        isOutgoing && invalidationStatus == Self.localPublishFailedStatus
+    }
+
+    nonisolated static let localPublishFailedStatus = "local_publish_failed"
 
     /// How long an own send may stay unconfirmed before its bubble stops reading as "Sending" and
     /// starts reading as an error. Publishing is a relay round-trip whose payload the composer has
@@ -3053,11 +3115,12 @@ nonisolated struct MessageItem: Identifiable, Hashable {
     /// What the bubble's delivery footer should show at `now`.
     ///
     /// `.none` for the rows that never carried a marker (incoming, uninvalidated). Invalidation is
-    /// terminal — convergence already decided the message lost — so it fails immediately rather
-    /// than waiting out the grace window.
+    /// terminal, so it resolves immediately rather than waiting out the grace window: red only for
+    /// an own send the core says never published, yellow for anything convergence retired later.
     func deliveryIndicator(at now: Date) -> MessageDeliveryIndicator {
         guard presentation.isChatBubble else { return .none }
-        if invalidationStatus != nil { return .failed }
+        if isLocalPublishFailure { return .failed }
+        if invalidationStatus != nil { return .warning }
         guard isOutgoing else { return .none }
         guard isPendingDelivery else { return .delivered }
         return pendingDeliveryGraceRemaining(at: now) == nil ? .failed : .sending
@@ -3760,6 +3823,19 @@ struct ComposeContact: Identifiable, Equatable {
 
     var subtitle: String {
         DisplayText.short(npub.isEmpty ? accountIdHex : npub, head: 12, tail: 8)
+    }
+
+    /// A copy with an empty npub or a missing picture filled in; values already present win.
+    func filling(npub: String?, pictureURL: String?) -> ComposeContact {
+        ComposeContact(
+            accountIdHex: accountIdHex,
+            npub: self.npub.isEmpty ? (npub ?? "") : self.npub,
+            displayName: displayName,
+            publishedDisplayName: publishedDisplayName,
+            displayNameIsPrivate: displayNameIsPrivate,
+            pictureURL: self.pictureURL ?? pictureURL,
+            lastActivity: lastActivity
+        )
     }
 
     var memberRef: String {
