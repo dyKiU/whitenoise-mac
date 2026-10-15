@@ -181,8 +181,18 @@ private struct DetailPaneView: View {
                                     let model = session.accountScope?.selectedAutomaticConversation,
                                     model.groupIdHex == group
                                 {
-                                    AutomaticConversationView(model: model)
-                                        .id(ObjectIdentifier(model))
+                                    AutomaticConversationView(
+                                        model: model,
+                                        title: { AutomaticChatPeerDisplay.title($0, workspace: workspace) }
+                                    )
+                                    .task(id: model.pairedHeader?.directPeerAccountIdHex) {
+                                        guard !Task.isCancelled,
+                                            model.accountRef == workspace.activeAccount?.accountRef,
+                                            let peer = model.pairedHeader?.directPeerAccountIdHex
+                                        else { return }
+                                        workspace.requestPeerProfileRefresh(peer)
+                                    }
+                                    .id(ObjectIdentifier(model))
                                 } else {
                                     EmptyDetailView()
                                 }
