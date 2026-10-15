@@ -13,6 +13,20 @@ import Testing
             }
         }
 
+        @Test func nativeAlreadyClosedSessionCompletesCleanup() async throws {
+            let original = LifetimeSession(noPointer: .init())
+            original.reportAlreadyClosed()
+            let owner = DeviceLinkingScope(accountRef: "test", session: original)
+            defer { original.stream.finishWithClosed() }
+            await waitFor { original.stream.isWaiting }
+            try await owner.cancel()
+            try await owner.cancel()
+            #expect(owner.cleanupError == nil)
+            #expect(original.cancelCount == 1)
+            #expect(original.stream.closeCount == 1)
+            #expect(owner.latestSnapshot == nil)
+        }
+
         @Test func replacingAccountCancelsOriginalAndRejectsDelayedSnapshot() async throws {
             let session = SessionState()
             let runtime = FakeMarmotRuntime(accounts: [])

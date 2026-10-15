@@ -12,6 +12,7 @@ import Testing
         private var received: [Data] = []
         private var cancellations = 0
         private var failCleanup = false
+        private var alreadyClosed = false
         private var rejectRevision = false
         private var pause = false
         private var phase: DeviceLinkingApprovalPhaseFfi = .awaitingApproval
@@ -38,8 +39,10 @@ import Testing
         }
         override func cancel() async throws {
             lock.withLock { cancellations += 1 }
+            if lock.withLock({ alreadyClosed }) { throw MarmotKitError.DeviceLinkingClosed }
             if lock.withLock({ failCleanup }) { throw MarmotKitError.DeviceLinkingRuntimeUnavailable }
         }
+        func reportAlreadyClosed() { lock.withLock { alreadyClosed = true } }
         func failCancellation(_ value: Bool) { lock.withLock { failCleanup = value } }
         func rejectNextRevision() { lock.withLock { rejectRevision = true } }
         func pauseSnapshot() { lock.withLock { pause = true } }
@@ -92,6 +95,17 @@ import Testing
         {
             try await state.adoptDeviceLinkingApprovalBatch { _, _ in [original] }
         }
+        @Test func nativeAlreadyClosedApprovalCompletesCleanup() async throws {
+            let original = ScopeApproval(noPointer: .init())
+            original.reportAlreadyClosed()
+            let owner = NativeDeviceLinkingApprovalScope(accountRef: "test", approval: original)
+            try await owner.cancel()
+            try await owner.cancel()
+            #expect(owner.cleanupError == nil)
+            #expect(original.cancelCount == 1)
+            await #expect(throws: MarmotKitError.DeviceLinkingClosed) { _ = try await owner.snapshot() }
+        }
+
         @Test func originalActionsPreserveRevisionBytesAndSdkError() async throws {
             let original = ScopeApproval(noPointer: .init())
             let owner = NativeDeviceLinkingApprovalScope(accountRef: "A", approval: original)
