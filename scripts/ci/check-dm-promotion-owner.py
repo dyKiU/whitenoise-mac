@@ -11,7 +11,7 @@ import time
 if os.environ.get('GITHUB_ACTIONS') != 'true':
     raise SystemExit('Remote CI only')
 phase = os.environ.get('PROMOTION_PHASE', 'red')
-assert phase in ('red', 'green')
+assert phase in ('red', 'green', 'reuse')
 output = Path('promotion-proof'); output.mkdir()
 source = Path('whitenoise-mac/Core/WorkspaceState+NewChat.swift')
 original = source.read_bytes()
@@ -31,7 +31,7 @@ def execute(suite,test,expected,stage="control"):
     with log.open('x') as stream:
         result=subprocess.run(command,stdout=stream,stderr=subprocess.STDOUT,timeout=2400,env=dict(os.environ,WN_TEST_DERIVED_DATA=str(folder/'DerivedData'),WN_TEST_RESULT_BUNDLE=str(bundle),WN_TEST_JOBS='2'))
     text=log.read_text(errors='replace');row.update(exit_code=result.returncode,seconds=round(time.monotonic()-started,3),log_sha256=hashlib.sha256(log.read_bytes()).hexdigest())
-    row['error_context_lines']=re.findall(r'(?m)^.*\berror:.*$',text)
+    row['compiler_diagnostics']=re.findall(r'(?m)^([^\n]+\.(?:swift|h|m|mm|c|cpp):[0-9]+:[0-9]+: error: [^\n]{1,400})$',text)[:20]
     row['compilation_failed']='** TEST BUILD FAILED **' in text or '** BUILD FAILED **' in text
     row['actual_create_prerequisite']='direct-promotion-owner-prerequisite actual-created-group=true retired-action=true' in text
     row['own_marker']='retired-direct-chat-action-must-not-promote-peer' in text
@@ -50,7 +50,10 @@ def execute(suite,test,expected,stage="control"):
     if not row['qualified']: raise RuntimeError('Actual named runtime evidence required; compilation/zero bodies do not qualify')
 try:
     assert subprocess.run(['git','diff','--quiet','HEAD']).returncode==0
-    for test in regressions: execute('DirectChatPromotionOwnershipTests',test,'red' if phase=='red' else 'green')
+    if phase=='reuse':
+        execute('GroupsTests','startingDirectChatReusesExistingConversation','green')
+    else:
+        for test in regressions: execute('DirectChatPromotionOwnershipTests',test,'red' if phase=='red' else 'green')
     if phase=='green':
         for test in ('startingADirectChatMakesThePeerAnAdminToo','aRefusedPeerPromotionStillOpensTheDirectChat'):
             execute('GroupsTests',test,'green')

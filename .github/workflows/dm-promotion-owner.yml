@@ -27,9 +27,9 @@ jobs:
         run: |
           df -h .
           test "$(df -Pk . | awk 'NR==2 {print $4}')" -ge 8388608
-      - name: Exact ownership green, guard omissions and restored controls
+      - name: Existing peer reuse through composer and contact entry
         env:
-          PROMOTION_PHASE: green
+          PROMOTION_PHASE: reuse
         run: python3 scripts/ci/check-dm-promotion-owner.py
       - uses: actions/upload-artifact@v4
         if: always()
