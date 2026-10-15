@@ -405,6 +405,21 @@ nonisolated final class MarmotClient: MarmotRuntime, @unchecked Sendable {
         try self.init(rootPath: MarmotStorageRoot.resolve(), relayUrls: Self.seedRelays)
     }
 
+    /// Pairing needs general-purpose relays; the inbox relays reject its event kind.
+    /// Explicit custom runtimes retain their supplied route, including isolated tests.
+    static let pairingRelays = ["wss://nos.lol", "wss://relay.primal.net"]
+
+    static func pairingOptions(_ options: MarmotOptions, runtimeRelays: [String]) -> MarmotOptions {
+        #if WN_EXPERIMENTAL_DEVICE_SYNC
+            guard runtimeRelays == seedRelays else { return options }
+            var configured = options
+            configured.pairingRelayUrls = pairingRelays
+            return configured
+        #else
+            return options
+        #endif
+    }
+
     static func defaultStorageRootPath() -> String {
         MarmotStorageRoot.expectedPath()
     }
@@ -423,12 +438,14 @@ nonisolated final class MarmotClient: MarmotRuntime, @unchecked Sendable {
         self.marmot = try Marmot.newWithConfiguration(
             rootPath: rootPath,
             relayUrls: relayUrls,
-            options: MarmotOptions(
-                relayPolicy: relayPolicy,
-                cursorPersistence: cursorPersistence,
-                clientName: "whitenoise",
-                secretStore: secretStore ?? storageProfile.makeSecretStore(),
-                attachmentAcquisitionMode: .hostManaged
+            options: Self.pairingOptions(
+                MarmotOptions(
+                    relayPolicy: relayPolicy,
+                    cursorPersistence: cursorPersistence,
+                    clientName: "whitenoise",
+                    secretStore: secretStore ?? storageProfile.makeSecretStore(),
+                    attachmentAcquisitionMode: .hostManaged
+                ), runtimeRelays: relayUrls
             )
         )
     }
