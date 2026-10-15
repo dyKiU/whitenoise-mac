@@ -706,6 +706,9 @@ extension WorkspaceState {
                 memberRefs: [memberRef],
                 description: nil
             )
+            guard activeAccountId == accountId, conversationMetadataEpoch == accountEpoch, !Task.isCancelled else {
+                return
+            }
             // Both people in a direct chat are its admins, so either can add someone or manage
             // roles. MDK founds a group with its creator as the only admin and takes no admin list
             // at creation, so the peer is promoted straight after. Best effort: the chat works

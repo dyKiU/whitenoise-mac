@@ -27,15 +27,15 @@ jobs:
         run: |
           df -h .
           test "$(df -Pk . | awk 'NR==2 {print $4}')" -ge 8388608
-      - name: Exact runtime ownership baseline
+      - name: Exact ownership green, guard omissions and restored controls
         env:
-          PROMOTION_PHASE: red
+          PROMOTION_PHASE: green
         run: python3 scripts/ci/check-dm-promotion-owner.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: promotion-runtime-${{ github.sha }}
-          path: promotion-proof/result.json
+          path: promotion-proof/
   format:
     runs-on: macos-26
     timeout-minutes: 10
@@ -45,9 +45,12 @@ jobs:
         run: |
           mkdir format-proof
           python3 -m py_compile scripts/ci/check-dm-promotion-owner.py
-          xcrun swift-format format --configuration .swift-format --in-place whitenoise-macTests/DirectChatPromotionOwnershipTests.swift
+          files=(whitenoise-mac/Core/WorkspaceState+NewChat.swift whitenoise-macTests/DirectChatPromotionOwnershipTests.swift whitenoise-macTests/DirectConversationRoutingTests.swift whitenoise-macTests/GroupsTests.swift)
+          xcrun swift-format format --configuration .swift-format --in-place "${files[@]}"
           git diff --binary > format-proof/formatting.patch
           test ! -s format-proof/formatting.patch
+          git diff --check
+          xcrun swift-format lint --configuration .swift-format --strict "${files[@]}"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

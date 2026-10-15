@@ -37,7 +37,15 @@ import Testing
             displayName: "Synthetic peer", pictureURL: nil)
         runtime.createGroupGateEnabled = true
         let creation = Task { await state.startDirectChat(with: recipient) }
-        while !runtime.didReachCreateGroupGate { await Task.yield() }
+        defer {
+            runtime.releaseCreateGroupGate()
+            creation.cancel()
+        }
+        let gateDeadline = ContinuousClock.now.advanced(by: .seconds(10))
+        while !runtime.didReachCreateGroupGate, ContinuousClock.now < gateDeadline {
+            try await Task.sleep(for: .milliseconds(5))
+        }
+        try #require(runtime.didReachCreateGroupGate, "actual-direct-chat-create-gate-must-be-reached")
         try #require(runtime.createGroupAttempts.count == 1)
         try #require(runtime.promoteAdminDetailedCallCount == 0)
         switch retirement {

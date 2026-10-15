@@ -4967,6 +4967,8 @@ struct GroupsTests: WorkspaceTestSupport {
         await state.createNewChat()
 
         #expect(runtime.createdGroupMemberRefs.isEmpty)
+        #expect(runtime.createGroupAttempts.isEmpty)
+        #expect(runtime.promoteAdminDetailedCallCount == 0)
         #expect(state.selection == .chat("direct-group"))
         #expect(!state.isNewChatComposerVisible)
     }
