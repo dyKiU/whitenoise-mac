@@ -201,5 +201,16 @@
       "prefix": "build/results/automatic-host-mac-de38-localization-compile-v1"
     },
     "failed_preparation": "v1 sync refused before catalogwrite/import because4 dynamic L10n keys were not emitted; genuine UI literals then compiled v2 actual sync/import"
+  },
+  "paired_peer_titles_2af": {
+    "source": "ddd86834b8a6c3cb8ef26f2d369f0cb47634cf77",
+    "sdk": "2af06342ee36ed6436c2a94d703f7d78920cbe08",
+    "passed": 17,
+    "failed": 0,
+    "skipped": 0,
+    "test_log_sha256": "6fba027b9c730ea407e5f4f3b2e791219a0ab2bfdcac1495778ccbca22f9ef49",
+    "inputs_sha256": "32726c4a9cbd840fd0fe373d60e8530fc567a0f68361354da485d0947a9163cc",
+    "checks": "Changed Swift formatting, all locale coverage and committed published package sanity pass. SDK overlays restored after sanity. Paired list/title/header use the attested peer and current account nickname/profile cache; bounded profile requests run in account-checked tasks.",
+    "limits": "Focused presentation follow-up; prior full PR evidence is baseline-only. Installed process/signature verification is not visible Chats, human pairing or sync acceptance."
   }
 }

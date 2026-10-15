@@ -5,6 +5,10 @@ import SwiftUI
     /// Paired-only text lane. Ordinary conversations keep their authenticated window and media actions.
     struct AutomaticConversationView: View {
         let model: AccountConversationViewModel?
+        var title: (PairedChatSummaryFfi) -> String = {
+            PairedChatDisplayTitle.resolve(
+                name: $0.name, directPeerAccountIdHex: $0.directPeerAccountIdHex, peerDisplayName: nil)
+        }
         @State private var text = ""
         @State private var sending = false
         @State private var sendFailed = false
@@ -27,7 +31,7 @@ import SwiftUI
 
         var body: some View {
             VStack(alignment: .leading) {
-                Text(PeerDisplayText.sanitize(model?.pairedHeader?.name) ?? L10n.string("Unnamed group"))
+                Text(verbatim: model?.pairedHeader.map(title) ?? L10n.string("Unnamed group"))
                     .font(.headline)
                 Text("Shared from a linked device")
                     .font(.caption)

@@ -7,14 +7,17 @@ import SwiftUI
         let searchText: String
         let excludedGroupIds: Set<String>
         let select: (String) -> Void
+        var title: (PairedChatSummaryFfi) -> String = {
+            PairedChatDisplayTitle.resolve(
+                name: $0.name, directPeerAccountIdHex: $0.directPeerAccountIdHex, peerDisplayName: nil)
+        }
 
         private var rows: [PairedChatSummaryFfi] {
             let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
             return (model?.pairedRows ?? []).filter { row in
                 !excludedGroupIds.contains(row.groupIdHex)
                     && (query.isEmpty
-                        || (PeerDisplayText.sanitize(row.name) ?? "")
-                            .localizedStandardContains(query))
+                        || title(row).localizedStandardContains(query))
             }
         }
 
@@ -26,7 +29,7 @@ import SwiftUI
                     HStack {
                         Image(systemName: "link")
                         VStack(alignment: .leading) {
-                            Text(PeerDisplayText.sanitize(row.name) ?? L10n.string("Unnamed group"))
+                            Text(verbatim: title(row))
                                 .lineLimit(1)
                             Text("Shared from a linked device")
                                 .font(.caption)

@@ -205,7 +205,9 @@ struct ChatListDrawerView: View {
                     let hasAutomaticRows =
                         filter == .active
                         && (automaticChats?.pairedRows.contains { row in
-                            query.isEmpty || (PeerDisplayText.sanitize(row.name) ?? "").localizedStandardContains(query)
+                            query.isEmpty
+                                || AutomaticChatPeerDisplay.title(row, workspace: workspace).localizedStandardContains(
+                                    query)
                         } ?? false)
                 #else
                     let hasAutomaticRows = false
@@ -229,7 +231,20 @@ struct ChatListDrawerView: View {
                             if filter == .active {
                                 AutomaticChatListSection(
                                     model: automaticChats, searchText: workspace.searchText,
-                                    excludedGroupIds: Set(visibleChats.map(\.id)), select: selectAutomaticChat)
+                                    excludedGroupIds: Set(visibleChats.map(\.id)), select: selectAutomaticChat,
+                                    title: { AutomaticChatPeerDisplay.title($0, workspace: workspace) }
+                                )
+                                .task(
+                                    id: [automaticChats?.accountRef ?? ""]
+                                        + (automaticChats?.pairedRows.compactMap(\.directPeerAccountIdHex) ?? [])
+                                ) {
+                                    guard !Task.isCancelled,
+                                        let model = automaticChats,
+                                        model.accountRef == workspace.activeAccount?.accountRef
+                                    else { return }
+                                    workspace.requestPeerProfileRefresh(
+                                        model.pairedRows.compactMap(\.directPeerAccountIdHex))
+                                }
                             }
                         #endif
                         ForEach(visibleChats) { chat in
