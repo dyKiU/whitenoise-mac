@@ -1057,6 +1057,26 @@ struct GroupsTests: WorkspaceTestSupport {
     }
 
     @MainActor
+    @Test func visibleContactRefreshAdoptsRemoteFollowChangesWithoutPublishing() async throws {
+        let account = desktopAccount()
+        let peer = String(repeating: "a", count: 64)
+        let runtime = FakeMarmotRuntime(accounts: [account])
+        let state = WorkspaceState(clientFactory: { runtime })
+        await state.bootstrap()
+        await state.showContactDetails(accountIdHex: peer, displayName: "Contact", pictureURL: nil)
+        #expect(state.contactFollowStatus(accountIdHex: peer) == .known(false))
+
+        runtime.installFollows(accountRef: account.label, follows: [peer])
+        await state.refreshFollowStatus(forContactIdHex: peer)
+        #expect(state.contactFollowStatus(accountIdHex: peer) == .known(true))
+
+        runtime.installFollows(accountRef: account.label, follows: [])
+        await state.refreshFollowStatus(forContactIdHex: peer)
+        #expect(state.contactFollowStatus(accountIdHex: peer) == .known(false))
+        #expect(runtime.followMutationCalls.isEmpty)
+    }
+
+    @MainActor
     @Test func failedFollowStatusRefreshKeepsTheKnownRelationship() async throws {
         // A failed refresh must not fail closed: showing "Follow" for someone this account
         // already follows invites a duplicate publish and misreports the relationship.
