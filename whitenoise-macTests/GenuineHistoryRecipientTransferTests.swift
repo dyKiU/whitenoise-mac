@@ -52,7 +52,7 @@
             let bridge = URL(fileURLWithPath: path, isDirectory: true)
             let fixture: GenuineRecipientTransferFixture = try await read("fixture.json", bridge: bridge)
             let root = URL(fileURLWithPath: fixture.root, isDirectory: true).resolvingSymlinksInPath()
-            guard fixture.version == 2, root.path.hasPrefix("/Users/pj/project/build/native-"),
+            guard fixture.version == 2, try HostedNativeFixtureRoot.accepts(root, prefix: "native-"),
                 fixture.account.count == 64, fixture.author.count == 64,
                 !fixture.group.isEmpty, fixture.group.utf8.count <= 512,
                 fixture.oldContent.utf8.count == 8192,

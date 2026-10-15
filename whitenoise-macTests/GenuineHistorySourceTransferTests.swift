@@ -29,7 +29,7 @@
             guard value.version == 2, value.recipientCount == 2,
                 value.expectedRecipient.count == 64,
                 value.expectedRecipient.allSatisfy({ "0123456789abcdef".contains($0) }),
-                root.path.hasPrefix("/Users/pj/project/build/native-"),
+                try HostedNativeFixtureRoot.accepts(root, prefix: "native-"),
                 try Data(contentsOf: root.appendingPathComponent(".native-acceptance"))
                     == Data("native-sdk83-test-only-v1\n".utf8)
             else { throw CocoaError(.fileReadCorruptFile) }

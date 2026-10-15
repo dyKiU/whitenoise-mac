@@ -27,7 +27,7 @@
             let value = try JSONDecoder().decode(Self.self, from: bytes)
             let root = URL(fileURLWithPath: value.root, isDirectory: true).resolvingSymlinksInPath()
             guard value.version == 1, value.recipientCount == 2,
-                root.path.hasPrefix("/Users/pj/project/build/native-"),
+                try HostedNativeFixtureRoot.accepts(root, prefix: "native-"),
                 try Data(contentsOf: root.appendingPathComponent(".native-acceptance"))
                     == Data("native-sdk83-test-only-v1\n".utf8)
             else { throw CocoaError(.fileReadCorruptFile) }
