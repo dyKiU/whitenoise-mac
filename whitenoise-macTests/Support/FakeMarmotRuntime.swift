@@ -2060,7 +2060,7 @@ nonisolated final class FakeMarmotRuntime: MarmotRuntime, @unchecked Sendable {
             }
             if let refusedMemberRef {
                 if let accountIdHex = missingKeyPackageAccountIdHexByMemberRef[refusedMemberRef] {
-                    throw MarmotKitError.MissingKeyPackage(account: accountIdHex)
+                    throw missingKeyPackageNotFound(account: accountIdHex)
                 }
                 if unresolvableMemberRefs.contains(refusedMemberRef) {
                     throw MarmotKitError.Publish(details: "no relay list for member")
@@ -2186,7 +2186,7 @@ nonisolated final class FakeMarmotRuntime: MarmotRuntime, @unchecked Sendable {
             missingKeyPackageAccountIdHexByMemberRef[$0] != nil || invalidKeyPackageMemberRefs.contains($0)
         }) {
             if let accountIdHex = missingKeyPackageAccountIdHexByMemberRef[refusedMemberRef] {
-                throw MarmotKitError.MissingKeyPackage(account: accountIdHex)
+                throw missingKeyPackageNotFound(account: accountIdHex)
             }
             throw MarmotKitError.InvalidKeyPackageEvent(details: "unusable key package event")
         }
