@@ -71,7 +71,8 @@
                         accountRef: account.label, peerAccountId: fixture.peer)
                     guard let destination = found, case .pairedSource(let observed) = destination else {
                         try await client.marmot.shutdownAndClose()
-                        try writeObservation(["runtime_closed": true], named: "paired-direct-closed.json", bridge: bridge)
+                        try writeObservation(
+                            ["runtime_closed": true], named: "paired-direct-closed.json", bridge: bridge)
                         XCTFail("paired-direct-adapter-destination")
                         return
                     }
