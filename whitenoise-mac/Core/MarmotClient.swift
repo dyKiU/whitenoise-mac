@@ -1063,9 +1063,21 @@ nonisolated final class MarmotClient: MarmotRuntime, @unchecked Sendable {
     func existingDirectConversation(accountRef: String, peerAccountId: String) async throws
         -> DirectConversationDestination?
     {
-        return try await marmot.existingDirectConversation(
-            accountRef: accountRef, peerAccountId: peerAccountId
-        ).map(DirectConversationDestination.localMls)
+        #if WN_EXPERIMENTAL_DEVICE_SYNC
+            guard
+                let conversation = try await marmot.existingAccountDirectConversation(
+                    accountRef: accountRef, peerAccountId: peerAccountId
+                )
+            else { return nil }
+            switch conversation {
+            case .localMls(let conversation): return .localMls(conversation)
+            case .pairedSource(let conversation): return .pairedSource(conversation)
+            }
+        #else
+            return try await marmot.existingDirectConversation(
+                accountRef: accountRef, peerAccountId: peerAccountId
+            ).map(DirectConversationDestination.localMls)
+        #endif
     }
 
     func createGroup(accountRef: String, name: String, memberRefs: [String], description: String?) async throws
