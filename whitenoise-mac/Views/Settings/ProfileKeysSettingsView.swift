@@ -42,7 +42,6 @@ struct ProfileKeysSettingsView: View {
                         DeviceVerificationView(model: deviceVerificationModel)
                             .id(ObjectIdentifier(deviceVerificationModel))
                     }
-                    if let acquireAccountSharing { AccountChatSharingEntryView(acquire: acquireAccountSharing) }
                 #endif
             } else {
                 SettingsSection {
