@@ -14,6 +14,9 @@
         private(set) var outgoingPacket: String?
         private(set) var isWorking = false
         private(set) var transportError: Error?
+        private var sharingApprovalAccepted = false
+        // Presentation only: completion and permission still come from the original SDK session.
+        var sharingApprovalSubmitted: Bool { isActive && sharingApprovalAccepted }
         enum TransportAction { case continueLinking, shareChats, exportPacket, receivePacket, finalizeLinking }
         var isActive: Bool { !retired && isCurrent() }
         var snapshot: DeviceLinkingSnapshotFfi? { isActive ? original.latestSnapshot : nil }
@@ -42,6 +45,7 @@
             try checkActive()
             try await original.continueLinkingAndShareChats(displayedRevision: displayedRevision)
             try checkActive()
+            sharingApprovalAccepted = true
         }
         func enrollmentPacket(displayedRevision: UInt64) async throws -> Data {
             try checkActive()
@@ -106,6 +110,7 @@
         }
         func invalidate() {
             retired = true
+            sharingApprovalAccepted = false
             outgoingPacket = nil
         }
     }
