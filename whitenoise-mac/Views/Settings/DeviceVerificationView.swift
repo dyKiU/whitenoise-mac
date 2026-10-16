@@ -79,14 +79,22 @@
                                 Text(
                                     "Pairing shares all existing and future chats, chat history, and messaging between these devices."
                                 )
-                                Button("Pair and share all chats") {
+                                Button {
                                     perform {
                                         let original = try model.enrollmentTransport()
                                         enrollment = original
                                         try await original.performTransportAction(
                                             .shareChats, displayedRevision: snapshot.revision)
+                                        Self.diagnostics.notice("Pairing sharing approval accepted")
                                     }
-                                }.disabled(isWorking || !model.isActive)
+                                } label: {
+                                    if enrollment?.sharingApprovalSubmitted == true {
+                                        ProgressView(L10n.string("Waiting"))
+                                    } else {
+                                        Text("Pair and share all chats")
+                                    }
+                                }
+                                .disabled(isWorking || !model.isActive || enrollment?.sharingApprovalSubmitted == true)
                             } else {
                                 Text("Verification complete. Enrollment remains unavailable.")
                             }
@@ -147,6 +155,9 @@
             }
             .onChange(of: model.owner.map(ObjectIdentifier.init)) { _, _ in clearQR() }
             .onChange(of: model.snapshot?.phase) { _, phase in
+                if let phase {
+                    Self.diagnostics.notice("Pairing phase=\(String(describing: phase), privacy: .public)")
+                }
                 if phase == .cancelled || phase == .expired || phase == .failed {
                     setup = ""
                     clearQR()

@@ -32,6 +32,18 @@ import Testing
         private var calls: [String] = []
         private var received: [Data] = []
         private var rejected = false
+        private var holdSharing = false
+        private var pendingSharing: CheckedContinuation<Void, Never>?
+        var isSharingWaiting: Bool { lock.withLock { pendingSharing != nil } }
+        func pauseSharing() { lock.withLock { holdSharing = true } }
+        func finishSharing() {
+            let continuation = lock.withLock {
+                let result = pendingSharing
+                pendingSharing = nil
+                return result
+            }
+            continuation?.resume()
+        }
         private var pause = false
         private var pending: CheckedContinuation<Data, Never>?
         var actions: [String] { lock.withLock { calls } }
@@ -44,6 +56,15 @@ import Testing
         }
         override func continueLinking(displayedRevision: UInt64) async throws {
             lock.withLock { calls.append("continue:\(displayedRevision)") }
+            if lock.withLock({ rejected }) { throw MarmotKitError.DeviceLinkingStaleRevision }
+        }
+        override func continueLinkingAndShareChats(displayedRevision: UInt64) async throws {
+            lock.withLock { calls.append("share:\(displayedRevision)") }
+            if lock.withLock({ holdSharing }) {
+                await withCheckedContinuation { continuation in
+                    lock.withLock { pendingSharing = continuation }
+                }
+            }
             if lock.withLock({ rejected }) { throw MarmotKitError.DeviceLinkingStaleRevision }
         }
         override func enrollmentPacket(displayedRevision: UInt64) async throws -> Data {
@@ -145,6 +166,51 @@ import Testing
             await waitFor { scope.latestSnapshot != nil }
             try #require(scope.latestSnapshot != nil)
             return try state.makeDeviceEnrollmentModel()
+        }
+        @Test(arguments: [false, true])
+        func sharingProgressRequiresSuccessfulOriginalApproval(reject: Bool) async throws {
+            let (state, _) = await state()
+            let original = EnrollmentSession(noPointer: .init())
+            let held = try await state.adoptDeviceLinkingFactory { _, _ in original }
+            let model = DeviceEnrollmentViewModel(
+                original: held, isCurrent: { state.deviceLinkingScope === held },
+                cancel: { try await state.cancelDeviceLinking() }, enrollmentSupported: true)
+            #expect(!model.sharingApprovalSubmitted)
+            if reject { original.rejectRevision() }
+            do {
+                try await model.performTransportAction(.shareChats, displayedRevision: 7)
+                #expect(!reject)
+            } catch {
+                #expect(reject)
+                #expect(model.transportError != nil)
+            }
+            #expect(model.sharingApprovalSubmitted == !reject)
+            #expect(original.actions == ["share:7"])
+            model.invalidate()
+            #expect(!model.sharingApprovalSubmitted)
+            await state.deactivate()
+        }
+        @Test func lateSharingApprovalCannotPresentProgressOnRetiredOwner() async throws {
+            let (state, _) = await state()
+            let original = EnrollmentSession(noPointer: .init())
+            let held = try await state.adoptDeviceLinkingFactory { _, _ in original }
+            let model = DeviceEnrollmentViewModel(
+                original: held, isCurrent: { state.deviceLinkingScope === held },
+                cancel: { try await state.cancelDeviceLinking() }, enrollmentSupported: true)
+            original.pauseSharing()
+            let action = Task {
+                try await model.performTransportAction(.shareChats, displayedRevision: 7)
+            }
+            defer { original.finishSharing() }
+            await waitFor { original.isSharingWaiting }
+            try #require(original.isSharingWaiting)
+            #expect(model.isWorking)
+            #expect(!model.sharingApprovalSubmitted)
+            model.invalidate()
+            original.finishSharing()
+            await #expect(throws: MarmotKitError.DeviceLinkingClosed) { try await action.value }
+            #expect(!model.sharingApprovalSubmitted)
+            await state.deactivate()
         }
         @Test func transportActionsUseOriginalRevisionAndBoundedOpaqueBytes() async throws {
             let (state, _) = await state()
