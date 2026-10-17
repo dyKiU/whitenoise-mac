@@ -4,16 +4,18 @@ import argparse
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import stat
 import subprocess
 import time
 
-BASE = 'db6bbc7ea1b72e791aa11902fd71494707b57c68'
+BASE = '2dd124f330ec1fd25f23d78235a3d4ac1ec81375'
 SELF = 'scripts/ci/onboarding-mutations.py'
 WORKFLOW = '.github/workflows/mac-ci.yml'
 MODEL = 'whitenoise-mac/Features/Onboarding/OnboardingCoordinator.swift'
 VIEW = 'whitenoise-mac/Views/Onboarding/OnboardingView.swift'
+SHELL = 'whitenoise-mac/Views/MessengerShellView.swift'
 HOST = 'AddProfileRoutingTests/'
 GUIDE = 'AccountSetupGuideTests/'
 CASES = {
@@ -37,8 +39,16 @@ MUTATIONS = [
     ('entered-chats-guard-omitted', VIEW,
      'guard let model, model.snapshot != nil, !model.hasEnteredChats else { return false }',
      'guard let model, model.snapshot != nil else { return false }',
-     {GUIDE + 'aWalkedThroughSetupLeavesThePaneOnceTheChatsAreEntered()'},
+     {GUIDE + 'aWalkedThroughSetupLeavesThePaneOnceTheChatsAreEntered()',
+      HOST + 'testAddProfileKeepsWelcomeRouteWithExistingReadyAccount',
+      HOST + 'testUnfinishedSetupCompletesThenAllowsAnotherProfile'},
      'OnboardingView.showsAccountSetup(model)'),
+    ('add-profile-shell-guard-omitted', SHELL,
+     '                OnboardingView.showsAccountSetup(onboarding),\n',
+     '',
+     {HOST + 'testAddProfileKeepsWelcomeRouteWithExistingReadyAccount',
+      HOST + 'testUnfinishedSetupCompletesThenAllowsAnotherProfile'},
+     'Existing ready projection must not dismiss Add Profile'),
 ]
 
 
@@ -181,6 +191,10 @@ def execute(label, output):
     raw = (output / (label + '.log')).read_text()
     require('** TEST BUILD SUCCEEDED **' in raw, 'build-did-not-pass')
     row['runtime_expectation_marker'] = 'Expectation failed:' in raw
+    row['hosted_route_assertion'] = (
+        'XCTAssertEqual failed:' in raw
+        and 'Existing ready projection must not dismiss Add Profile' in raw
+        and re.search(r'AddProfileRoutingTests\.swift:97(?::|\b)', raw) is not None)
     row['assertion_markers'] = {marker: marker in raw for *_, marker in MUTATIONS}
     (output / (label + '-command.json')).write_text(json.dumps(row, indent=2) + '\n')
     return row
@@ -204,6 +218,9 @@ def main():
     report = {'source_commit': git('rev-parse', 'HEAD'), 'reviewed_product_base': BASE,
               'source_before': original, 'parser_controls': controls, 'chains': [],
               'qualified': False, 'historical_behavioral_red_claimed': False,
+              'prior_real_merge_failure': {
+                  'run': 'https://github.com/dyKiU/whitenoise-mac/actions/runs/39047448098',
+                  'scope': 'Original AddProfile routing failures precede source fix; this run separately measures mutation detection'},
               'toolchain': subprocess.check_output(['xcodebuild', '-version'], text=True).strip(),
               'host': subprocess.check_output(['sw_vers'], text=True).strip(),
               'execution_count_scope': 'validated native rows only; command/summary files retain exporter failures'}
@@ -232,8 +249,12 @@ def main():
                 chain['runtime_detected'] = (
                     mutant['exit'] == 65 and bool(failed) and failed <= allowed
                     and mutant['source'] == chain['mutated_source']
-                    and GUIDE + 'aWalkedThroughSetupLeavesThePaneOnceTheChatsAreEntered()' in failed
-                    and mutant['runtime_expectation_marker'] and mutant['assertion_markers'][marker])
+                    and mutant['assertion_markers'][marker]
+                    and ((name == 'add-profile-shell-guard-omitted'
+                          and failed == allowed and mutant['hosted_route_assertion'])
+                         or (name != 'add-profile-shell-guard-omitted'
+                             and GUIDE + 'aWalkedThroughSetupLeavesThePaneOnceTheChatsAreEntered()' in failed
+                             and mutant['runtime_expectation_marker'])))
             except Exception as error:
                 chain['mutant_error'] = str(error)
             finally:
@@ -253,7 +274,7 @@ def main():
                 save()
             require(chain['source_restored'] and chain.get('restored') and passing(chain['restored']),
                     'restored-control-not-green')
-        report['qualified'] = len(report['chains']) == 2 and all(row['qualified'] for row in report['chains'])
+        report['qualified'] = len(report['chains']) == len(MUTATIONS) and all(row['qualified'] for row in report['chains'])
         require(report['qualified'], 'mutation-qualification-incomplete')
     except Exception as error:
         report['error'] = str(error)
@@ -270,9 +291,19 @@ def main():
                 'wall_seconds': attempt['wall_seconds'],
                 'exported_native_counts': attempt.get('exported_native_counts'),
                 'case_identity_validated': 'counts' in attempt})
-        report['source_after'] = fingerprint()
-        report['source_pristine'] = report['source_after'] == original
+        try:
+            report['source_after'] = fingerprint()
+            report['source_pristine'] = report['source_after'] == original
+        except Exception as error:
+            report['source_after'] = None
+            report['source_pristine'] = False
+            report['final_source_probe_error'] = str(error)
+        report['qualified'] = report['qualified'] and report['source_pristine']
+        if not report['source_pristine']:
+            report['final_source_error'] = 'final-source-not-pristine'
         save()
+        if not report['source_pristine'] and 'error' not in report:
+            raise RuntimeError('final-source-not-pristine')
 
 
 if __name__ == '__main__':
