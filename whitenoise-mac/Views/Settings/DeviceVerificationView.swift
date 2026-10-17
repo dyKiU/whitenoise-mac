@@ -85,7 +85,6 @@
                                         enrollment = original
                                         try await original.performTransportAction(
                                             .shareChats, displayedRevision: snapshot.revision)
-                                        Self.diagnostics.notice("Pairing sharing approval accepted")
                                     }
                                 } label: {
                                     if enrollment?.sharingApprovalSubmitted == true {
@@ -155,9 +154,6 @@
             }
             .onChange(of: model.owner.map(ObjectIdentifier.init)) { _, _ in clearQR() }
             .onChange(of: model.snapshot?.phase) { _, phase in
-                if let phase {
-                    Self.diagnostics.notice("Pairing phase=\(String(describing: phase), privacy: .public)")
-                }
                 if phase == .cancelled || phase == .expired || phase == .failed {
                     setup = ""
                     clearQR()
