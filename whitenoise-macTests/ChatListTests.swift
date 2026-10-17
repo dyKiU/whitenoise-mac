@@ -54,7 +54,7 @@ struct ChatListTests: WorkspaceTestSupport {
         )
         state.activeAccountId = account.id
         state.setArchivedChats([chat], forAccountId: account.id)
-        #expect(chat.avatarSeed == "avatar:alice")
+        #expect(chat.avatarSeed == contact)
         #expect(ChatListOrdering.preservingResolvedMetadata(in: chat, from: chat).directPeerAccountIdHex == contact)
         // The contact sheet must save against the same identity the sidebar overlay resolves.
         let peer = try #require(chat.directPeerAccountIdHex)
@@ -69,7 +69,7 @@ struct ChatListTests: WorkspaceTestSupport {
         #expect(state.archivedChats.first?.title == "Mum")
         #expect(state.filteredChats(matching: "mum").map(\.id) == ["dm"])
         #expect(state.activeChats.first?.publishedTitle == "Alice")
-        #expect(state.activeChats.first?.avatarSeed == "avatar:alice")
+        #expect(state.activeChats.first?.avatarSeed == contact)
 
         state.setContactNickname("Mother", forContactAccountIdHex: peer)
         #expect(state.activeChats.first?.title == "Mother")

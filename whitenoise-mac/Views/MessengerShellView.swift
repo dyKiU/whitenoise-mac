@@ -231,13 +231,14 @@ private struct DetailPaneView: View {
             )
         ) {
             guard workspace.phase == .onboarding,
-                session.accountScope?.onboarding.canEnterChats == true,
+                let onboarding = session.accountScope?.onboarding,
+                onboarding.canEnterChats,
+                OnboardingView.showsAccountSetup(onboarding),
                 workspace.activeAccount != nil
             else { return }
             let enteredAccountIdHex = workspace.activeAccount?.accountIdHex
-            let onboarding = session.accountScope?.onboarding
             await workspace.activateReadyState()
-            onboarding?.didEnterChats()
+            onboarding.didEnterChats()
             workspace.presentImprovementsPromptIfNeeded(forEnteredAccountIdHex: enteredAccountIdHex)
         }
     }
