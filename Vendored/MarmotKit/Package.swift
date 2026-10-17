@@ -44,8 +44,8 @@ let package = Package(
             ],
             linkerSettings: [
                 .linkedFramework("Security"),
-                .linkedFramework("SystemConfiguration")
+                .linkedFramework("SystemConfiguration"),
             ]
-        )
+        ),
     ]
 )
