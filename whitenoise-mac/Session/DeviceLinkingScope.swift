@@ -15,17 +15,12 @@
         @ObservationIgnored private let session: any DeviceLinkingSessionProtocol
         @ObservationIgnored private let subscription: DeviceLinkingSubscription
         @ObservationIgnored private var observation: Task<Void, Never>?
-        @ObservationIgnored private var runtimeDiagnostics: Task<Void, Never>?
         @ObservationIgnored private var cleanup: Task<Void, Error>?
         @ObservationIgnored private var active = true
 
-        init(
-            accountRef: String, session: any DeviceLinkingSessionProtocol,
-            runtimeDiagnostics: Task<Void, Never>? = nil
-        ) {
+        init(accountRef: String, session: any DeviceLinkingSessionProtocol) {
             self.accountRef = accountRef
             self.session = session
-            self.runtimeDiagnostics = runtimeDiagnostics
             self.subscription = session.subscribe()
             let subscription = self.subscription
             observation = Task { [weak self] in
@@ -139,8 +134,6 @@
             subscription.closeStream()
             observation?.cancel()
             observation = nil
-            runtimeDiagnostics?.cancel()
-            runtimeDiagnostics = nil
         }
 
         func cancel() async throws {
