@@ -466,7 +466,10 @@ final class SessionState {
             } onCancel: {
                 task.cancel()
             }
-            let owner = DeviceLinkingScope(accountRef: scope.account.accountRef, session: original)
+            let owner = DeviceLinkingScope(
+                accountRef: scope.account.accountRef, session: original,
+                runtimeDiagnostics: PairingRuntimeDiagnostics.start(
+                    runtime: scope.runtime, accountIdHex: scope.account.accountIdHex))
             guard !Task.isCancelled, accountScope === scope, !scope.isCancelled,
                 selection == activationToken, epoch == deviceLinkingEpoch
             else {
