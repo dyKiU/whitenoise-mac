@@ -6,6 +6,12 @@ on:
     branches:
       - master
   workflow_dispatch:
+    inputs:
+      scope:
+        description: Full qualification or focused behavioral onboarding mutations
+        type: choice
+        options: [full, onboarding-mutations]
+        default: full
   schedule:
     - cron: "17 9 * * *"
 
@@ -13,7 +19,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: mac-ci-${{ github.workflow }}-${{ github.ref }}
+  group: mac-ci-${{ github.workflow }}-${{ github.ref }}-${{ inputs.scope || 'full' }}
   cancel-in-progress: true
 
 env:
@@ -38,6 +44,7 @@ env:
 # branch protection requires, and it is the only status that has to be green.
 jobs:
   checks:
+    if: github.event_name != 'workflow_dispatch' || inputs.scope == 'full'
     name: Static checks
     runs-on: macos-26
     timeout-minutes: 15
@@ -84,6 +91,7 @@ jobs:
         run: scripts/ci/macos-sanity-checks.sh
 
   test:
+    if: github.event_name != 'workflow_dispatch' || inputs.scope == 'full'
     name: Unit tests
     runs-on: macos-26
     timeout-minutes: 30
@@ -132,6 +140,7 @@ jobs:
           retention-days: 7
 
   build:
+    if: github.event_name != 'workflow_dispatch' || inputs.scope == 'full'
     name: Release build
     runs-on: macos-26
     timeout-minutes: 30
@@ -156,6 +165,7 @@ jobs:
             CODE_SIGNING_ALLOWED=NO
 
   analyze:
+    if: github.event_name != 'workflow_dispatch' || inputs.scope == 'full'
     name: Static analysis
     runs-on: macos-26
     timeout-minutes: 30
@@ -178,6 +188,7 @@ jobs:
             CODE_SIGNING_ALLOWED=NO
 
   coverage:
+    if: github.event_name != 'workflow_dispatch' || inputs.scope == 'full'
     name: Coverage
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -248,7 +259,7 @@ jobs:
     name: PR Checks
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    if: ${{ always() }}
+    if: ${{ always() && (github.event_name != 'workflow_dispatch' || inputs.scope == 'full') }}
     needs: [checks, test, build, analyze, coverage]
 
     steps:
@@ -272,3 +283,53 @@ jobs:
         run: |
           echo "::error::One or more Mac CI jobs did not succeed."
           exit 1
+
+  onboarding-mutations:
+    name: Onboarding behavioral mutation qualification
+    if: github.event_name == 'workflow_dispatch' && inputs.scope == 'onboarding-mutations'
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - name: Check out exact candidate and reviewed baseline
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Validate source and result parser controls
+        run: python3 scripts/ci/onboarding-mutations.py --preflight
+      - name: Remote focused format preflight and feedback
+        run: |
+          python3 - <<'PYFORMAT'
+          import difflib
+          from pathlib import Path
+          import subprocess
+          files = ['whitenoise-mac/Features/Onboarding/OnboardingCoordinator.swift',
+                   'whitenoise-mac/Views/Onboarding/OnboardingView.swift',
+                   'whitenoise-macTests/AddProfileRoutingTests.swift',
+                   'whitenoise-macTests/AccountSetupGuideTests.swift']
+          output = Path('build/onboarding-format')
+          output.mkdir(parents=True, exist_ok=True)
+          lint = subprocess.run(['xcrun', 'swift-format', 'lint', '--configuration', '.swift-format', '--strict', *files])
+          if lint.returncode:
+              patch = []
+              for name in files:
+                  formatted = subprocess.run(['xcrun', 'swift-format', 'format', '--configuration', '.swift-format', name], capture_output=True, text=True, check=True).stdout
+                  patch.extend(difflib.unified_diff(Path(name).read_text().splitlines(True), formatted.splitlines(True), fromfile='a/' + name, tofile='b/' + name))
+              (output / 'feedback.patch').write_text(''.join(patch))
+          raise SystemExit(lint.returncode)
+          PYFORMAT
+      - name: Cache MarmotKit binary artifact
+        uses: ./.github/actions/marmotkit-cache
+      - name: Run baseline, runtime mutants and exact restored controls
+        run: python3 scripts/ci/onboarding-mutations.py
+      - name: Preserve compact qualification and failed attempts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: onboarding-mutation-qualification
+          path: |
+            build/onboarding-mutations/result.json
+            build/onboarding-mutations/*.json
+            build/onboarding-mutations/*.log
+            build/onboarding-format/feedback.patch
+          if-no-files-found: warn
+          retention-days: 14
