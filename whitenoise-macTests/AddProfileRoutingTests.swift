@@ -27,12 +27,12 @@ import XCTest
             try await Task.sleep(for: .milliseconds(10))
         }
         XCTAssertNotNil(model.snapshot)
-        XCTAssertTrue(model.hasUnfinishedSetup)
+        XCTAssertTrue(OnboardingView.showsAccountSetup(model))
         runtime.onboardingState = nil
         model.start()
         try await Task.sleep(for: .milliseconds(100))
         XCTAssertNil(model.snapshot)
-        XCTAssertFalse(model.hasUnfinishedSetup)
+        XCTAssertFalse(OnboardingView.showsAccountSetup(model))
     }
 
     private func checkHostedRoute(initiallyReady: Bool) async throws {
@@ -81,11 +81,16 @@ import XCTest
         try await Task.sleep(for: .milliseconds(300))
         if !initiallyReady {
             XCTAssertEqual(workspace.phase, .onboarding)
-            XCTAssertTrue(originalScope.onboarding.hasUnfinishedSetup)
+            XCTAssertTrue(OnboardingView.showsAccountSetup(originalScope.onboarding))
             runtime.onboardingState?.ready = true
             await originalScope.onboarding.run()
             try await Task.sleep(for: .milliseconds(300))
+            XCTAssertEqual(workspace.phase, .onboarding, "Guided setup waits for explicit Open Chats")
+            XCTAssertFalse(originalScope.onboarding.canEnterChats)
+            originalScope.onboarding.openChats()
+            try await Task.sleep(for: .milliseconds(300))
             XCTAssertEqual(workspace.phase, .ready)
+            XCTAssertTrue(originalScope.onboarding.hasEnteredChats)
             workspace.showAccountOnboarding()
             try await Task.sleep(for: .milliseconds(300))
         }

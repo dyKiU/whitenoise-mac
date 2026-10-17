@@ -145,6 +145,13 @@ nonisolated final class FakeMarmotRuntime: MarmotRuntime, @unchecked Sendable {
     var onboardingUpdates: [OnboardingSnapshotFfi] = []
     private(set) var begunOnboardingIdentities: [String] = []
     private(set) var onboardingDiscoveryRelayUpdates: [[String]] = []
+    private(set) var cancelOnboardingCallCount = 0
+    private(set) var runOnboardingCallCount = 0
+    private(set) var proposedOnboardingProfiles: [UserProfileMetadataFfi] = []
+    /// Thrown by `runOnboarding` in place of a checkpoint: storage failing, the account closed.
+    var runOnboardingError: Error?
+    /// Armed, parks `runOnboarding` until released — a check MarmotKit is still working on.
+    let onboardingRunGate = AsyncFfiGate()
     var usageSettings = UsageDiagnosticsSettingsFfi(
         decision: .acceptanceRequired,
         policyRevision: "test-policy",
@@ -1942,7 +1949,10 @@ nonisolated final class FakeMarmotRuntime: MarmotRuntime, @unchecked Sendable {
     }
 
     func runOnboarding(accountRef: String) async throws -> OnboardingSnapshotFfi {
-        try advanceOnboarding()
+        runOnboardingCallCount += 1
+        await onboardingRunGate.passIfArmed()
+        if let runOnboardingError { throw runOnboardingError }
+        return try advanceOnboarding()
     }
 
     func retryOnboardingStep(accountRef: String, step: OnboardingStepFfi) async throws -> OnboardingSnapshotFfi {
@@ -1968,6 +1978,7 @@ nonisolated final class FakeMarmotRuntime: MarmotRuntime, @unchecked Sendable {
     }
 
     func cancelOnboarding(accountRef: String) async throws {
+        cancelOnboardingCallCount += 1
         onboardingState = nil
     }
 
@@ -1979,7 +1990,8 @@ nonisolated final class FakeMarmotRuntime: MarmotRuntime, @unchecked Sendable {
     func proposeOnboardingProfile(accountRef: String, profile: UserProfileMetadataFfi) async throws
         -> OnboardingSnapshotFfi
     {
-        try advanceOnboarding()
+        proposedOnboardingProfiles.append(profile)
+        return try advanceOnboarding()
     }
 
     func proposeOnboardingFollows(accountRef: String, follows: [String]) async throws -> OnboardingSnapshotFfi {
