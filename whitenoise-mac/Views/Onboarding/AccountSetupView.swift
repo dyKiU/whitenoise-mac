@@ -57,9 +57,9 @@ struct AccountSetupView: View {
                             L10n.string(
                                 "Existing invitation keys stay unchanged. Pair devices to share chats.", locale: locale)
                         )
-                            .wnFont(.medium12)
-                            .foregroundStyle(WNColor.backgroundContentSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
+                        .wnFont(.medium12)
+                        .foregroundStyle(WNColor.backgroundContentSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
                     }
 
                     // Only errors that belong to no step's screen land here: a step's own screen
