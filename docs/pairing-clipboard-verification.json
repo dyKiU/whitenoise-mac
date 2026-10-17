@@ -1,0 +1,174 @@
+{
+  "base": "0cacb85a865c72d7a303a80b75eb8460a951ea88",
+  "scope": "Setup and encrypted verification wire packets deliberately copied to another device use unconcealed clipboard policy and visible Copied feedback. Private clipboard defaults remain concealed.",
+  "behavior_red_stash": "679877e08e49df9c86ef2b55f36da89d60959dae",
+  "green_stash": "740ec836ef83953547a3881adfba0cc7518c1d9c",
+  "tested_paths": {
+    "whitenoise-mac/Views/CopyToClipboardButton.swift": "43baec20d42bbbbe7acf86cd9dd0eb6fabccdc1ee11c2dd10281b68a4f09dd65",
+    "whitenoise-mac/Views/Settings/DeviceVerificationView.swift": "9ca4850c376792745abffadfde4dfdeaf96e14fdef728ce7ad67d8b52dace926",
+    "whitenoise-macTests/PairingClipboardTests.swift": "4c0d2cd5f3e3065b252081164d515f9caa71921e56e616b3eea5863699d4081e"
+  },
+  "cohorts": {
+    "affected-v1": {
+      "exit": 0,
+      "seconds": 4.220357179641724,
+      "log": "/Users/pj/project/build/mac-pairing-clipboard-affected-v1.log",
+      "log_sha256": "0d43fa98a4478b238bc3a5297351be8a14e2c8c6dfc1e78203b5cf5bbecd099a",
+      "inputs": "../build/results/mac-pairing-clipboard-affected-v1-inputs.json",
+      "classification": "passing",
+      "passed": 18,
+      "failed": 0,
+      "total": 18,
+      "skipped": 0
+    },
+    "green-v1": {
+      "exit": 0,
+      "seconds": 17.750224113464355,
+      "log": "/Users/pj/project/build/mac-pairing-clipboard-green-v1.log",
+      "log_sha256": "c8d93844846a2cfe29322cec9eb18f0b24b1d564a8037ddf706a441f1c69a6ce",
+      "inputs": "../build/results/mac-pairing-clipboard-green-v1-inputs.json",
+      "classification": "passing",
+      "passed": 2,
+      "failed": 0,
+      "total": 2,
+      "skipped": 0
+    },
+    "red-v1": {
+      "exit": 65,
+      "seconds": 17.388367176055908,
+      "log": "/Users/pj/project/build/mac-pairing-clipboard-red-v1.log",
+      "log_sha256": "c84c00995184a39469728afbc3a92d776a78bcf91ce9bce589d1a1a8dac83d35",
+      "inputs": "../build/results/mac-pairing-clipboard-red-v1-inputs.json",
+      "classification": "fixture compile"
+    },
+    "red-v2": {
+      "exit": 65,
+      "seconds": 45.96001100540161,
+      "log": "/Users/pj/project/build/mac-pairing-clipboard-red-v2.log",
+      "log_sha256": "779cb559a29af73f60abf697c7e928c4ddb417e715a08d372383a025f537b08b",
+      "inputs": "../build/results/mac-pairing-clipboard-red-v2-inputs.json",
+      "classification": "unreachable hosted AX fixture"
+    },
+    "red-v3": {
+      "exit": 65,
+      "seconds": 23.179909229278564,
+      "log": "/Users/pj/project/build/mac-pairing-clipboard-red-v3.log",
+      "log_sha256": "74de10e8a20b62f57c0ae736c9f9dd5c254cd0e03a927b5e542e59cef64219c6",
+      "inputs": "../build/results/mac-pairing-clipboard-red-v3-inputs.json",
+      "classification": "unreachable hosted AX fixture"
+    },
+    "red-v4": {
+      "exit": 65,
+      "seconds": 19.24967670440674,
+      "log": "/Users/pj/project/build/mac-pairing-clipboard-red-v4.log",
+      "log_sha256": "4817342c789e2f477ba421a9c4184d1c1a45ff6097754693d0b8b331f0e5792b",
+      "inputs": "../build/results/mac-pairing-clipboard-red-v4-inputs.json",
+      "classification": "unreachable hosted AX fixture"
+    },
+    "red-v5": {
+      "exit": 65,
+      "seconds": 22.351521968841553,
+      "log": "/Users/pj/project/build/mac-pairing-clipboard-red-v5.log",
+      "log_sha256": "6ec208633f97482bbb8915704954a6de4d655fa60b7704ab402aa450ed1bf2dd",
+      "inputs": "../build/results/mac-pairing-clipboard-red-v5-inputs.json",
+      "classification": "behavioral regression",
+      "passed": 1,
+      "failed": 1,
+      "total": 2,
+      "skipped": 0
+    },
+    "full-experimental-v2": {
+      "exit": 0,
+      "seconds": 69.33891201019287,
+      "log": "/Users/pj/project/build/mac-pairing-clipboard-full-experimental-v2.log",
+      "log_sha256": "828becbd866c8c7223dc067d4f6a55d6952ee35f26ea276d37f4af5dc59ba66e",
+      "inputs": "build/results/mac-pairing-clipboard-full-experimental-v2-inputs.json",
+      "passed": 1810,
+      "failed": 0,
+      "skipped": 5,
+      "total": 1815,
+      "classification": "passing full PR"
+    },
+    "full-published-v1": {
+      "exit": 65,
+      "seconds": 3.4734601974487305,
+      "log": "/Users/pj/project/build/mac-pairing-clipboard-full-published-v1.log",
+      "log_sha256": "66bddc01b53b1a2fbe5730b24e2689e6702c9d9d61dc32bee71257ac3413fece",
+      "inputs": "build/results/mac-pairing-clipboard-full-published-v1-inputs.json",
+      "executed": 0,
+      "classification": "diagnosed stale named FFI PCM compile failure"
+    },
+    "full-published-v2": {
+      "exit": 65,
+      "seconds": 8.163556098937988,
+      "log": "/Users/pj/project/build/mac-pairing-clipboard-full-published-v2.log",
+      "log_sha256": "cdfe2d2e212b154b71bfa2b79298f0ebbb34531eaed64915dd30b890aeb9cf33",
+      "inputs": "build/results/mac-pairing-clipboard-full-published-v2-inputs.json",
+      "executed": 0,
+      "classification": "diagnosed stale named FFI PCM compile failure"
+    },
+    "full-published-v3": {
+      "exit": 0,
+      "seconds": 87.53552579879761,
+      "log": "/Users/pj/project/build/mac-pairing-clipboard-full-published-v3.log",
+      "log_sha256": "f464e5b1514e3b6696f445e5fc903d783ae2bbc90a349870533b05989ede23a7",
+      "inputs": "build/results/mac-pairing-clipboard-full-published-v3-inputs.json",
+      "passed": 1664,
+      "failed": 0,
+      "skipped": 0,
+      "total": 1664,
+      "classification": "passing full PR"
+    }
+  },
+  "static": [
+    "all source/test roots strict swift-format passed",
+    "git diff --check passed",
+    "catalog unchanged; existing Copy/Copied localization reused",
+    "All nine existing catalog languages1270/1270 translated"
+  ],
+  "limits": [
+    "Hosted AX fixture failed before Start; preserved separately, not behavioral proof.",
+    "Passing controls exercise actual configured packet component and the same Workspace callback used by its button body.",
+    "No actual Universal Clipboard/Handoff success or installed pairing acceptance claimed.",
+    "Both final full PR cohorts pass; development rebuilds follow. Installed clipboard/Universal Clipboard and fresh pairing remain pending safe session handoff.",
+    "No credential/account state accessed, no system clipboard content read/written by regression."
+  ],
+  "handoff_failure": {
+    "prefix": "mac-pairing-clipboard-full-experimental-v1",
+    "classification": "Initial bundle fetch named branch absent because bundle exported HEAD; old-source runner interrupted without qualification. Corrected HEAD fetch/GOOD normal FF before v2.",
+    "source": "0cacb85a865c72d7a303a80b75eb8460a951ea88",
+    "log_sha256": "4f5d9fca9e2305d2afee5d7ee3d53245db0c578f9e763589ab8d57790e1febee",
+    "counts_claimed": false
+  },
+  "sdk_overlay_stash_m5": "a3bee33b4bfbecf4f6601dbf31d07c544654e4b7",
+  "sdk_switch": {
+    "experimental_stash": "578094b29c3bb438691bcb573e06a9556e85ef9f",
+    "published_flag": 0,
+    "published_source": "60744bac12131699632bc399fa021852c5e546d1"
+  },
+  "sdk_overlay_restored_exact": true,
+  "cache_repairs": [
+    {
+      "xcode_idle": true,
+      "diagnosed_log": "mac-pairing-clipboard-full-published-v1.log",
+      "retired": [
+        {
+          "path": "/Users/pj/project/build/MacTestIsolationM5/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules/marmot_uniffiFFI-ANJFQSPITBY9ONMYZP4O7TT7H.pcm",
+          "sha256": "06401559f3d97474671688b7a0b824aa36534afa863ee150a91c4752f5597287",
+          "bytes": 556456
+        }
+      ]
+    },
+    {
+      "xcode_idle": true,
+      "diagnosed_log": "mac-pairing-clipboard-full-published-v2.log",
+      "retired": [
+        {
+          "path": "/Users/pj/project/build/MacTestIsolationM5/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules/marmot_uniffiFFI-1KNRUIXGJEZQJRMJL82Z0FTCM.pcm",
+          "sha256": "afdf68451097bf86ba0175d930a9faa9334bb7342dadda9f91cffcc5ccbbaae1",
+          "bytes": 556408
+        }
+      ]
+    }
+  ]
+}

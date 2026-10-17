@@ -10,6 +10,110 @@ import Observation
 @MainActor
 @Observable
 final class AccountScope {
+    private(set) var isCancelled = false
+    #if WN_EXPERIMENTAL_DEVICE_SYNC
+        private(set) var historyConsentReview: HistoryConsentReviewViewModel?
+
+        func installHistoryConsentReview(_ model: HistoryConsentReviewViewModel) {
+            guard !isCancelled, historyConsentReview == nil else {
+                model.invalidate()
+                return
+            }
+            historyConsentReview = model
+            addCancellation { model.invalidate() }
+        }
+
+        private(set) var automaticChatList: AccountChatListViewModel?
+        private(set) var selectedAutomaticConversation: AccountConversationViewModel?
+
+        let history: NativeHistoryAccountOwner
+        @ObservationIgnored private var historySources: [String: (model: HistorySourceViewModel, cancellation: UUID)] =
+            [:]
+
+        func historySourceModel(
+            groupIdHex: String,
+            query:
+                @escaping @MainActor (any MarmotRuntime, String, String) async throws -> [HistoryTransferRecipientFfi] =
+                {
+                    runtime, account, group in
+                    try await runtime.historyTransferRecipients(accountRef: account, groupIdHex: group)
+                },
+            begin:
+                @escaping @MainActor (any MarmotRuntime, String, String, Data) async throws ->
+                any HistoryTransferProtocol = {
+                    runtime, account, group, device in
+                    try await runtime.beginHistoryTransfer(
+                        accountRef: account, groupIdHex: group, recipientDevice: device)
+                }
+        ) -> HistorySourceViewModel {
+            if let existing = historySources[groupIdHex] { return existing.model }
+            let model = HistorySourceViewModel(
+                groupIdHex: groupIdHex,
+                query: { [weak self] in
+                    guard let self, !self.isCancelled else { throw MarmotKitError.HistoryTransferClosed }
+                    let values = try await query(self.runtime, self.account.accountRef, groupIdHex)
+                    guard !self.isCancelled else { throw MarmotKitError.HistoryTransferClosed }
+                    return values
+                },
+                begin: { [weak self] device in
+                    guard let self, !self.isCancelled else { throw MarmotKitError.HistoryTransferClosed }
+                    return try await self.history.adoptTransfer(groupIdHex: groupIdHex) { runtime, account in
+                        try await begin(runtime, account, groupIdHex, device)
+                    }
+                })
+            guard !isCancelled else {
+                model.invalidate()
+                return model
+            }
+            let cancellation = addCancellation { model.invalidate() }
+            historySources[groupIdHex] = (model, cancellation)
+            return model
+        }
+
+        let selectedChat: NativeSelectedChatAccountOwner
+        private(set) var selectedChatTransfer: SelectedChatTransferViewModel?
+
+        func installSelectedChatTransfer(_ model: SelectedChatTransferViewModel) {
+            guard !isCancelled, selectedChatTransfer == nil else {
+                model.invalidate()
+                return
+            }
+            selectedChatTransfer = model
+            addCancellation { model.invalidate() }
+        }
+
+        private(set) var deviceVerification: DeviceVerificationViewModel?
+
+        private(set) var deviceEnrollment: DeviceEnrollmentViewModel?
+        private(set) var deviceEnrollmentApproval: DeviceEnrollmentApprovalViewModel?
+
+        func installDeviceEnrollment(_ model: DeviceEnrollmentViewModel) {
+            guard !isCancelled else {
+                model.invalidate()
+                return
+            }
+            if deviceEnrollment == nil { addCancellation { [weak self] in self?.deviceEnrollment?.invalidate() } }
+            deviceEnrollment?.invalidate()
+            deviceEnrollment = model
+        }
+        func installDeviceEnrollmentApproval(_ model: DeviceEnrollmentApprovalViewModel) {
+            guard !isCancelled else {
+                model.invalidate()
+                return
+            }
+            if deviceEnrollmentApproval == nil {
+                addCancellation { [weak self] in self?.deviceEnrollmentApproval?.invalidate() }
+            }
+            deviceEnrollmentApproval?.invalidate()
+            deviceEnrollmentApproval = model
+        }
+
+        func installDeviceVerification(_ model: DeviceVerificationViewModel) {
+            guard !isCancelled, deviceVerification == nil else { return }
+            deviceVerification = model
+            addCancellation { model.invalidate() }
+        }
+    #endif
     let account: AccountItem
     @ObservationIgnored let runtime: any MarmotRuntime
     let settingsModel: SettingsViewModel
@@ -25,6 +129,8 @@ final class AccountScope {
     @ObservationIgnored private var attachmentPolicyTask: Task<Void, Never>?
     @ObservationIgnored private var cancellations: [UUID: @MainActor () -> Void] = [:]
     @ObservationIgnored private var conversations: [String: (model: ConversationViewModel, cancellation: UUID)] = [:]
+    @ObservationIgnored private var synchronizedHistoryReaders:
+        [String: (model: SynchronizedHistoryViewModel, cancellation: UUID)] = [:]
     @ObservationIgnored private var attachments: [String: (model: AttachmentViewModel, cancellation: UUID)] = [:]
     @ObservationIgnored private var groupSafety: [String: GroupSafetyViewModel] = [:]
 
@@ -36,6 +142,10 @@ final class AccountScope {
         let attachmentPolicy = AttachmentPolicyController(accountRef: account.accountRef, runtime: runtime)
         let blockedUsers = BlockedUsersViewModel(accountRef: account.accountRef, runtime: runtime)
         let productAnalytics = ProductAnalyticsRecorder()
+        #if WN_EXPERIMENTAL_DEVICE_SYNC
+            self.history = NativeHistoryAccountOwner(accountRef: account.accountRef, runtime: runtime)
+            self.selectedChat = NativeSelectedChatAccountOwner(accountRef: account.accountRef, runtime: runtime)
+        #endif
         self.account = account
         self.runtime = runtime
         self.settingsModel = SettingsViewModel(
@@ -62,10 +172,22 @@ final class AccountScope {
             runtime: runtime
         )
         self.productAnalytics = productAnalytics
+        #if WN_EXPERIMENTAL_DEVICE_SYNC
+            if let observations = runtime as? any AccountChatObserving {
+                let model = AccountChatListViewModel(accountRef: account.accountRef, runtime: observations)
+                automaticChatList = model
+                addCancellation { model.invalidate() }
+            }
+            addCancellation { [selectedChat] in selectedChat.invalidate() }
+            addCancellation { [history] in history.invalidate() }
+        #endif
     }
 
     func start(connectivityAvailable: Bool) {
         chatListModel.start()
+        #if WN_EXPERIMENTAL_DEVICE_SYNC
+            automaticChatList?.start()
+        #endif
         attentionModel.start()
         blockedUsers.start()
         onboarding.start()
@@ -111,6 +233,30 @@ final class AccountScope {
         cancellations[id] = nil
     }
 
+    func synchronizedHistoryModel(
+        groupIdHex: String
+    ) -> SynchronizedHistoryViewModel {
+        synchronizedHistoryModel(groupIdHex: groupIdHex) { [runtime] account, group, cursor, limit in
+            try runtime.synchronizedHistoryPage(
+                accountRef: account, groupIdHex: group, afterMessageIdHex: cursor, limit: limit)
+        }
+    }
+
+    func synchronizedHistoryModel(
+        groupIdHex: String,
+        read: @escaping SynchronizedHistoryViewModel.Reader
+    ) -> SynchronizedHistoryViewModel {
+        if let existing = synchronizedHistoryReaders[groupIdHex] { return existing.model }
+        let model = SynchronizedHistoryViewModel(accountRef: account.accountRef, groupIdHex: groupIdHex, read: read)
+        guard !isCancelled else {
+            model.invalidate()
+            return model
+        }
+        let cancellation = addCancellation { [model] in model.invalidate() }
+        synchronizedHistoryReaders[groupIdHex] = (model, cancellation)
+        return model
+    }
+
     /// Conversations open in `.automatic`: MarmotKit anchors the window on the first unread row,
     /// which the transcript positions under a "New messages" divider, else on the latest row.
     func conversationModel(
@@ -139,6 +285,9 @@ final class AccountScope {
         mode: ConversationOpenModeFfi = .automatic,
         messageIdHex: String? = nil
     ) -> ConversationViewModel {
+        #if WN_EXPERIMENTAL_DEVICE_SYNC
+            releaseAutomaticConversation()
+        #endif
         if let selectedConversationModel, selectedConversationModel.groupIdHex == groupIdHex {
             return selectedConversationModel
         }
@@ -151,6 +300,27 @@ final class AccountScope {
         return model
     }
 
+    #if WN_EXPERIMENTAL_DEVICE_SYNC
+        /// Navigation holds source-qualified observations without constructing an MLS chat row.
+        func selectAutomaticConversation(groupIdHex: String) -> AccountConversationViewModel? {
+            guard !isCancelled, let observations = runtime as? any AccountChatObserving else { return nil }
+            if let selectedAutomaticConversation, selectedAutomaticConversation.groupIdHex == groupIdHex {
+                return selectedAutomaticConversation
+            }
+            releaseAutomaticConversation()
+            let model = AccountConversationViewModel(
+                accountRef: account.accountRef, groupIdHex: groupIdHex, runtime: runtime, observations: observations)
+            selectedAutomaticConversation = model
+            model.start()
+            return model
+        }
+
+        func releaseAutomaticConversation() {
+            selectedAutomaticConversation?.invalidate()
+            selectedAutomaticConversation = nil
+        }
+    #endif
+
     func releaseSelectedConversation() {
         guard let groupIdHex = selectedConversationModel?.groupIdHex else { return }
         selectedConversationModel = nil
@@ -158,6 +328,16 @@ final class AccountScope {
     }
 
     func releaseConversation(groupIdHex: String) {
+        #if WN_EXPERIMENTAL_DEVICE_SYNC
+            if let source = historySources.removeValue(forKey: groupIdHex) {
+                releaseCancellation(source.cancellation)
+                source.model.invalidate()
+            }
+        #endif
+        if let history = synchronizedHistoryReaders.removeValue(forKey: groupIdHex) {
+            releaseCancellation(history.cancellation)
+            history.model.invalidate()
+        }
         guard let owned = conversations.removeValue(forKey: groupIdHex) else { return }
         if selectedConversationModel === owned.model {
             selectedConversationModel = nil
@@ -197,12 +377,20 @@ final class AccountScope {
     }
 
     func cancelAll() async {
+        isCancelled = true
+        #if WN_EXPERIMENTAL_DEVICE_SYNC
+            releaseAutomaticConversation()
+        #endif
         attachmentPolicyTask?.cancel()
         attachmentPolicyTask = nil
         let pending = Array(cancellations.values)
         cancellations.removeAll()
         selectedConversationModel = nil
         conversations.removeAll()
+        synchronizedHistoryReaders.removeAll()
+        #if WN_EXPERIMENTAL_DEVICE_SYNC
+            historySources.removeAll()
+        #endif
         attachments.removeAll()
         groupSafety.removeAll()
         for cancel in pending {

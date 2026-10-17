@@ -48,6 +48,10 @@ protocol QuickReactionStoring: AnyObject {
 
 @MainActor
 final class UserDefaultsQuickReactionStore: QuickReactionStoring {
+    // Avoid the synthesized isolated-deinit trampoline on older macOS concurrency runtimes.
+    // Releasing the defaults reference needs no actor-bound cleanup.
+    nonisolated deinit {}
+
     static let storageKey = "whitenoise.mac.quickReactions.v1"
     static let legacyStorageKeys = [
         "whitenoise.mac.quickReactions",

@@ -1,0 +1,15 @@
+{
+  "scope": "Test-only AVKit linkage assertion compatibility; product code unchanged",
+  "baseline": "a39f54688d356ceb60d2592241a8b68add6039d0",
+  "red": "Three matching-image crashes in final published full run at MediaTests.swift34, libswiftCore metadata initialization through SwiftTesting.__checkBinaryOperation; AVKit was linked",
+  "fix": "Evaluate Objective-C class presence into Bool before #expect; retain identical AVPlayerView linkage requirement",
+  "affected": {
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0,
+    "artifact": "../build/results/mac-avkit-assertion-compatibility-v1-summary.json",
+    "host": "M1 macOS15.8, Xcode26.3, experimental SDK987"
+  },
+  "static": "Scoped strict format, diff check and published sanity passed",
+  "limits": "Full unlocked published/experimental suites pending. This changes no app runtime source, artifact, credentials or protection."
+}

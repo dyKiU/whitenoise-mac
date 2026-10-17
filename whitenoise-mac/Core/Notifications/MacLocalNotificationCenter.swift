@@ -3,6 +3,10 @@ import UserNotifications
 
 @MainActor
 final class MacLocalNotificationCenter: NSObject, LocalNotificationCenter, UNUserNotificationCenterDelegate {
+    // Avoid the synthesized isolated-deinit trampoline on older macOS concurrency runtimes.
+    // Delegate and notification cleanup do not acquire new work during teardown.
+    nonisolated deinit {}
+
     private let center: UNUserNotificationCenter
     private var responseHandler: (@MainActor ([String: String]) -> Void)?
 

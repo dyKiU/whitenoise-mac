@@ -130,6 +130,93 @@ struct LinkPreviewTests {
         #expect(failed == .failed)
     }
 
+    @Test func youtubePreviewUsesVideoMetadataInsteadOfGenericWatchPage() async {
+        let url = URL(string: "https://youtu.be/Gmc4_2SFxbY?si=tracking")!
+        let thumbnail = "https://i.ytimg.com/vi/Gmc4_2SFxbY/hqdefault.jpg"
+        let result = await LinkPreviewLoader.fetchMetadata(for: url) { request in
+            if request.url?.path == "/oembed" {
+                #expect(request.url?.host == "www.youtube.com")
+                #expect(request.httpShouldHandleCookies == false)
+                #expect(request.value(forHTTPHeaderField: "Accept") == "application/json")
+                let query = URLComponents(url: request.url!, resolvingAgainstBaseURL: false)?.queryItems
+                #expect(
+                    query?.first(where: { $0.name == "url" })?.value == "https://www.youtube.com/watch?v=Gmc4_2SFxbY")
+                let json = Data(
+                    #"{"version":"1.0","type":"video","title":"Actual video title","thumbnail_url":"\#(thumbnail)"}"#
+                        .utf8)
+                return (json, Self.htmlResponse(request.url!, contentType: "application/json"))
+            }
+            return (Data("<head><title>YouTube</title></head>".utf8), Self.htmlResponse(url))
+        }
+        #expect(result == .loaded(LinkPreviewMetadata(title: "Actual video title", imageURL: URL(string: thumbnail))))
+    }
+
+    @Test(arguments: [
+        "https://youtu.be/Gmc4_2SFxbY?t=12&si=ignored",
+        "https://www.youtube.com/watch?v=Gmc4_2SFxbY&list=ignored",
+        "https://youtube.com/watch?v=Gmc4_2SFxbY",
+        "https://m.youtube.com/watch?v=Gmc4_2SFxbY",
+        "https://www.youtube.com/shorts/Gmc4_2SFxbY",
+        "https://www.youtube.com/embed/Gmc4_2SFxbY",
+        "https://www.youtube.com/live/Gmc4_2SFxbY",
+    ])
+    func youtubeVideoFormsUseTheFixedMetadataEndpoint(raw: String) async {
+        let result = await LinkPreviewLoader.fetchMetadata(for: URL(string: raw)!) { request in
+            #expect(request.url?.host == "www.youtube.com")
+            #expect(request.url?.path == "/oembed")
+            let items = URLComponents(url: request.url!, resolvingAgainstBaseURL: false)?.queryItems
+            #expect(items?.count == 2)
+            #expect(items?.first(where: { $0.name == "url" })?.value == "https://www.youtube.com/watch?v=Gmc4_2SFxbY")
+            return (
+                Data(#"{"version":"1.0","type":"video","title":"Video"}"#.utf8),
+                Self.htmlResponse(request.url!, contentType: "application/json")
+            )
+        }
+        #expect(result == .loaded(LinkPreviewMetadata(title: "Video", imageURL: nil)))
+    }
+
+    @Test(arguments: [
+        "https://youtube.com.evil.example/watch?v=Gmc4_2SFxbY",
+        "https://youtu.be.evil.example/Gmc4_2SFxbY",
+        "https://www.youtube.com/watch?v=Gmc4_2SFxbY&v=another_id_",
+        "https://youtu.be/short",
+        "https://youtu.be/Gmc4_2SFxbY/extra",
+        "https://www.youtube.com/watch?v=Gmc4_2SFxb%25",
+        "https://www.youtube.com/channel/Gmc4_2SFxbY",
+    ])
+    func nonVideoURLsNeverTriggerAYouTubeMetadataRequest(raw: String) async {
+        let url = URL(string: raw)!
+        let result = await LinkPreviewLoader.fetchMetadata(for: url) { request in
+            #expect(request.url == url)
+            return (Data("<head><title>Ordinary page</title></head>".utf8), Self.htmlResponse(url))
+        }
+        #expect(result == .loaded(LinkPreviewMetadata(title: "Ordinary page", imageURL: nil)))
+    }
+
+    @Test func unavailableYouTubeMetadataFallsBackToTheExistingHTMLPath() async {
+        let url = URL(string: "https://youtu.be/Gmc4_2SFxbY")!
+        let result = await LinkPreviewLoader.fetchMetadata(for: url) { request in
+            if request.url?.path == "/oembed" { return nil }
+            #expect(request.url == url)
+            return (Data("<head><title>Fallback video title</title></head>".utf8), Self.htmlResponse(url))
+        }
+        #expect(result == .loaded(LinkPreviewMetadata(title: "Fallback video title", imageURL: nil)))
+    }
+
+    @Test func youtubeMetadataRejectsUnsafeImagesAndBoundsUntrustedFields() {
+        let json =
+            #"{"version":"1.0","type":"video","title":"\u202E  Video   title  ","thumbnail_url":"https://127.0.0.1/private","html":"<script>ignored</script>"}"#
+        #expect(YouTubeLinkPreview.parse(Data(json.utf8)) == LinkPreviewMetadata(title: "Video title", imageURL: nil))
+        #expect(
+            YouTubeLinkPreview.parse(Data(repeating: 32, count: YouTubeLinkPreview.maximumMetadataBytes + 1)) == nil)
+        for invalid in [
+            "{}", #"{"version":"2.0","type":"video","title":"Wrong version"}"#,
+            #"{"version":"1.0","type":"photo","title":"Wrong kind"}"#,
+        ] {
+            #expect(YouTubeLinkPreview.parse(Data(invalid.utf8)) == nil)
+        }
+    }
+
     @Test func fetchNeverContactsUnsafeHosts() async {
         for raw in [
             "http://example.com", "https://localhost/page", "https://192.168.1.1/", "https://example.com:8443/",

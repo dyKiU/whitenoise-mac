@@ -1,0 +1,54 @@
+{
+  "source_base": "db7832437f72c1479a05665a076ee39be9052264",
+  "changed_source_sha256": {
+    "whitenoise-mac/Core/HistorySourceTransferring.swift": "b5644524f512c77fe147809f1b55c1d3958d1a30c1bc3c37df9693cdb108fe33",
+    "whitenoise-mac/Features/HistorySource/HistorySourceViewModel.swift": "6eb863d58d2af6076b2890e83e20d55cc2af06594eac2550e40284a01629392c",
+    "whitenoise-mac/Session/AccountScope.swift": "1705ed5a406d8de3d8f18e45f90699125f09fa3938d15d70c695e020f0bf1e5c",
+    "whitenoise-mac/Session/NativeHistoryActionScope.swift": "5941e0919d0c588b95fe9eca4cbc4fe6e1773610f22e5c751f9fc3c05bdcafee",
+    "whitenoise-macTests/HistorySourceViewModelTests.swift": "1306b9ab473c577e68a4a82f117bfbeb1d111d489913110b96298610fd7cc915",
+    "whitenoise-macTests/NativeHistoryActionScopeTests.swift": "132670daec553223cccf33a3bde8d9575c54d2d074074895c583f8db4848f81b"
+  },
+  "sdk_source": "98707713a2cc02828c2d66ed858588991896b9b0",
+  "verified_matching_repository_inputs": 483,
+  "test_results": {
+    "1": {
+      "passedTests": 35,
+      "failedTests": 0,
+      "skippedTests": 0
+    },
+    "2": {
+      "passedTests": 36,
+      "failedTests": 0,
+      "skippedTests": 0
+    },
+    "3": {
+      "passedTests": 36,
+      "failedTests": 0,
+      "skippedTests": 0
+    }
+  },
+  "final_cohort": "v3; v1 precedes pending-request cancel control, v2 includes it, v3 changes only test closure spelling for strict lint",
+  "command": "WN_EXPERIMENTAL_DEVICE_SYNC=1 WN_TEST_DERIVED_DATA=/Users/pj/project/build/MacTestIsolationM5 WN_TEST_RESULT_BUNDLE=/Users/pj/project/build/results/mac-history-source-model-v3.xcresult scripts/test-isolated.sh -only-testing:whitenoise-macTests/HistorySourceViewModelTests -only-testing:whitenoise-macTests/NativeHistoryActionScopeTests -only-testing:whitenoise-macTests/HistoryTransferRecipientRuntimeTests -only-testing:whitenoise-macTests/HistoryConsentReviewViewModelTests -only-testing:whitenoise-macTests/SynchronizedHistoryAccountScopeTests",
+  "raw_logs_sha256": {
+    "/Users/pj/project/build/results/mac-history-source-model-v1.log": "db0f7858d0b8ab37bd1c8e1877835f275b4cb588692aaafb0f26cf2fdf004dc5",
+    "/Users/pj/project/build/results/mac-history-source-model-v2.log": "cb0ea55b0b227821fa947667597470ac536302bb572b924d2b811bf60e59e1c5",
+    "/Users/pj/project/build/results/mac-history-source-model-v3.log": "d2e0c2cdcb40ea0638e8db81eb49c90495b8a1f25d55b5832bf5f948f38528d9"
+  },
+  "static_checks": {
+    "strict_format": "passed",
+    "localization": "passed",
+    "published_project_sanity": "passed; published SDK bytes restored temporarily and original local overlay restored afterward",
+    "prior_failure": "seven OnlyOneTrailingClosureArgument test lint errors, fixed with explicit begin arguments"
+  },
+  "static_logs_sha256": {
+    "build/results/mac-history-source-model-static-v1.log": "1746c5f2f08acdbef9e1411df7a5b10cfb46e097078fa443f53e1eea01cb2f50",
+    "build/results/mac-history-source-model-static-v2.log": "f46e6c574de2800f85d264ac32c3d8625b89c79746d1a751a53c1d74940d2977"
+  },
+  "audit": "/Users/pjaeckel/project/whitenoisechat-openclaw/build/results/mac-history-source-model-audit.json",
+  "ownership": "One model per exact account scope and chat; account and chat retirement invalidate it. Core observations only populate selection. A request calls the captured native factory through NativeHistoryAccountOwner, which retains custody across cancellation. Continued actions use the retained source original and displayed revision. A late result is cancelled on retirement, selection cancellation, or mismatched group/recipient.",
+  "limits": [
+    "Model action/lifetime controls use original test doubles; the runtime query refusal controls execute the actual SDK.",
+    "Successful native recipient selection, source-pane UI, installed transfer/reader navigation and full final integration qualification remain open.",
+    "No production app, phone installation, account database or main SDK overlay was changed."
+  ]
+}

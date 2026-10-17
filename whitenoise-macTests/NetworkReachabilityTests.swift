@@ -132,6 +132,67 @@ struct NetworkReachabilityTests {
     }
 
     @MainActor
+    @Test func relayRecoveryWithoutAnInterfaceChangeClearsTheNotice() async throws {
+        let probe = RecordingRelayProbe(answers: [false, true])
+        let state = WorkspaceState(
+            clientFactory: { throw TestConnectivityError() },
+            networkInterfaceMonitor: ScriptedInterfaceMonitor(availability: [true], finishes: false),
+            relayHostProbe: probe
+        )
+        state.startConnectivityMonitoring()
+        let watch = state.connectivityMonitorTask
+        defer { state.stopConnectivityMonitoring() }
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: .seconds(8))
+        while probe.recordedEndpoints.count < 2, clock.now < deadline {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        let recovered = !state.isOffline && probe.recordedEndpoints.count >= 2
+        state.stopConnectivityMonitoring()
+        await watch?.value
+        #expect(recovered, "a reachable relay must clear a transient failed probe without an NWPath change")
+    }
+
+    @MainActor
+    @Test func aRetiredProbeCannotOverwriteTheReplacementWatch() async throws {
+        let probe = BlockedFirstRelayProbe()
+        let state = WorkspaceState(
+            clientFactory: { throw TestConnectivityError() },
+            networkInterfaceMonitor: ScriptedInterfaceMonitor(availability: [true], finishes: false),
+            relayHostProbe: probe
+        )
+        defer {
+            state.stopConnectivityMonitoring()
+            Task { await probe.releaseFirst(isReachable: false) }
+        }
+        state.startConnectivityMonitoring()
+        let retired = state.connectivityMonitorTask
+        let clock = ContinuousClock()
+        let firstDeadline = clock.now.advanced(by: .seconds(2))
+        while await !probe.firstStarted, clock.now < firstDeadline {
+            try await Task.sleep(for: .milliseconds(1))
+        }
+        try #require(await probe.firstStarted, "first probe must reach the controlled callback")
+        state.stopConnectivityMonitoring()
+        state.startConnectivityMonitoring()
+        let replacement = state.connectivityMonitorTask
+        let replacementDeadline = clock.now.advanced(by: .seconds(2))
+        while await probe.requestCount < 2, clock.now < replacementDeadline {
+            try await Task.sleep(for: .milliseconds(1))
+        }
+        try #require(await probe.requestCount == 2, "replacement watch must issue its own probe")
+        #expect(!state.isOffline)
+        await probe.releaseFirst(isReachable: false)
+        await retired?.value
+        #expect(!state.isOffline, "a cancelled probe's late result cannot replace current reachability")
+        state.stopConnectivityMonitoring()
+        await replacement?.value
+        let count = await probe.requestCount
+        try await Task.sleep(for: .milliseconds(20))
+        #expect(await probe.requestCount == count)
+    }
+
+    @MainActor
     @Test func aWorkspaceThatNeverStartsMonitoringNeverClaimsToBeOffline() async {
         // Construction is inert on purpose: the production monitor and probe are the defaults,
         // so every test that merely builds a workspace would otherwise open sockets.
@@ -201,5 +262,25 @@ private final class RecordingRelayProbe: RelayHostReachabilityProbing {
             }
             return next
         }
+    }
+}
+
+/// Deliberately ignores cancellation, as an already-issued callback can complete late.
+private actor BlockedFirstRelayProbe: RelayHostReachabilityProbing {
+    private(set) var requestCount = 0
+    private(set) var firstStarted = false
+    private var first: CheckedContinuation<Bool, Never>?
+    func canReachAnyHost(_: [RelayHostEndpoint]) async -> Bool {
+        requestCount += 1
+        if requestCount == 1 {
+            firstStarted = true
+            return await withCheckedContinuation { first = $0 }
+        }
+        return true
+    }
+    func releaseFirst(isReachable: Bool) {
+        let continuation = first
+        first = nil
+        continuation?.resume(returning: isReachable)
     }
 }

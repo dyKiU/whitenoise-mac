@@ -136,14 +136,20 @@ whitespace the install step strips.
 
 ## Testing
 
-Run the tests from Xcode (⌘U) or via `xcodebuild`:
+Run the PR unit suite in a separate host identity:
 
 ```sh
-xcodebuild test \
-  -project whitenoise-mac.xcodeproj \
-  -scheme whitenoise-mac \
-  -destination 'platform=macOS'
+scripts/test-isolated.sh
 ```
+
+The runner builds `White Noise Unit Host.app` with bundle ID
+`dev.ipf.whitenoise.mac.tests`, its own storage/Keychain profile and `marmot-tests`
+URL scheme. It verifies the host identity before running tests and unregisters
+that temporary app afterward. Choose task-specific `WN_TEST_DERIVED_DATA` and
+fresh `WN_TEST_RESULT_BUNDLE` paths when retaining evidence. Pass Xcode test
+selection arguments to the script for focused runs. `just test` uses the same
+runner and keeps the result at `TestResults.xcresult` for coverage. Running ⌘U
+under a production bundle ID uses that app's defaults domain.
 
 - `whitenoise-macTests/` — the unit-test target run by the shared scheme above.
 
@@ -162,3 +168,20 @@ the Marmot/MLS core in `MarmotKit` rather than in app code.
 
 This project is licensed under the GNU Affero General Public License v3.0
 (AGPL-3.0). See [LICENSE](LICENSE) for the full text.
+
+### Experimental native linking lifetime
+
+With `WN_EXPERIMENTAL_DEVICE_SYNC`, `SessionState` owns one original SDK linking
+session and subscription through a feature-scoped `DeviceLinkingScope`. Account
+replacement, runtime replacement and actual sign-out/remove/reset teardown invalidate
+the native owner before awaiting cleanup. A late factory result is cancelled as the
+original object, even after A→B→A; pending factories do not hold terminal reset open.
+Cleanup failures retain that exact object for explicit retry and block new factories.
+Real class runtime identity preserves the scope on shell rerenders; value runtime
+implementations intentionally provide no preservation identity.
+
+This adds lifetime wiring, not pairing UI or enrollment capability. Scene background
+currently reports analytics and does not close the runtime; no scene suspension claim
+is made. The local e6 SDK overrides remain uncommitted development inputs. Focused
+qualification is recorded in `docs/native-device-linking-lifetime.md`; the full PR suite passed on signed9b245 in both the published0.12 and
+experimental e6 cohorts. Fresh pairing UI/enrollment remains separate.

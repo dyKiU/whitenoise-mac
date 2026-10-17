@@ -1,0 +1,21 @@
+{
+  "base_source": "d9d2712fbfbaa83ae1f9d4f3c7be855af8f0240a",
+  "sdk_source": "14336e1f0c4067e8e13aff63877241ee29109c37",
+  "reported_regression": "Installed M1 UI and user both confirm setup packet has Copy but no QR export; accessibility shows duplicate Import controls.",
+  "change": "Distinct setup, incoming and outgoing SwiftUI identity roles retain exact model/session identities for local state retirement.",
+  "affected_tests": {
+    "passed": 31,
+    "failed": 0,
+    "suites": 4,
+    "log_sha256": "11d9e82364d5be05badefa03fbc1b7288e03aeb2e18ad40f092e2efe83709637"
+  },
+  "static": {
+    "format": "passed",
+    "localization": "passed",
+    "published_sanity": "refused local SDK overlay; unchanged published-only assertion",
+    "log_sha256": "9a2c079efc7abe9de6fd80094b98f14688930553605cb9b6c86d76f210a9a690"
+  },
+  "diagnostic_limit": "Hosted accessibility diagnostic could not see Start even before the change. Its compile/host failures are retained and are not a behavioral RED.",
+  "installed_ui_verified": false,
+  "remaining": "Build signed source, replace development apps, verify actual QR export and pairing. iPhone intermittent background/navigation unavailability remains unproven."
+}

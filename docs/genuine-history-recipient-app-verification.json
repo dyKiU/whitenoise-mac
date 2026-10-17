@@ -1,0 +1,163 @@
+{
+  "scope": "Genuine Mac recipient SessionState/HistoryConsentReviewViewModel original approval and reader acceptance, with iOS simulator source public UI controls on matched SDK987. Test only; no product authority or permission changes.",
+  "product_base": "c299cc9500e5e07ed4fa033893d3a87f558383b9",
+  "sdk_source": "98707713a2cc02828c2d66ed858588991896b9b0",
+  "source_test": "whitenoise-macTests/GenuineHistoryRecipientTransferTests.swift",
+  "test_sha256": "0232e596cbe40d999127142fc0d7e0b3b1609d240f7a1b236b0a9e7bcc903caf",
+  "original_test_stash": "ab3efdb9bc6bfbbcc3feaff6730666396f7b4e30",
+  "source_inputs": 501,
+  "affected_and_live_inputs_identical": true,
+  "source_manifest_sha256": "218209abb4c5304795293717f44149199bd81afb1cc11ac883115b2aaeb6d060",
+  "sdk_manifest_sha256": "6cd1507524da8db73883246138abcc357ce996c158d35819cbb42336ce2b39c4",
+  "affected": {
+    "result": "Passed",
+    "passedTests": 46,
+    "failedTests": 0,
+    "skippedTests": 0,
+    "totalTestCount": 46
+  },
+  "mac_recipient": {
+    "result": "Passed",
+    "passedTests": 1,
+    "failedTests": 0,
+    "skippedTests": 0,
+    "totalTestCount": 1
+  },
+  "ios_source_commit": "00837b43dde1b92d1cd35785629f2592168f015a",
+  "ios_source_inputs": 890,
+  "ios_source_unit": {
+    "result": "Passed",
+    "totalTestCount": 1,
+    "passedTests": 1,
+    "failedTests": 0,
+    "skippedTests": 0
+  },
+  "ios_source_public_driver": {
+    "result": "Passed",
+    "totalTestCount": 1,
+    "passedTests": 1,
+    "failedTests": 0,
+    "skippedTests": 0
+  },
+  "ios_source_unchanged": true,
+  "ios_sdk_unchanged": true,
+  "ios_products_unchanged": true,
+  "controller_source": "b290783 (combined original-owner controller), final supported runner483fd1a included in parentb84a828",
+  "native_actual": {
+    "passed": 1,
+    "failed": 0,
+    "seconds": 82.96,
+    "native_runtime_cleanup": {
+      "originals": 5,
+      "closed": 5,
+      "failed": 0
+    },
+    "history_counts": {
+      "native_three_device_phases": {
+        "coordinator": "enrollmentComplete",
+        "joining": "enrollmentComplete",
+        "sibling": "settled"
+      },
+      "native_three_device_transitions": [
+        {
+          "coordinator": {
+            "phase": "verificationCompleteEnrollmentPending",
+            "revision": 5
+          },
+          "joining": {
+            "phase": "verificationCompleteEnrollmentPending",
+            "revision": 6
+          },
+          "sibling": {
+            "phase": "awaitingSettlement",
+            "revision": 3
+          }
+        },
+        {
+          "coordinator": {
+            "phase": "verificationCompleteEnrollmentPending",
+            "revision": 5
+          },
+          "joining": {
+            "phase": "enrollmentComplete",
+            "revision": 7
+          },
+          "sibling": {
+            "phase": "settled",
+            "revision": 4
+          }
+        },
+        {
+          "coordinator": {
+            "phase": "enrollmentComplete",
+            "revision": 6
+          },
+          "joining": {
+            "phase": "enrollmentComplete",
+            "revision": 7
+          },
+          "sibling": {
+            "phase": "settled",
+            "revision": 4
+          }
+        }
+      ],
+      "eligible_recipients": 2,
+      "query_created_requests": 0,
+      "source_records": 2,
+      "imported_records": 1,
+      "archive_page_records": 1,
+      "verified_prejoin_records": 1,
+      "postjoin_live_record_present": true,
+      "source_complete": true,
+      "recipient_complete": true,
+      "app_source_model_complete": true,
+      "app_recipient_model_complete": true
+    }
+  },
+  "binary_sha256_mac": "295a7c514d90c9aad6a388322db79816b7b4eaf4e17b8c3b6031d9ad2f8e52cb",
+  "binary_sha256_simulator": "eee6d69a6f21c181c52cee8a4b29a40a505a55bbae576886da786515bb35d734",
+  "custody": "B original native runtime positively closed before A fresh request; Mac B opens same original encrypted account without copying data, authenticates its fresh original consent and approves displayed revision. A public Continue retains its original. B remains alive until A final receipt completion and positive shutdown. Both app storage closures precede native B reader-only reopen with no original restoration; C archive remains empty. All five native worker closures acknowledged.",
+  "sdk_preservation": "Four uncommitted SDK987 overrides preserved byte-identical in M5 named stash206fbace52735372dfec844f71cfed90cef51f88; no generated SDK file committed.",
+  "failed_cohorts": [
+    {
+      "prefix": "mac-recipient-acceptance-affected-v1",
+      "classification": "Zero-test compile infrastructure failure: compiler-named stale FFI PCM ANJFQSPITBY9ONMYZP4O7TT7H preserved after idle/lsof-clear."
+    },
+    {
+      "prefix": "mac-recipient-acceptance-affected-v2",
+      "classification": "Zero-test compile infrastructure failure: second compiler-named stale FFI PCM1KNRUIXGJEZQJRMJL82Z0FTCM preserved after idle/lsof-clear."
+    }
+  ],
+  "raw_evidence_sha256": {
+    "build/results/mac-recipient-acceptance-affected/mac-recipient-acceptance-affected-v3-test-counts.json": "2d95fbfbf0c826fb4f5c7f44ea9e9cd6af0475fc57b58456c8687354b539b048",
+    "build/results/mac-recipient-acceptance-affected/mac-recipient-acceptance-affected-v2-compile.log": "62230fe71fa1dbe3f5b4bbc51e748b128d7b73d820edfd4d0109be7654814983",
+    "build/results/mac-recipient-acceptance-affected/mac-recipient-acceptance-affected-v3-results.json": "98ae77524cbebfc013df7cb7b005cb09128c221c15781ba765a9e33a5be0b5b5",
+    "build/results/mac-recipient-acceptance-affected/mac-recipient-acceptance-affected-v1-compile.log": "89466c6f04a6ec29c03e7142d53c3d4e5f62b8ba0909d8e59d059e09aad77a9c",
+    "build/results/mac-recipient-acceptance-affected/mac-recipient-acceptance-affected-v2-results.json": "247e3ccd69ad0495478bc3f686611d5e043da8d57d3236130ccf19567afca500",
+    "build/results/mac-recipient-acceptance-affected/mac-recipient-acceptance-affected-v3-inputs.json": "218209abb4c5304795293717f44149199bd81afb1cc11ac883115b2aaeb6d060",
+    "build/results/mac-recipient-acceptance-affected/mac-recipient-acceptance-affected-v3-compile.log": "350ee59ad8dc82133da979fc9b83c137053002c820cc252909b944b534a65893",
+    "build/results/mac-recipient-acceptance-affected/mac-recipient-acceptance-affected-v1-results.json": "897828da752af176a0aaad5d3dc88bb100fc4dd9a4edfdcdb112ae20c9966f30",
+    "build/results/mac-recipient-acceptance-affected/mac-recipient-acceptance-affected-v3-affected.log": "4368cedcff7cdb249dcfce97722d22582748978a3f01c8f30ba7363b7a18ed88",
+    "build/results/mac-recipient-acceptance-live/ios-both-app-history-source-v1-input.json": "d63e008517bc2ed5c08e996850b3f2f0fd128392d1cf951a30503b536ac4e440",
+    "build/results/mac-recipient-acceptance-live/ios-both-app-history-source-v1-results.json": "fa0650268ee3629cec8efce67bc6596cb166e66d9c82949ebd2ac072cc57ed8a",
+    "build/results/mac-recipient-acceptance-live/mac-recipient-acceptance-live-v1-results.json": "1a6f2115eb08591fe3764175ecfb033784bad336e68734f1a78ba71ce11456f5",
+    "build/results/mac-recipient-acceptance-live/mac-recipient-acceptance-live-v1-inputs.json": "218209abb4c5304795293717f44149199bd81afb1cc11ac883115b2aaeb6d060",
+    "build/results/mac-recipient-acceptance-live/mac-recipient-acceptance-live-v1.log": "09fb1e55a3720ab3e742d45611a295b678418d18515bdbe59a6093324790dc06",
+    "build/results/mac-recipient-acceptance-live/ios-both-app-history-source-v1-unit.log": "c8530b6edd5ff4fc0db5aadb6f29a24f3f4255879a85a70bb342f1d491db7745",
+    "build/results/mac-recipient-acceptance-live/ios-both-app-history-source-v1-driver.log": "029710c86bef7e304bc6a8d4e044a45749314dd7c15375bfb6be211237d02ae5",
+    "build/results/native-both-app-history-v1.json": "e129b481a43ceb1ec86eea0c4af68439b256fad7b7a3dfa39230125ff51ac4ee",
+    "build/results/native-both-app-history-v1-inputs.json": "0bf84ef50fa729b2bf559a63699fc3813cee275c816b8fba238dcca5a6ac488f",
+    "build/results/native-both-app-history-v1-orchestration.json": "f1c3cad79dab605c9e2197dce57a52c52352c039e767dcfbf15a768f4d615e43",
+    "build/results/native-both-app-history-v1-controller.log": "620c994c34f7484bdfb2e4ba15a6b8f085f578d3fb7ac5c3c305d1737e10277f",
+    "build/results/native-both-app-history-v1-mac-driver.log": "876ee5db79ad86d8816e8b904c8e4ac3918ee616ef4b2485252b398bcaa16e7c",
+    "build/results/native-both-app-history-v1-ios-driver.log": "daa8259149fc76a9cf2da35e8a868f4cce8476c70c4457e9785c95bd08cb7267"
+  },
+  "postfreeze_changes": "This proof document only. Exact test source unchanged after compile/affected/live.",
+  "limits": [
+    "Mac recipient model explicit approval is qualified; Mac public Approve button/installed navigation is not exercised here.",
+    "iOS source public Request/Refresh/Continue UI is qualified in a simulator; physical phone history transfer is not claimed.",
+    "Original qualified product full cohort remains unchanged; this additive test was scoped through compile,46 affected controls and actual both-app run.",
+    "No live account data copy, direct SQL, private ratchet/key copy, new SDK generation, or product deployment."
+  ]
+}

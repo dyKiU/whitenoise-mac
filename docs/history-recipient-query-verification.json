@@ -1,0 +1,47 @@
+{
+  "source_base": "19456224448e58277ec1ae6eae0cbbd79c2c139e",
+  "sdk_source": "98707713a2cc02828c2d66ed858588991896b9b0",
+  "sdk_features": [
+    "otlp-export",
+    "product-analytics-export",
+    "experimental-device-sync"
+  ],
+  "verified_app_and_repository_inputs": 479,
+  "experimental_compatibility": {
+    "passed": 7,
+    "failed": 0,
+    "skipped": 0,
+    "prior_attempts": "v1/v2 stopped before tests because of two separately diagnosed stale FFI precompiled modules; exact idle files moved for rollback"
+  },
+  "affected_component_tests": {
+    "passed": 9,
+    "failed": 0,
+    "skipped": 0,
+    "suites": [
+      "HistoryTransferRecipientRuntimeTests",
+      "NativeSecretStoreBoundaryTests",
+      "SynchronizedHistoryRuntimeTests",
+      "SynchronizedHistoryAccountScopeTests"
+    ],
+    "command": "WN_EXPERIMENTAL_DEVICE_SYNC=1 WN_TEST_DERIVED_DATA=/Users/pj/project/build/MacTestIsolationM5 WN_TEST_RESULT_BUNDLE=/Users/pj/project/build/results/mac-history-recipient-query-v1.xcresult scripts/test-isolated.sh -only-testing:whitenoise-macTests/HistoryTransferRecipientRuntimeTests -only-testing:whitenoise-macTests/NativeSecretStoreBoundaryTests -only-testing:whitenoise-macTests/SynchronizedHistoryRuntimeTests -only-testing:whitenoise-macTests/SynchronizedHistoryAccountScopeTests"
+  },
+  "static_checks": {
+    "strict_swift_format": "passed",
+    "localization_coverage": "passed all nine target languages",
+    "project_sanity": "passed against unchanged published binding bytes, local SDK overlay restored afterward"
+  },
+  "logs_sha256": {
+    "/Users/pj/project/build/results/mac-sdk987-compatibility-v3.log": "4d0ca6fedfe2ca3b34f0b5a84def524e11884ee31fb35e2a9435d18b09eb4a22",
+    "/Users/pj/project/build/results/mac-sdk987-compatibility-v2.log": "fee499dc74a021735ae659e7c7c9d309a26093c81cdf0e6a4be194a94ea5156b",
+    "/Users/pj/project/build/results/mac-sdk987-compatibility-v1.log": "e4840ed1056bdffb038ba4cde1800bbfc6e4a6680900f638b092bb2679a692c8",
+    "/Users/pj/project/build/results/mac-history-recipient-query-v1.log": "1ada9c7a3c266d27fed604db5f60551d9da61bcfd0cbad48dd3a127bbec26ff6"
+  },
+  "root_audit": "/Users/pjaeckel/project/whitenoisechat-openclaw/build/results/mac-history-recipient-query-v1-audit.json",
+  "limits": [
+    "Query returns observations only; creating an original transfer remains a separate fresh native operation.",
+    "Native controls exercise malformed-group and unavailable-account refusal with a fresh isolated root and injected rejecting SecretStore. They do not exercise successful linked-device choices.",
+    "No source picker UI, installed navigation, cross-device transfer acceptance or runtime SDK promotion is claimed.",
+    "Full final integration/published-experimental qualification remains required at feature integration under the approved tiered policy."
+  ],
+  "static_log_sha256": "f46e6c574de2800f85d264ac32c3d8625b89c79746d1a751a53c1d74940d2977"
+}

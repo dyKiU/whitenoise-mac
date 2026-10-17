@@ -36,6 +36,9 @@
          <TestPlanReference
             reference = "container:TestPlans/UIPerformance.xctestplan">
          </TestPlanReference>
+         <TestPlanReference
+            reference = "container:TestPlans/HostedAutomation.xctestplan">
+         </TestPlanReference>
       </TestPlans>
       <Testables>
          <TestableReference

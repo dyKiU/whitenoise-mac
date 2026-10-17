@@ -50,6 +50,18 @@ struct AccountSetupView: View {
                         )
                     }
 
+                    if let snapshot = model.snapshot, snapshot.ready,
+                        snapshot.steps.contains(where: { $0.step == .keyPackage && $0.status == .skipped })
+                    {
+                        Text(
+                            L10n.string(
+                                "Existing invitation keys stay unchanged. Pair devices to share chats.", locale: locale)
+                        )
+                        .wnFont(.medium12)
+                        .foregroundStyle(WNColor.backgroundContentSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    }
+
                     // Only errors that belong to no step's screen land here: a step's own screen
                     // shows the error of the action pressed on it.
                     if reviewing == nil, let message = model.error {

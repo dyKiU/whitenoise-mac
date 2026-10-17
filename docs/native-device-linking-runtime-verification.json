@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "source_base": "d4eaafa3b1e776a1328de7729a30568ddcbf3dd8",
+  "mdk_source_sha": "e6b0e9c159b632b8c07eb68f12f46c3bc930699c",
+  "qualified_app_files_sha256": {
+    "scripts/build-sync-development.sh": "ac97efa7fd439ee0fbe60d33c7bacdf27a52e2cc5d8a37957006606c5f789e80",
+    "scripts/test-isolated.sh": "9dd162b1b65a2a8858a1329fff3f56ffd8d9095a4fb983521220e63f5a004b43",
+    "scripts/local-device-sync-settings.sh": "2a63c45ab0f8e756f406983412d6a20878df2b581e1ac271743528619b3524d2",
+    "whitenoise-mac/Core/MarmotClient.swift": "129e95e7c06eecea85b8d9bd4813760c2b3318f7ed7920c8552f91fe215bdff8",
+    "whitenoise-macTests/Support/FakeMarmotRuntime.swift": "41799dc343288087ee6d3e567f604e1bec06f3120b04b67445f79b79460155b7",
+    "whitenoise-macTests/ProjectionMigrationTests.swift": "6954c5688bdaa6108c25f590652812493fa12c342c91aa8f5296f24cacc51bde",
+    "whitenoise-macTests/NativeDeviceLinkingRuntimeTests.swift": "8df70da98c6b8f45892764610ab35ebdb89b8922dc772c4c3aa57316adc6b208"
+  },
+  "qualification": {
+    "m5_experimental_focused": {
+      "source_base": "d4eaafa3b1e776a1328de7729a30568ddcbf3dd8",
+      "source_inputs": 412,
+      "input_manifest_sha256": "2bb8a096bbc889394a0ca259e6071a33d079cfbed29aec0ed3e92208def248f3",
+      "profile": "local-e6/experimentalflag1",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 0,
+      "seconds": 28.66,
+      "log_sha256": "8b4899e4586b28cdbc787bc4a546b8f79ac0face84892afd368542d510459749",
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 5,
+        "passedTests": 5,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "test_failures": []
+    },
+    "m5_experimental_full": {
+      "source_base": "d4eaafa3b1e776a1328de7729a30568ddcbf3dd8",
+      "source_inputs": 412,
+      "input_manifest_sha256": "2bb8a096bbc889394a0ca259e6071a33d079cfbed29aec0ed3e92208def248f3",
+      "profile": "local-e6/experimentalflag1",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 0,
+      "seconds": 49.85,
+      "log_sha256": "62159c23af773a0bbbc0d3f14f05fdd2f9504636f6d5736c8a2cc73df464d454",
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 1654,
+        "passedTests": 1654,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "test_failures": []
+    },
+    "m1_experimental_focused": {
+      "source_base": "d4eaafa3b1e776a1328de7729a30568ddcbf3dd8",
+      "source_inputs": 412,
+      "input_manifest_sha256": "b80542ca53dab061257ec96531ea6ec8a21b2079bbe4e4e9276eb2f8f850aa5f",
+      "profile": "local-e6/experimentalflag1",
+      "installed_manifest_sha256": "d2d4eb58bf65e4748e47d07593dffe107273d685d25a4c149ce640354ae8b91c",
+      "exit_code": 0,
+      "seconds": 198.96,
+      "log_sha256": "60c7160b52d94ed6e53460a6f6f75a2ea789b2c33213b3a7a339bf4f51dea59d",
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 5,
+        "passedTests": 5,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "test_failures": []
+    },
+    "m5_default_full": {
+      "source_base": "d4eaafa3b1e776a1328de7729a30568ddcbf3dd8",
+      "source_inputs": 412,
+      "input_manifest_sha256": "e15ce5f23b650a2f94a56610c1c76dbe64bd45c4bb03b857aa27b539e671f21c",
+      "profile": "published0.12/defaultflag0",
+      "exit_code": 0,
+      "seconds": 89.55,
+      "log_sha256": "873c5a4841b0b836cf22d0fc917b6d86ed39875eb5eb8b39d995eae3b80c632a",
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 1649,
+        "passedTests": 1649,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "test_failures": []
+    }
+  },
+  "root_independently_verified": "All frozen inputs and complete logs for both M5 experimental gates, M1 focused gate, and final M5 published default gate. Two generated M5 metadata files were preserved separately when verifying against M1 installation metadata.",
+  "post_qualification_prose": [
+    "AGENTS.md",
+    "docs/local-marmotkit-development.md",
+    "docs/native-device-linking-runtime-verification.json"
+  ],
+  "compile_failures_not_behavioral_red": [
+    "M5 experimental v1 missing draftVersion",
+    "M5 experimental v2 missing attachment role",
+    "M5 experimental v3 local version metadata has no published constants",
+    "M5 default v2 stale FFI PCM header module"
+  ],
+  "generated_bindings_and_binaries_committed": false,
+  "fresh_pairing_qualified": false,
+  "ordinary_message_delivery_qualified": false,
+  "history_qualified": false
+}

@@ -31,7 +31,10 @@ struct MediaTests: WorkspaceTestSupport {
     /// VideoPlayerView from mangled name 'So12AVPlayerViewC'". This file deliberately does not
     /// import AVKit, so the lookup reflects what the app binary loaded.
     @Test func appBinaryLoadsAVKitSoVideoPlayerCanResolveItsSuperclass() {
-        #expect(NSClassFromString("AVPlayerView") != nil)
+        // Keep Objective-C metatypes out of SwiftTesting's generic assertion evaluator.
+        // Older macOS runtimes can crash while initializing that evaluator's metadata.
+        let playerViewIsLoaded = NSClassFromString("AVPlayerView") != nil
+        #expect(playerViewIsLoaded)
     }
 
     @Test func mediaPlaybackTempStoreLivesInsideAppContainerNotSharedTemp() {

@@ -86,10 +86,21 @@ final class LinkPreviewLoader {
         inFlight.removeAll()
     }
 
-    /// Fetches `url` and parses its `<head>`, off the main actor. Only HTML is parsed, against the
-    /// URL the redirects ended at so relative image paths resolve the way a browser would.
+    /// Loads YouTube video metadata from its fixed oEmbed endpoint, otherwise parses the HTML
+    /// head off the main actor. Relative image URLs resolve against the final page URL.
     nonisolated static func fetchMetadata(for url: URL, fetch: PageFetch) async -> FetchOutcome {
         guard let validated = LinkPreviewMetadata.fetchableURL(url.absoluteString) else { return .loaded(nil) }
+        if let endpoint = YouTubeLinkPreview.metadataURL(for: validated) {
+            var metadataRequest = request(for: endpoint)
+            metadataRequest.setValue("application/json", forHTTPHeaderField: "Accept")
+            if let (data, response) = await fetch(metadataRequest),
+                response.mimeType?.lowercased() == "application/json",
+                let metadata = YouTubeLinkPreview.parse(data)
+            {
+                return .loaded(metadata)
+            }
+            guard !Task.isCancelled else { return .failed }
+        }
         guard let (data, response) = await fetch(request(for: validated)) else { return .failed }
         guard let mimeType = response.mimeType?.lowercased(), htmlMIMETypes.contains(mimeType) else {
             return .loaded(nil)

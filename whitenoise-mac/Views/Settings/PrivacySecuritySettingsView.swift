@@ -25,6 +25,9 @@ import SwiftUI
 
 struct PrivacySecuritySettingsView: View {
     @Environment(WorkspaceState.self) private var workspace
+    #if WN_EXPERIMENTAL_DEVICE_SYNC
+        @Environment(SessionState.self) private var session
+    #endif
     let model: DiagnosticsSettingsViewModel
     @State private var showClearLogsConfirmation = false
     @State private var showEraseAppDataConfirmation = false
@@ -90,7 +93,18 @@ struct PrivacySecuritySettingsView: View {
         }
         .alert(L10n.string("Erase app data?"), isPresented: $showEraseAppDataConfirmation) {
             Button(L10n.string("Erase App Data"), role: .destructive) {
-                Task { await workspace.deleteAllData() }
+                Task {
+                    #if WN_EXPERIMENTAL_DEVICE_SYNC
+                        await workspace.deleteAllData(beforeRuntimeReset: {
+                            try await session.prepareForAccountExit()
+                        })
+                        await session.activate(
+                            account: workspace.activeAccount, runtime: workspace.client,
+                            connectivityAvailable: !workspace.isOffline)
+                    #else
+                        await workspace.deleteAllData()
+                    #endif
+                }
             }
             Button(L10n.string("Cancel"), role: .cancel) {}
         } message: {

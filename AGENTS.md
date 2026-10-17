@@ -22,9 +22,8 @@ xcodebuild -scheme whitenoise-mac -configuration Debug build CODE_SIGNING_ALLOWE
 # Build the unit-test target (catches test-only breakage without running)
 xcodebuild -scheme whitenoise-mac -configuration Debug build-for-testing CODE_SIGNING_ALLOWED=NO
 
-# Run the unit tests in the PR test plan
-xcodebuild test-without-building -scheme whitenoise-mac -configuration Debug \
-  -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO
+# Run unit tests in the PR plan with an isolated host identity
+scripts/test-isolated.sh
 
 # Run UI performance tests (requires macOS UI automation permissions)
 xcodebuild test -scheme whitenoise-mac -configuration Debug -testPlan UIPerformance \
@@ -38,8 +37,7 @@ smaller focused suites, with shared fakes and helpers in
 test function, which is how you iterate without paying for the full suite:
 
 ```sh
-xcodebuild test-without-building -scheme whitenoise-mac -configuration Debug \
-  -destination 'platform=macOS,arch=arm64' -testPlan PR CODE_SIGNING_ALLOWED=NO \
+scripts/test-isolated.sh \
   -only-testing:'whitenoise-macTests/TimelineTests/someTestName()'
 ```
 
@@ -65,6 +63,49 @@ UI performance tests live in `whitenoise-macUITests/`, are isolated in the
 `-uiFixture heavy-chat` argument for deterministic chat/search/media data.
 
 ## Test isolation on disk
+
+Use `scripts/test-isolated.sh` for unit tests, including focused `-only-testing:`
+arguments. `just test` and CI call the same runner. It overrides the hardcoded
+`TEST_HOST` path and verifies `dev.ipf.whitenoise.mac.tests` before execution;
+`MarmotStorageProfile.testHost` has a separate disk root and account-ID Keychain
+service. Its product name is `White Noise Unit Host`, so coverage's test-bundle
+name filter keeps the app. Choose task-specific `WN_TEST_DERIVED_DATA` and fresh
+`WN_TEST_RESULT_BUNDLE` paths. The runner unregisters only its temporary test host
+on exit and performs no installation. Preserve production preferences when
+checking erase/reset behavior; use synthetic sentinel keys and remove them.
+Storage-root fixtures describing production paths must inject `.production`
+against their temporary support root, rather than assuming the running profile.
+
+
+The explicit development bundle `dev.ipf.whitenoise.mac.syncdev` selects
+`MarmotStorageProfile.syncDevelopment`: a separate Application Support root and
+account-ID keyed `SyncDevelopmentSecretStore`. Production keeps the platform
+default account store. Keep initialization and reset on the same captured
+profile. An explicitly supplied `SecretStore` owns credential cleanup for that
+client: enumerate its actual SDK accounts and remove through that callback before
+shutdown or root deletion. Never purge the profile Keychain for a supplied store.
+A refused removal must leave the runtime and root intact. Keychain regressions must use unique test service names and synthetic
+credentials, with cleanup; never query production credentials.
+
+Build the separate Mac sidecar with `scripts/build-sync-development.sh` and a
+task-specific `WN_SYNC_DERIVED_DATA` path. App-only `WN_APP_*` settings keep the
+SwiftPM privacy resource bundle name intact. The script signs locally with the
+project's sandbox entitlements, verifies signing, and performs no installation.
+The explicit experimental sidecar adds camera access and its usage description
+through `whitenoise-mac.syncdev.entitlements`; production signing stays unchanged.
+The sidecar registers `marmot-syncdev`, preserving production URL registration;
+development deep-link flow verification remains pending. By default it uses
+published MarmotKit 0.12.0. Explicit `WN_EXPERIMENTAL_DEVICE_SYNC=1` enables the
+native device-linking runtime methods only after checking the installed local
+framework, generated Swift, source/builder identity and feature cohort. Use the
+same flag with `scripts/test-isolated.sh`; never enable it for published bindings.
+Keep fresh pairing and chat delivery acceptance separate from runtime smoke tests.
+
+For a reviewed local experimental cohort, use `scripts/sync-local-bindings.sh`
+with a clean MDK checkout/full SHA and explicit `EXPERIMENTAL_DEVICE_SYNC=1`.
+Reuse `CARGO_TARGET_DIR`; do not commit local binaries or generated local binding
+overrides. Restore published bindings before integration. See
+`docs/local-marmotkit-development.md` for checks and remaining native gates.
 
 Tests write real files, so every on-disk root a test double hands out is isolated
 per test and per process by default — see `whitenoise-macTests/Support/TestStorageRoot.swift`.
@@ -232,3 +273,87 @@ The rules, in the order they are most often broken:
 - **No new computed `var …: some View`.** Extract a `View` struct instead. A computed property
   shares its parent's observation set, so it re-renders whenever anything the parent reads changes;
   a struct observes only what it is given.
+
+## Experimental native linking owner
+
+`SessionState` and `DeviceLinkingScope` retain the original opaque SDK session and
+subscription. Never reconstruct it from snapshot metadata or enable enrollment from
+native capability flags. Factory adoption must retain the exact account scope,
+runtime instance and ownership ticket across awaits, including A→B→A. Invalidate
+before any Core teardown; retain failed exact cleanup and retry deliberately.
+The generic `beforeAccountExit`/`beforeRuntimeReset` callbacks wire existing app
+exit paths without adding feature state to `WorkspaceState`. Runtime identity is
+only positive for class implementations, tested with actual `MarmotClient`.
+Keep generated development SDK overrides out of commits. Use the dedicated
+`MacTestIsolationM5` cache and isolated host for focused tests. Lifetime qualification on signed9b245 passed the full PR suite with published0.12
+and experimental e6. It does not cover pairing UI or scene suspension.
+
+
+The experimental Settings verification pane takes its account-owned model explicitly
+through the shell. Keep the initial bootstrap and comparison display local to that
+owner and confirm the displayed revision. The SDK exchanges encrypted packets and
+authenticated processing receipts automatically; normal UI never asks the user to
+receive or acknowledge individual packets.
+Do not add enrollment actions while the SDK capability is unavailable. Localization
+for this pane used Apple stringsdata/XLIFF export-import, preserving all prior
+catalog entries; retain that tool provenance when extending it. Final source passed
+full published0.12 and experimental e6 PR gates; actual native pairing remains a
+separate acceptance gate.
+
+## Synchronized logical history reader
+
+`Features/SynchronizedHistory` owns one bounded source-attested page; Core value
+records preserve logical tags, ordered media outcomes and provenance. Invalidate
+before account teardown and refuse late cancelled/superseded reads. Keep this
+projection separate from live authenticated timeline rows and original consent.
+Use `docs/synchronized-history-reader.md`; native adapter/UI acceptance is a
+separate gate, and no record or cursor supplies transfer/download permission.
+
+Create chat history readers through `AccountScope.synchronizedHistoryModel`,
+which captures the account reference and registers exact reader invalidation.
+Account replacement invalidates before teardown; releasing a chat retires its
+reader even when no live conversation has been opened. Retired scopes return
+inactive readers and must never call the injected storage read dependency.
+
+The default reader factory captures the scope's exact `MarmotRuntime`; synchronous
+history storage calls run through the model's detached task. Update protocol,
+`MarmotClient` and shared fake together. Experimental native history requires the
+matching history-capable SDK; the older SDK83 cohort cannot compile the new
+bridge with `WN_EXPERIMENTAL_DEVICE_SYNC` enabled. Published builds refuse the
+unavailable query. Mapping preserves source attestation, not live authorship.
+
+## Incoming history review
+
+`AccountScope` owns the experimental `HistoryConsentReviewViewModel`. Its loader
+captures the exact account scope across awaits and retains original SDK consent
+handles through `NativeHistoryAccountOwner`. Features depend on the Core
+`HistoryConsentReviewing` interface, never Session. Row UUIDs select already-held
+originals; snapshot fields and device fingerprints never create approval authority.
+Listing and selection only refresh. Approval forwards the displayed revision to
+the exact recipient original; account replacement invalidates the model before
+teardown. One malformed original must not block review of another. Focused model
+and related lifetime evidence is in `docs/history-recipient-review-model-verification.json`;
+installed UI, real transfer acceptance and full PR qualification remain separate.
+
+The incoming review pane is acquired explicitly from Settings through the exact
+live account scope. Approval must capture the snapshot revision rendered in the
+button; listing, selecting and refresh never approve. Keep full device fingerprints
+and source-attestation visible; row IDs only select already-held originals.
+Cancel presentation tasks on dismissal or account retirement. Apple catalog
+provenance and focused gates are in
+`docs/history-recipient-review-pane-verification.json`; full PR and genuine
+installed approval/reader acceptance remain separate requirements.
+
+Full recipient-pane PR qualification at signed `ed16012` passes experimental
+1,787/0 and published 1,661/0, with no skips. Two prior published attempts
+executed no tests because of individually diagnosed stale FFI PCMs; both are
+preserved separately. See `docs/history-recipient-review-full-pr-verification.json`.
+Genuine installed original approval and imported reader acceptance remain open.
+
+One-scan development pairing uses the compact native bootstrap and automatic
+SDK-owned encrypted relay exchange. Activate only after exact account/runtime
+factory adoption; a late result must be cancelled before it can export a scanner
+response. Keep visual SAS comparison, bilateral enrollment/chat-sharing approval
+and each existing device's explicit review. Transport receipts never replace
+approval. The normal UI offers no per-packet export/import/receive/ACK/finalize
+controls; the existing low-level SDK APIs remain available for controlled tests.

@@ -1,0 +1,58 @@
+{
+  "source_base": "60ca2980a12483e8d8caca6bd1886f49d2f52f75",
+  "sdk_source": "98707713a2cc02828c2d66ed858588991896b9b0",
+  "m5_frozen_inputs": 494,
+  "m1_matching_non_sdk_inputs": 490,
+  "tests": {
+    "result": "Passed",
+    "totalTestCount": 1,
+    "passedTests": 1,
+    "failedTests": 0,
+    "skippedTests": 0
+  },
+  "native_fixture": {
+    "gate": "native-original-history",
+    "passed": 1,
+    "failed": 0,
+    "seconds": 44.83,
+    "sdk_source": "98707713a2cc02828c2d66ed858588991896b9b0",
+    "binary_sha256": "295a7c514d90c9aad6a388322db79816b7b4eaf4e17b8c3b6031d9ad2f8e52cb",
+    "scope": "Real original native SDK sessions on M1+M5; not installed application UI acceptance",
+    "history_counts": {
+      "native_three_device_phases": {
+        "coordinator": "enrollmentComplete",
+        "joining": "enrollmentComplete",
+        "sibling": "settled"
+      },
+      "eligible_recipients": 2,
+      "query_created_requests": 0,
+      "source_records": 2,
+      "imported_records": 1,
+      "archive_page_records": 1,
+      "verified_prejoin_records": 1,
+      "postjoin_live_record_present": true,
+      "source_complete": true,
+      "recipient_complete": true
+    }
+  },
+  "controller_source": "800732e21023e60b746973a0a2a972168eb5daf9",
+  "controller_controls": {
+    "passed": 31,
+    "failed": 0
+  },
+  "input_manifest_sha256": "abd14ac3bcf55921fc4b354806c31ff0f3a62a9bf69ba0b6cdd583eda920ddcc",
+  "raw_log_sha256": "e41cdac1e0f9b7c79ff16a26cb9460f755d47dbfce9224588bacc10ff27ccb9f",
+  "native_result_sha256": "0020be70b05c0a3d90d10bba28b981f10cfaa9da2a8c4c20e761207e2b4e7bca",
+  "native_log_sha256": "325f874ee1fefa08b2b0d76781406f8bf3fa04237ea55292d291a0aa7f0836dc",
+  "handoff_sha256": "eab3918d7310381d413110e89c48a6cdf7d88d65d333e5a7ce50b2569e9eb26f",
+  "static_log_sha256": "f1a3adac433f23b055e8dc681902db95eb97ab76bd5746690cdf1d2ea2136a2a",
+  "command": "WN_EXPERIMENTAL_DEVICE_SYNC=1 WN_SOURCE_PICKER_FIXTURE=/Users/pj/project/build/native-source-picker-v1-handoff.json TEST_RUNNER_WN_SOURCE_PICKER_FIXTURE=<same> WN_TEST_DERIVED_DATA=/Users/pj/project/build/MacTestIsolationM5 WN_TEST_RESULT_BUNDLE=/Users/pj/project/build/results/mac-genuine-source-picker-v1.xcresult scripts/test-isolated.sh -only-testing:whitenoise-macTests/GenuineHistorySourcePickerTests -jobs 2",
+  "scope": "Actual SessionState/AccountScope/MarmotClient query and fresh original via explicit model actions; same original refreshed/cancelled and native runtime closed. No injected fake query/factory, consent reconstructed from observations, or MLS/account database copy.",
+  "retained_qualification": "Existing 37 affected controls and corrected hosted visual 1/1 at source_base retained: this slice adds opt-in native acceptance only, production/model/binding sources unchanged.",
+  "remaining": [
+    "Actual picker UI-button acceptance",
+    "Complete source-to-recipient transfer through app actions",
+    "Installed navigation and cross-device journey",
+    "Full final SDK987 integration matrix"
+  ]
+}

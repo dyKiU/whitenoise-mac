@@ -1,0 +1,114 @@
+{
+  "sdk_source": "84113c20771a0092cb0e52ca094836375f9dd406",
+  "qualified_test_candidate": "7cbce04f27e94b1d57a4639ffa9b437f657c68cd",
+  "root_verification": "All2892 immutable inputs across6 cohorts checked against exact Git trees;6 complete raw logs rehashed; actual4 executable Xcode summaries independently checked. Initial2 stale FFI compile failures preserved. Same-root actual SDK account publicly reopened, real SessionState account-scoped reader returns committed source-attested record, live postjoin row remains separate, hosted graph retired before scope teardown and records cleared.",
+  "cohorts": [
+    {
+      "candidate": "70c6fdb78ed909e3e669c51e32b775a6275534d9",
+      "prefix": "mac-genuine-imported-history-pane-initial-v1",
+      "source_inputs": 482,
+      "input_manifest_sha256": "6707ef6088d1c1f39d071151a3a776f4d4fb14cf021fb51ea477fcb256031bf4",
+      "log_sha256": "a167d0c3f5a1d6e5f91fd1562682cb8680ec569edba4cdbe5f1a231f59ba2407",
+      "exit_code": 65,
+      "seconds": 2.986828292021528,
+      "sdk_source": "84113c20771a0092cb0e52ca094836375f9dd406",
+      "scope": "Genuine same-root public native Mac recipient reopen; actual SessionState account-owned archive reader and hosted pane, then teardown. Not installed navigation or app original approval."
+    },
+    {
+      "candidate": "70c6fdb78ed909e3e669c51e32b775a6275534d9",
+      "prefix": "mac-genuine-imported-history-pane-initial-v2",
+      "source_inputs": 482,
+      "input_manifest_sha256": "6707ef6088d1c1f39d071151a3a776f4d4fb14cf021fb51ea477fcb256031bf4",
+      "log_sha256": "318f500e2ee5c3d8ce025cafae6502306f24901a729e98068c4a83d4218a7961",
+      "exit_code": 65,
+      "seconds": 4.497622499940917,
+      "sdk_source": "84113c20771a0092cb0e52ca094836375f9dd406",
+      "scope": "Genuine same-root public native Mac recipient reopen; actual SessionState account-owned archive reader and hosted pane, then teardown. Not installed navigation or app original approval."
+    },
+    {
+      "candidate": "70c6fdb78ed909e3e669c51e32b775a6275534d9",
+      "prefix": "mac-genuine-imported-history-pane-initial-v3",
+      "source_inputs": 482,
+      "input_manifest_sha256": "6707ef6088d1c1f39d071151a3a776f4d4fb14cf021fb51ea477fcb256031bf4",
+      "log_sha256": "b95e34364f36f0c0cafb68885b5a06abd8c3ddba5dd7e618c7ff033e920b9837",
+      "exit_code": 0,
+      "seconds": 42.61344174994156,
+      "sdk_source": "84113c20771a0092cb0e52ca094836375f9dd406",
+      "scope": "Genuine same-root public native Mac recipient reopen; actual SessionState account-owned archive reader and hosted pane, then teardown. Not installed navigation or app original approval.",
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 1,
+        "passedTests": 1,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "test_failures": []
+    },
+    {
+      "candidate": "70c6fdb78ed909e3e669c51e32b775a6275534d9",
+      "prefix": "mac-genuine-imported-history-pane-affected-v1",
+      "source_inputs": 482,
+      "input_manifest_sha256": "6707ef6088d1c1f39d071151a3a776f4d4fb14cf021fb51ea477fcb256031bf4",
+      "log_sha256": "acaa403bdcc46e94ace7415e2bc8c580d3628c4e12d4f626b64977b1deaaf0a5",
+      "exit_code": 0,
+      "seconds": 8.009249833179638,
+      "sdk_source": "84113c20771a0092cb0e52ca094836375f9dd406",
+      "scope": "Genuine same-root public native Mac recipient reopen; actual SessionState account-owned archive reader and hosted pane, then teardown. Not installed navigation or app original approval.",
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 18,
+        "passedTests": 18,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "test_failures": []
+    },
+    {
+      "candidate": "8cf48b08c6192a8eb7e31f74f925390c1f0dd5f8",
+      "prefix": "mac-genuine-imported-history-pane-visual-v1",
+      "source_inputs": 482,
+      "input_manifest_sha256": "b27d455642802387ce5c3d76e977af66620ff041b1651e2b68a8dcead0905021",
+      "log_sha256": "d2eef927a6d5b551997892718713328f3e36a8bbf50a5235c2f0105bc9ec1a01",
+      "exit_code": 0,
+      "seconds": 9.938022249843925,
+      "sdk_source": "84113c20771a0092cb0e52ca094836375f9dd406",
+      "scope": "Genuine same-root public native Mac recipient reopen; actual SessionState account-owned archive reader and hosted pane, then teardown. Not installed navigation or app original approval.",
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 1,
+        "passedTests": 1,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "test_failures": []
+    },
+    {
+      "candidate": "7cbce04f27e94b1d57a4639ffa9b437f657c68cd",
+      "prefix": "mac-genuine-imported-history-pane-final-v1",
+      "source_inputs": 482,
+      "input_manifest_sha256": "1505a31ac334a2c6d44f1b344f2689438ba9e6cf8460433b2946e06897f73860",
+      "log_sha256": "323c08844c7add996d1969a9804ffa3f273fcae258f5203a2772cda22263b559",
+      "exit_code": 0,
+      "seconds": 12.420305625069886,
+      "sdk_source": "84113c20771a0092cb0e52ca094836375f9dd406",
+      "scope": "Genuine same-root public native Mac recipient reopen; actual SessionState account-owned archive reader and hosted pane, then teardown. Not installed navigation or app original approval.",
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 18,
+        "passedTests": 18,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "test_failures": []
+    }
+  ],
+  "native_fixture_result_sha256": "5c390e099ce2970afb825ca702ae852f7caab9190941197901c54631b47dbb26",
+  "screenshot_sha256": "8e84fa1fdf0d4eae375a53fa2e21c10759985a2407f7357ccccc7339af80ea17",
+  "visual_review": "Final opaque window-context screenshot independently viewed: history title, Close, source-attestation notice, author/date and long imported synthetic content correctly wrap; Refresh visible and Next disabled. Initial bitmap caught loading transition; next transparent capture hid root text; final fixture awaits real hosting reload and supplies normal system window background.",
+  "limits": [
+    "Consent/import was performed by original native harness actors; installed app-button approval/navigation remains separate.",
+    "Fixture has no media, expiry or deletion; ordered media, competing live-ID precedence and retention UI cases remain unqualified.",
+    "This is acceptance of the reader after constructor TDD, not a new reproduced runtime reader defect.",
+    "No full PR or develop merge of this new opt-in test yet; SDK84113 unchanged."
+  ]
+}

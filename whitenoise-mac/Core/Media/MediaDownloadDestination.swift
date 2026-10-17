@@ -47,6 +47,10 @@ protocol MediaDownloadDestinationStoring: AnyObject {
 
 @MainActor
 final class UserDefaultsMediaDownloadDestinationStore: MediaDownloadDestinationStoring {
+    // Avoid the synthesized isolated-deinit trampoline on older macOS concurrency runtimes.
+    // Releasing the defaults reference needs no actor-bound cleanup.
+    nonisolated deinit {}
+
     private enum Key {
         static let bookmark = "whitenoise.mac.mediaDownloadDestinationBookmark"
     }

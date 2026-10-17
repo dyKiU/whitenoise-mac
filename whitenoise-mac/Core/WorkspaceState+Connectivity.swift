@@ -23,17 +23,38 @@ extension WorkspaceState {
         let probe = relayHostProbe
 
         connectivityMonitorTask = Task { [weak self] in
+            var retryTask: Task<Void, Never>?
+            defer { retryTask?.cancel() }
             // The stream yields the current path before any change, so the first pass through
             // this loop is the initial reading rather than a wait for the network to move.
             for await hasInterface in monitor.interfaceAvailability() {
+                retryTask?.cancel()
+                retryTask = nil
                 let isOffline: Bool
                 if hasInterface {
                     isOffline = await !Self.canReachAnyRelay(using: probe, endpoints: endpoints)
                 } else {
                     isOffline = true
                 }
-                guard let self else { return }
+                guard !Task.isCancelled, let self else { return }
                 self.isOffline = isOffline
+                if hasInterface && isOffline {
+                    // A failed seed probe is transient even when NWPath stays unchanged.
+                    // This child belongs to this path reading and is retired on the next one.
+                    retryTask = Task { [weak self] in
+                        while !Task.isCancelled {
+                            do {
+                                try await Task.sleep(for: .seconds(5))
+                            } catch {
+                                return
+                            }
+                            let reachable = await Self.canReachAnyRelay(using: probe, endpoints: endpoints)
+                            guard !Task.isCancelled, let self else { return }
+                            self.isOffline = !reachable
+                            if reachable { return }
+                        }
+                    }
+                }
             }
         }
     }

@@ -1,0 +1,128 @@
+{
+  "source_base": "c217ad3b642dbe74c353b540eb47e90e0aee1ae0",
+  "sdk_source": "98707713a2cc02828c2d66ed858588991896b9b0",
+  "verified_matching_repository_inputs": 486,
+  "test_results": {
+    "initial-v1": {
+      "passedTests": 25,
+      "failedTests": 0,
+      "skippedTests": 0
+    },
+    "final-v1": {
+      "passedTests": 37,
+      "failedTests": 0,
+      "skippedTests": 0
+    },
+    "visual-v2": {
+      "passedTests": 1,
+      "failedTests": 0,
+      "skippedTests": 0
+    }
+  },
+  "commands": {
+    "affected": "WN_EXPERIMENTAL_DEVICE_SYNC=1 WN_TEST_DERIVED_DATA=/Users/pj/project/build/MacTestIsolationM5 WN_TEST_RESULT_BUNDLE=/Users/pj/project/build/results/mac-history-source-pane-final-v1.xcresult scripts/test-isolated.sh -only-testing:whitenoise-macTests/HistorySourcePaneTests -only-testing:whitenoise-macTests/HistorySourceViewModelTests -only-testing:whitenoise-macTests/NativeHistoryActionScopeTests -only-testing:whitenoise-macTests/HistoryTransferRecipientRuntimeTests -only-testing:whitenoise-macTests/HistoryConsentReviewViewModelTests -only-testing:whitenoise-macTests/SynchronizedHistoryAccountScopeTests",
+    "corrected_visual": "Same isolated runner, result mac-history-source-pane-visual-v2.xcresult, only HistorySourcePaneTests. Product/model/SDK inputs unchanged; fixture adds opaque drawing background and alpha assertion."
+  },
+  "logs_sha256": {
+    "/Users/pj/project/build/results/mac-history-source-pane-initial-v1.log": "708fcc3d3acc5c1b454b322dd055f3a0b69c05fa38967fb0cfa258fe5102e6d8",
+    "/Users/pj/project/build/results/mac-history-source-pane-final-v1.log": "b362e3d322ec7ada8ee2147d607c6a03a2453a7ad55e1d293436e0199092a9fb",
+    "/Users/pj/project/build/results/mac-history-source-pane-visual-v2.log": "3f32efb20fd4f4b9e6b213c072cca92ff2a7a644eeab0a1404eaa26d4f60daa6"
+  },
+  "static_checks": "Strict whole-repository formatting, localization coverage for all nine target languages and published project sanity pass; final changed fixture also passes strict scoped format/lint. SDK overrides restored after published sanity.",
+  "static_log_sha256": "93b55107c9f0d0d16fd8715dcca49b1819a6cd11db5f9c1cafd3eed659601afb",
+  "localization": {
+    "command": [
+      "xcrun",
+      "xcstringstool",
+      "sync",
+      "/Users/pj/project/build/mac-history-source-pane-localizations/Localizable.xcstrings",
+      "--stringsdata",
+      "/Users/pj/project/build/MacTestIsolationM5/Build/Intermediates.noindex/whitenoise-mac.build/Debug/whitenoise-mac.build/Objects-normal/arm64/HistorySourceView.stringsdata",
+      "--skip-marking-strings-stale"
+    ],
+    "compiled_stringsdata_sha256": "0f3332db59f3d21814aa2c5766cbd8a4d099e0521f26201eddcfb43cfb296e8c",
+    "Apple_export_template": "/Users/pj/project/build/mac-verification-localizations/de.xcloc/Localized Contents/de.xliff",
+    "template_sha256": "3a53cf6f35b05849b8c11c14d338f2b8ecb700b34ca7a08e3039a1676d35add1",
+    "original_catalog_sha256": "2703c03953c3d448111b8dd7612a71231cfb466efb1dfc894e1955cf0935b80b",
+    "original_entries": 1275,
+    "added": [
+      "Send chat history",
+      "Choose a linked device to receive a snapshot of this chat.",
+      "No eligible receiving devices.",
+      "Request history transfer"
+    ],
+    "imports": [
+      {
+        "language": "de",
+        "exit_code": 0,
+        "xliff_sha256": "d5c33b238846a52dfb7544797dc032c4d2029d5ce7650b799add991fc923b15e",
+        "log_sha256": "3ccdbef37950f08765e62ec1ba42b25d68c2d8526ee68d4414302a4717d16592"
+      },
+      {
+        "language": "es",
+        "exit_code": 0,
+        "xliff_sha256": "88387bcf865fe14f8c6200541cbc1f99b07bd70e6fb8330adb44c85a4a0f7182",
+        "log_sha256": "34c97652dd89f50250da20eb842da2ca40865cab445e6e0a16d4d9a1a9cfae43"
+      },
+      {
+        "language": "fr",
+        "exit_code": 0,
+        "xliff_sha256": "ba99b7b17de2af92a134696e0a398150df55cea7a150a04188f4227249d09634",
+        "log_sha256": "7eaf7938664fbfe902209b622289da61bddd75f7c03facd91bedf7b89449257c"
+      },
+      {
+        "language": "it",
+        "exit_code": 0,
+        "xliff_sha256": "c72967638c941c618e230ae7dedb4314b2198ebc7710b423f980d2584cd6a767",
+        "log_sha256": "04c277fe5b376a35ab0dc5425b1bced257f917adc4a67ab6411e2961e2fe6a61"
+      },
+      {
+        "language": "pt",
+        "exit_code": 0,
+        "xliff_sha256": "36031b35a13e4ca6b7ea739b8123cae76aa2f992e7a1935839ab1edd94b8d65f",
+        "log_sha256": "fb95607e10f05c859899b5bdb64397146d0ef6e6979193319892004c16e9ba2b"
+      },
+      {
+        "language": "ru",
+        "exit_code": 0,
+        "xliff_sha256": "bed8f7e8ac7e977ec9ab27bd2ce06a8928f59bea636294fdd7ef10a3f524e463",
+        "log_sha256": "045f6138325e5abbcfe975a7f53397405f006f842aa349b2b6020ad13fcd0abf"
+      },
+      {
+        "language": "tr",
+        "exit_code": 0,
+        "xliff_sha256": "58c4da47df1c3e03ffc6cb8735bdd7ea6dd20f8f48969e6d50066917575af3fb",
+        "log_sha256": "aaacb9a5987f9cb04ccf8da6400a9800ce75b18c752efa543dc488e9cf3031d3"
+      },
+      {
+        "language": "zh-Hans",
+        "exit_code": 0,
+        "xliff_sha256": "2d0b6ba09808dd74fa315f281e759f5c9c7a99d8f40cac0d8255fe9b0a6651e4",
+        "log_sha256": "9fef1a6333c6f5a47857abcf3b89c0fb9fb37387d6fda6e524d18bd0c5f5bc9b"
+      },
+      {
+        "language": "zh-Hant",
+        "exit_code": 0,
+        "xliff_sha256": "3347cbf106348c1c00c1b99fce6b182a001f9443001442fe1667d68665d61b0d",
+        "log_sha256": "2b49e1cf529aebbc993636aad2aba5a2584f72c501beb29444b7fedc52f958bb"
+      }
+    ],
+    "all_existing_entries_and_order_unchanged": true,
+    "preservation": "Only whole Apple sync/import-generated new entry retained; original raw top-level entry blocks preserved, no nested plural edits",
+    "catalog_sha256": "3ee5f89314f649082a76df16c0a09b9534b0be30dadefa1469085d71274cbe9b"
+  },
+  "visual_review": {
+    "initial": "Transparent snapshots establish no visual QA; preserved under visual-v1.",
+    "corrected": "Two exported visual-v2 snapshots independently viewed: title/instruction, two complete device keys, disabled Request before selection, selected checkmark and enabled Request after model-driven selection, Close/Refresh/Cancel.",
+    "artifacts_sha256": {
+      "build/results/mac-history-source-pane-visual-v2/EFF0E07E-65C8-48CF-9678-62FBA0FE46CD.png": "fd7bb8a13b12e6059097060654218f9efae9f22a4ab19195b00dd6f3b864e9d5",
+      "build/results/mac-history-source-pane-visual-v2/CA38FC12-C517-403C-8653-2FB7095EED30.png": "8a911ab553754744c074965c673544288759dd956c790a3566418adec506f14e"
+    }
+  },
+  "limits": [
+    "Hosted pane uses synthetic recipient observations; selection is model-driven, not a UI-button press.",
+    "Actual linked-device recipient query, original request/continue buttons, recipient approval and imported-reader navigation through installed apps remain open.",
+    "Full final published/experimental integration qualification and promotion to running M1/M5/iPhone SDKs remain open."
+  ],
+  "audit": "/Users/pjaeckel/project/whitenoisechat-openclaw/build/results/mac-history-source-pane-audit.json"
+}

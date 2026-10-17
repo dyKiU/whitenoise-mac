@@ -1,0 +1,327 @@
+{
+  "base": "64a8ddd28afa5746b6d23d588c17e4253bfdbb8f",
+  "sdk": "e6b0e9c159b632b8c07eb68f12f46c3bc930699c",
+  "stages": {
+    "mac-native-linking-lifetime-red-focused-v6": {
+      "source_base": "64a8ddd28afa5746b6d23d588c17e4253bfdbb8f",
+      "source_inputs": 415,
+      "input_manifest_sha256": "f6190f5edcf28a5d75805964b4e2fa15edfd5aff448604e226a8168c4723730a",
+      "profile": "local-e6/experimentalflag1",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 65,
+      "seconds": 48.81,
+      "log_sha256": "21d838c3b10c8b084f15aea27ad709cd3f521d46f51300df6925da4c324b188b",
+      "tests": {
+        "result": "Failed",
+        "totalTestCount": 3,
+        "passedTests": 0,
+        "failedTests": 3,
+        "skippedTests": 0
+      },
+      "test_failures": [
+        {
+          "failureText": "Expectation failed: await pending.value == false",
+          "targetName": "whitenoise-macTests",
+          "testIdentifier": 2,
+          "testIdentifierString": "NativeDeviceLinkingLifetimeTests/lateFactoryCannotAttachAcrossReplacementOrDeactivation(deactivate:)",
+          "testIdentifierURL": "test://com.apple.xcode/whitenoise-mac/whitenoise-macTests/NativeDeviceLinkingLifetimeTests/lateFactoryCannotAttachAcrossReplacementOrDeactivation(deactivate:)",
+          "testName": "lateFactoryCannotAttachAcrossReplacementOrDeactivation(deactivate:)"
+        },
+        {
+          "failureText": "Expectation failed: original.cancelCount == 1\noriginal.cancelCount \u2192 0",
+          "targetName": "whitenoise-macTests",
+          "testIdentifier": 1,
+          "testIdentifierString": "NativeDeviceLinkingLifetimeTests/replacingAccountCancelsOriginalAndRejectsDelayedSnapshot()",
+          "testIdentifierURL": "test://com.apple.xcode/whitenoise-mac/whitenoise-macTests/NativeDeviceLinkingLifetimeTests/replacingAccountCancelsOriginalAndRejectsDelayedSnapshot()",
+          "testName": "replacingAccountCancelsOriginalAndRejectsDelayedSnapshot()"
+        },
+        {
+          "failureText": "Expectation failed: session.accountScope !== scope\nsession.accountScope \u2192 whitenoise_mac.AccountScope\nscope \u2192 whitenoise_mac.AccountScope",
+          "targetName": "whitenoise-macTests",
+          "testIdentifier": 3,
+          "testIdentifierString": "NativeDeviceLinkingLifetimeTests/sameAccountNewRuntimeReplacesScopeAndCancelsOriginal()",
+          "testIdentifierURL": "test://com.apple.xcode/whitenoise-mac/whitenoise-macTests/NativeDeviceLinkingLifetimeTests/sameAccountNewRuntimeReplacesScopeAndCancelsOriginal()",
+          "testName": "sameAccountNewRuntimeReplacesScopeAndCancelsOriginal()"
+        }
+      ]
+    },
+    "mac-native-linking-reset-red-focused-v6": {
+      "source_base": "64a8ddd28afa5746b6d23d588c17e4253bfdbb8f",
+      "source_inputs": 415,
+      "input_manifest_sha256": "b7531a797e242328bed3ebc43ee74e5ab3f6eaa029c28e04fce887208f557a39",
+      "profile": "local-e6/experimentalflag1",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 65,
+      "seconds": 40.0,
+      "log_sha256": "ab804fca6e129bd95917addea9e3c1e308fe425a9ca77fb375a9aa50b5153cd9",
+      "tests": {
+        "result": "Failed",
+        "totalTestCount": 1,
+        "passedTests": 0,
+        "failedTests": 1,
+        "skippedTests": 0
+      },
+      "test_failures": [
+        {
+          "failureText": "Expectation failed: original.cancelCount == 1\noriginal.cancelCount \u2192 0",
+          "targetName": "whitenoise-macTests",
+          "testIdentifier": 1,
+          "testIdentifierString": "NativeDeviceLinkingLifetimeTests/actualRuntimeResetTearsDownOriginalBeforeCoreDeletion()",
+          "testIdentifierURL": "test://com.apple.xcode/whitenoise-mac/whitenoise-macTests/NativeDeviceLinkingLifetimeTests/actualRuntimeResetTearsDownOriginalBeforeCoreDeletion()",
+          "testName": "actualRuntimeResetTearsDownOriginalBeforeCoreDeletion()"
+        }
+      ]
+    },
+    "mac-native-linking-reset-cleanup-red-focused-v8": {
+      "source_base": "64a8ddd28afa5746b6d23d588c17e4253bfdbb8f",
+      "source_inputs": 415,
+      "input_manifest_sha256": "eaa809d4a129f65ea35b0f81267086f15bd5f6ba0b773bca5af7ee5d51d4f51b",
+      "profile": "local-e6/experimentalflag1",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 65,
+      "seconds": 15.2,
+      "log_sha256": "a56513c720cf03510dadcb83876347243529deb762704fedfe6f434f6f551f89",
+      "tests": {
+        "result": "Failed",
+        "totalTestCount": 1,
+        "passedTests": 0,
+        "failedTests": 1,
+        "skippedTests": 0
+      },
+      "test_failures": [
+        {
+          "failureText": "Expectation failed: original.cancelCount == 1\noriginal.cancelCount \u2192 2",
+          "targetName": "whitenoise-macTests",
+          "testIdentifier": 1,
+          "testIdentifierString": "NativeDeviceLinkingLifetimeTests/actualResetCleanupFailureRetainsExactOwnerWithoutRetryingImplicitly()",
+          "testIdentifierURL": "test://com.apple.xcode/whitenoise-mac/whitenoise-macTests/NativeDeviceLinkingLifetimeTests/actualResetCleanupFailureRetainsExactOwnerWithoutRetryingImplicitly()",
+          "testName": "actualResetCleanupFailureRetainsExactOwnerWithoutRetryingImplicitly()"
+        }
+      ]
+    },
+    "mac-native-linking-lifetime-green-focused-v6": {
+      "source_base": "64a8ddd28afa5746b6d23d588c17e4253bfdbb8f",
+      "source_inputs": 415,
+      "input_manifest_sha256": "3f1cd15fb2fe9148ea64e2c9392cf38d7bcaf255221fd9fefb3e932b94b7231b",
+      "profile": "local-e6/experimentalflag1",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 65,
+      "seconds": 69.79,
+      "log_sha256": "848aa884c64d318713f92f20b49df784e29bedb246951faa82cf26fd77cf9de2",
+      "tests": {
+        "result": "Failed",
+        "totalTestCount": 4,
+        "passedTests": 3,
+        "failedTests": 1,
+        "skippedTests": 0
+      },
+      "test_failures": [
+        {
+          "failureText": "Crash: White Noise Unit Host at $s7Testing6RunnerV19_applyScopingTraits33_E393D8EDD5AFFA0BF3AEFD347B81DFDFLL3for8testCase_yAA4TestV_AI0P0VSgyyYaYbKctYaKFZ011$s7Testing6b13V27_runSingleqp12Iteration33_fghijkL86DFDFLL_6withinyAA0E0V0F0V_AC4PlanV4StepVtYaFZyyYaXEfU_yyYaKXEfU_yyYaYbKcfU_yyYaYbKcfU_AKTf1nnEn_nTf4nndn_nTQ1_",
+          "targetName": "whitenoise-macTests",
+          "testIdentifier": 4,
+          "testIdentifierString": "NativeDeviceLinkingLifetimeTests/actualRuntimeResetTearsDownOriginalBeforeCoreDeletion()",
+          "testIdentifierURL": "test://com.apple.xcode/whitenoise-mac/whitenoise-macTests/NativeDeviceLinkingLifetimeTests/actualRuntimeResetTearsDownOriginalBeforeCoreDeletion()",
+          "testName": "actualRuntimeResetTearsDownOriginalBeforeCoreDeletion()"
+        }
+      ]
+    },
+    "mac-native-linking-lifetime-green-focused-v7": {
+      "source_base": "64a8ddd28afa5746b6d23d588c17e4253bfdbb8f",
+      "source_inputs": 415,
+      "input_manifest_sha256": "6888afff35956a32526cf579bba3c16921a3e87662d4621a279482495d6f9358",
+      "profile": "local-e6/experimentalflag1",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 0,
+      "seconds": 46.54,
+      "log_sha256": "4bffaac71ccfff8ba4765c09e325266ae869ba713ac28bc8336cb3e690b44caf",
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 4,
+        "passedTests": 4,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "test_failures": []
+    },
+    "mac-native-linking-lifetime-green-focused-v10": {
+      "source_base": "64a8ddd28afa5746b6d23d588c17e4253bfdbb8f",
+      "source_inputs": 415,
+      "input_manifest_sha256": "70f3b1ab7a0681d5eea2ed4a182dd394ff303215ba5e8b786c86d31cf0444446",
+      "profile": "local-e6/experimentalflag1",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 0,
+      "seconds": 9.56,
+      "log_sha256": "e2651c9e67663af96a541b5d0b94bb985c4d9b60374e6a98d3f762be9873a4ee",
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 8,
+        "passedTests": 8,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "test_failures": []
+    },
+    "mac-native-linking-lifetime-affected-focused-v10": {
+      "source_base": "64a8ddd28afa5746b6d23d588c17e4253bfdbb8f",
+      "source_inputs": 415,
+      "input_manifest_sha256": "70f3b1ab7a0681d5eea2ed4a182dd394ff303215ba5e8b786c86d31cf0444446",
+      "profile": "local-e6/experimentalflag1",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 0,
+      "seconds": 3.84,
+      "log_sha256": "2089356f024f15293be6a3dbfb40d796d21369b81cdd59c6de735bb71da85eac",
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 16,
+        "passedTests": 16,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "test_failures": []
+    },
+    "mac-native-linking-lifetime-default-focused-v10": {
+      "source_base": "64a8ddd28afa5746b6d23d588c17e4253bfdbb8f",
+      "source_inputs": 415,
+      "input_manifest_sha256": "70f3b1ab7a0681d5eea2ed4a182dd394ff303215ba5e8b786c86d31cf0444446",
+      "profile": "local-e6/experimentalflag0",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 65,
+      "seconds": 16.69,
+      "log_sha256": "8d9e90d83bb4aa532c0397928b113c05aaba55bbb3a307fc100d751052abb5cf"
+    },
+    "mac-native-linking-published-default-focused-v13": {
+      "source_base": "2f8c5bf52bb77141402e0498439a65bbe475d0ca",
+      "source_inputs": 417,
+      "input_manifest_sha256": "85083e7b56f0b9d233eeeb0401a98cc2ea83cec1b99ab0bfc96356723f5d6a80",
+      "profile": "published0.12/experimentalflag0",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 0,
+      "seconds": 44.21,
+      "log_sha256": "ef16d67bd02d5fc140e5717fa23b935f9ae54e9d69ad5bdbad23d6df3ade0d4f",
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 11,
+        "passedTests": 11,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "test_failures": []
+    },
+    "mac-native-linking-repeated-exit-red-focused-v16": {
+      "source_base": "2f8c5bf52bb77141402e0498439a65bbe475d0ca",
+      "source_inputs": 417,
+      "input_manifest_sha256": "e9100ce905c333f2272099774c09a38baf7c23d2e071644c46a7b748f5c240a8",
+      "profile": "local-e6/experimentalflag1",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 65,
+      "seconds": 78.05,
+      "log_sha256": "48a20c4333d53333a9338225d911d7b4d3371ac3790a538c7a86bdc4a704b0ca",
+      "tests": {
+        "result": "Failed",
+        "totalTestCount": 1,
+        "passedTests": 0,
+        "failedTests": 1,
+        "skippedTests": 0
+      },
+      "test_failures": [
+        {
+          "failureText": "Expectation failed: runtime.signedOutAccountRefs.isEmpty\nruntime.signedOutAccountRefs \u2192 [\"jeff\"]\nisEmpty \u2192 false",
+          "targetName": "whitenoise-macTests",
+          "testIdentifier": 1,
+          "testIdentifierString": "NativeDeviceLinkingLifetimeTests/repeatedAccountExitCannotBypassDetachedFailedCleanup()",
+          "testIdentifierURL": "test://com.apple.xcode/whitenoise-mac/whitenoise-macTests/NativeDeviceLinkingLifetimeTests/repeatedAccountExitCannotBypassDetachedFailedCleanup()",
+          "testName": "repeatedAccountExitCannotBypassDetachedFailedCleanup()"
+        }
+      ]
+    },
+    "mac-native-linking-lifetime-green-focused-v17": {
+      "source_base": "2f8c5bf52bb77141402e0498439a65bbe475d0ca",
+      "source_inputs": 417,
+      "input_manifest_sha256": "538508a7228becc78f9219de635cade29f706b1a6bd9dee982496653eec25058",
+      "profile": "local-e6/experimentalflag1",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 0,
+      "seconds": 15.3,
+      "log_sha256": "1bf5dcb44e86a8b0bcd670f257ee4c932cc1d281f4f0a25a6cbc5ff879193845",
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 9,
+        "passedTests": 9,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "test_failures": []
+    },
+    "mac-native-linking-lifetime-affected-focused-v17": {
+      "source_base": "2f8c5bf52bb77141402e0498439a65bbe475d0ca",
+      "source_inputs": 417,
+      "input_manifest_sha256": "538508a7228becc78f9219de635cade29f706b1a6bd9dee982496653eec25058",
+      "profile": "local-e6/experimentalflag1",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 0,
+      "seconds": 4.42,
+      "log_sha256": "f2509a3e561e1bf1bdde91d9e83d5fa406cf2a0428bc410b820066c9644eb20d",
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 16,
+        "passedTests": 16,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "test_failures": []
+    },
+    "mac-native-linking-final-experimental-full-v18": {
+      "source_base": "9b2452f12611b024efe23ee43d011f04ec5294bd",
+      "source_inputs": 417,
+      "input_manifest_sha256": "44cd8744d2b7a2eeb42fcb94cf2e8582a24711add653384bc665d462b4c6bd46",
+      "profile": "local-e6/experimentalflag1",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 0,
+      "seconds": 62.36,
+      "log_sha256": "1d226f6f9ad07cdbba9e4cbbc614844e59e0d701694f878ac95810b427cacbf5",
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 1663,
+        "passedTests": 1663,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "test_failures": []
+    },
+    "mac-native-linking-published-default-full-v20": {
+      "source_base": "9b2452f12611b024efe23ee43d011f04ec5294bd",
+      "source_inputs": 417,
+      "input_manifest_sha256": "bbb0a7f348682f866b6db652323793032de6df4839ec3d9ff717dfddb64b841a",
+      "profile": "published0.12/experimentalflag0",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 0,
+      "seconds": 86.61,
+      "log_sha256": "f0a4f6545c2430ca8f128d0553350eee46ae5aeb32af7f2d17feb277391ac439",
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 1649,
+        "passedTests": 1649,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "test_failures": []
+    }
+  },
+  "limits": [
+    "No native pairing UI/enrollment capability or full sync claim",
+    "Scene background does not close runtime; suspension coverage limited to explicit deactivation/replacement/reset",
+    "Default-off test build fails in unchanged FakeMarmotRuntime draftVersion fixture; zero tests",
+    "GreenV6 crash cause unproven; protocol revert and owned Swift rebuild preceded V7 pass"
+  ],
+  "red_sources": [
+    "69493b8801688abd9e6fad6a55a4f1783b448a2c",
+    "29507b10c6ea743abbb9e572eb8f3446ceb901fa",
+    "f375d5ac90824430d733cedc33e3197c238b5fe6"
+  ],
+  "crash_source": "ac186a0f16860ae25f145f071a4dd25956345ae0",
+  "repeated_exit_red_source": "caf4105cb287de55af314ac8e52a18cb540d1900",
+  "qualified_product_commit": "9b2452f12611b024efe23ee43d011f04ec5294bd",
+  "published_sdk_checksum": "344251a65ec7afcdcce8b7bb0cbf26bfcf398983a99a11bfc93181a0069621a5",
+  "cohort_note": "published runs restore exact HEAD four bindings files; ignored e6 LOCAL_BUILD hash is diagnostic only, not selected binary provenance"
+}

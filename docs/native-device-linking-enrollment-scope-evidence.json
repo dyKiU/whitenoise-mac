@@ -1,0 +1,142 @@
+{
+  "base": "67fdbe62922c4fca3cec681f61e9e413f60f5f37",
+  "sdk": "e6b0e9c159b632b8c07eb68f12f46c3bc930699c",
+  "red_source_stash": "78b92a1e0c4e75fded805b61835de7f6da341186",
+  "red_source_proof": "Two exact owned RED files verified from named stash against frozen426-input manifest; untracked test in third parent.",
+  "owned_source_sha256": {
+    "whitenoise-mac/Session/DeviceLinkingScope.swift": "7f1639a00dd58233deec8e8a033daebf54714c9ba293de4d515b9fa47961434f",
+    "whitenoise-macTests/NativeDeviceLinkingEnrollmentActionTests.swift": "4c089bafa8061bb540ac39ed976c0ac58f87f8b820b434fd82b4676e2d783c02"
+  },
+  "runs": {
+    "red": {
+      "source_base": "67fdbe62922c4fca3cec681f61e9e413f60f5f37",
+      "source_inputs": 426,
+      "input_manifest_sha256": "45c943ae6493b3ad3081d4a450676d103f01b36555252ed32d243cc5c9941e9d",
+      "profile": "local-e6/experimentalflag1",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 65,
+      "seconds": 42.17,
+      "log_sha256": "9abd78b83f28bc310e62f9964301483941480201cf15efab0b5577c938d49576",
+      "tests": {
+        "result": "Failed",
+        "totalTestCount": 5,
+        "passedTests": 0,
+        "failedTests": 5,
+        "skippedTests": 0
+      },
+      "test_failures": [
+        {
+          "failureText": "Expectation failed: session.isWaiting\nsession \u2192 whitenoise_macTests.(unknown context at $11752bef4).EnrollmentSession\nisWaiting \u2192 false",
+          "targetName": "whitenoise-macTests",
+          "testIdentifier": 5,
+          "testIdentifierString": "NativeDeviceLinkingEnrollmentActionTests/deactivationOrExplicitExitRejectsDelayedEnrollmentResult(explicitExit:)",
+          "testIdentifierURL": "test://com.apple.xcode/whitenoise-mac/whitenoise-macTests/NativeDeviceLinkingEnrollmentActionTests/deactivationOrExplicitExitRejectsDelayedEnrollmentResult(explicitExit:)",
+          "testName": "deactivationOrExplicitExitRejectsDelayedEnrollmentResult(explicitExit:)"
+        },
+        {
+          "failureText": "Expectation failed: session.isWaiting\nsession \u2192 whitenoise_macTests.(unknown context at $11752bef4).EnrollmentSession\nisWaiting \u2192 false",
+          "targetName": "whitenoise-macTests",
+          "testIdentifier": 4,
+          "testIdentifierString": "NativeDeviceLinkingEnrollmentActionTests/delayedPacketCannotEscapeAccountReplacementAndReturn()",
+          "testIdentifierURL": "test://com.apple.xcode/whitenoise-mac/whitenoise-macTests/NativeDeviceLinkingEnrollmentActionTests/delayedPacketCannotEscapeAccountReplacementAndReturn()",
+          "testName": "delayedPacketCannotEscapeAccountReplacementAndReturn()"
+        },
+        {
+          "failureText": "Caught error: .DeviceLinkingNotReady",
+          "targetName": "whitenoise-macTests",
+          "testIdentifier": 1,
+          "testIdentifierString": "NativeDeviceLinkingEnrollmentActionTests/explicitActionsForwardOnlyToOriginalHandle()",
+          "testIdentifierURL": "test://com.apple.xcode/whitenoise-mac/whitenoise-macTests/NativeDeviceLinkingEnrollmentActionTests/explicitActionsForwardOnlyToOriginalHandle()",
+          "testName": "explicitActionsForwardOnlyToOriginalHandle()"
+        },
+        {
+          "failureText": "Expectation failed: expected error \".DeviceLinkingClosed\" of type MarmotKitError, but \".DeviceLinkingNotReady\" of type MarmotKitError was thrown instead: MarmotKitError.DeviceLinkingClosed",
+          "targetName": "whitenoise-macTests",
+          "testIdentifier": 3,
+          "testIdentifierString": "NativeDeviceLinkingEnrollmentActionTests/explicitCancellationRejectsEveryEnrollmentOperation()",
+          "testIdentifierURL": "test://com.apple.xcode/whitenoise-mac/whitenoise-macTests/NativeDeviceLinkingEnrollmentActionTests/explicitCancellationRejectsEveryEnrollmentOperation()",
+          "testName": "explicitCancellationRejectsEveryEnrollmentOperation()"
+        },
+        {
+          "failureText": "Expectation failed: expected error \".DeviceLinkingStaleRevision\" of type MarmotKitError, but \".DeviceLinkingNotReady\" of type MarmotKitError was thrown instead: MarmotKitError.DeviceLinkingStaleRevision",
+          "targetName": "whitenoise-macTests",
+          "testIdentifier": 2,
+          "testIdentifierString": "NativeDeviceLinkingEnrollmentActionTests/originalSdkRevisionErrorRemainsAnError()",
+          "testIdentifierURL": "test://com.apple.xcode/whitenoise-mac/whitenoise-macTests/NativeDeviceLinkingEnrollmentActionTests/originalSdkRevisionErrorRemainsAnError()",
+          "testName": "originalSdkRevisionErrorRemainsAnError()"
+        }
+      ]
+    },
+    "green": {
+      "source_base": "67fdbe62922c4fca3cec681f61e9e413f60f5f37",
+      "source_inputs": 426,
+      "input_manifest_sha256": "9bc0afcb664b493738ce06e32f0fa39a11e15925534ff69ebeee20c1cc7a8754",
+      "profile": "local-e6/experimentalflag1",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 0,
+      "seconds": 11.66,
+      "log_sha256": "f50a8e5b6212e7fd1cdb07032ae3fcc417524fa99987d4ae6db3924c3b01992b",
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 5,
+        "passedTests": 5,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "test_failures": []
+    },
+    "affected": {
+      "source_base": "67fdbe62922c4fca3cec681f61e9e413f60f5f37",
+      "source_inputs": 426,
+      "input_manifest_sha256": "9bc0afcb664b493738ce06e32f0fa39a11e15925534ff69ebeee20c1cc7a8754",
+      "profile": "local-e6/experimentalflag1",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 0,
+      "seconds": 4.2,
+      "log_sha256": "2946863678a7a2e44d536de2978416de5021ed17fb98dd891164785b84d14e59",
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 23,
+        "passedTests": 23,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "test_failures": []
+    }
+  },
+  "earlier_compile_failures": {
+    "v1": {
+      "source_base": "67fdbe62922c4fca3cec681f61e9e413f60f5f37",
+      "source_inputs": 426,
+      "input_manifest_sha256": "45c943ae6493b3ad3081d4a450676d103f01b36555252ed32d243cc5c9941e9d",
+      "profile": "local-e6/experimentalflag1",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 65,
+      "seconds": 3.03,
+      "log_sha256": "18c6783d74e44ae24721e1a8bdc2965d973211dfb3c6a672fbfaaefdcd6194ac"
+    },
+    "v2": {
+      "source_base": "67fdbe62922c4fca3cec681f61e9e413f60f5f37",
+      "source_inputs": 426,
+      "input_manifest_sha256": "45c943ae6493b3ad3081d4a450676d103f01b36555252ed32d243cc5c9941e9d",
+      "profile": "local-e6/experimentalflag1",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 65,
+      "seconds": 4.46,
+      "log_sha256": "55a8bcc64419d8ee3ffde8a848ad8f490f9f13e8d2676eca7afe33e78a39ca5c"
+    }
+  },
+  "recovery": "Two compiler-named stale FFI PCMs preserved and retired individually only after no xcodebuild and no lsof handles. One retry runner prefix guard failed before build and is retained; no source changes between RED attempts.",
+  "counting": "Focused xcresult/Swift Testing reports five functions; the actual deactivation/explicit-exit function runs two cases, six cases total. Affected23 functions includes these five.",
+  "checks": {
+    "swift_format": "6.2.3 strict scoped pass with repository configuration",
+    "git_diff_check": "pass"
+  },
+  "limits": [
+    "Only original-scope four enrollment forwards; verification protocol/model/UI/capability unchanged.",
+    "Generated original-handle controls through actual SessionState A-B-A/deactivation/prepareForAccountExit, not SDK enrollment acceptance.",
+    "Approval custody and enrollment model/UI remain separate.",
+    "No full PR qualification, push/merge, native SDK/Cargo build or development/production app adoption.",
+    "Existing MacTestIsolationM5 uses isolated test-host identity; no live accounts or production Keychain inspection."
+  ]
+}

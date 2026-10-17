@@ -221,6 +221,8 @@ nonisolated final class FakeMarmotRuntime: MarmotRuntime, @unchecked Sendable {
     var localSendStatusFallback: LocalSendStatusFfi?
     private(set) var sentTextClientTokens: [String] = []
     var localSendAcceptance: LocalSendAcceptanceFfi?
+    var localSendAcceptanceForToken: (@Sendable (String) -> LocalSendAcceptanceFfi)?
+    var localSendStatusForToken: (@Sendable (String) throws -> LocalSendStatusFfi?)?
     private(set) var createdGroupMemberRefs: [String] = []
     /// Every `createGroup` call in order, refused ones included — `createdGroupMemberRefs` records
     /// only the roster that went through, so it cannot show how a refusal was chased down.
@@ -229,6 +231,11 @@ nonisolated final class FakeMarmotRuntime: MarmotRuntime, @unchecked Sendable {
     /// the workspace from here to see what the UI would have been rendering *while* a press is still
     /// working through the roster.
     var onMemberResolutionAttempt: (@Sendable () async -> Void)?
+    var existingDirectConversationsByPeer: [String: DirectConversationDestination] = [:]
+    var existingDirectConversationError: Error?
+    var onDirectConversationLookup: (@Sendable () async -> Void)?
+    private(set) var existingDirectConversationQueries: [(account: String, peer: String)] = []
+
     private(set) var createdGroupName: String?
     private(set) var createdGroupDescription: String?
     /// Member refs the core would refuse for want of a published KeyPackage. `createGroup` mirrors
@@ -562,6 +569,23 @@ nonisolated final class FakeMarmotRuntime: MarmotRuntime, @unchecked Sendable {
     private var syncCallThreads: [String: [Bool]] = [:]
     /// Guards recorded-call state mutated by concurrent runtime calls while tests poll it mid-flight.
     private let recordedStateLock = NSLock()
+    private var historyPageHandler: (@Sendable (String, String, String?, UInt32) throws -> SynchronizedHistoryPage)?
+
+    func installSynchronizedHistoryPageHandler(
+        _ handler: @escaping @Sendable (String, String, String?, UInt32) throws -> SynchronizedHistoryPage
+    ) {
+        recordedStateLock.withLock { historyPageHandler = handler }
+    }
+
+    func synchronizedHistoryPage(
+        accountRef: String, groupIdHex: String, afterMessageIdHex: String?, limit: UInt32
+    ) throws -> SynchronizedHistoryPage {
+        recordSyncCall("synchronizedHistoryPage")
+        guard let handler = recordedStateLock.withLock({ historyPageHandler }) else {
+            throw SynchronizedHistoryReadError.unavailable
+        }
+        return try handler(accountRef, groupIdHex, afterMessageIdHex, limit)
+    }
     /// When set, `subscribeNotifications()` throws this error, simulating a background
     /// notification-listener failure for routing tests.
     var subscribeNotificationsError: Error?
@@ -879,6 +903,63 @@ nonisolated final class FakeMarmotRuntime: MarmotRuntime, @unchecked Sendable {
         return storedAccounts
     }
 
+    #if WN_EXPERIMENTAL_DEVICE_SYNC
+        func deviceLinkingCapabilities() -> DeviceLinkingCapabilitiesFfi {
+            DeviceLinkingCapabilitiesFfi(verificationSupported: false, enrollmentSupported: false)
+        }
+
+        func deviceLinkingTargets(accountRef: String) async throws -> [DeviceLinkingTargetFfi] {
+            throw MarmotKitError.DeviceLinkingUnsupported
+        }
+
+        func pendingDeviceLinkingApprovals(accountRef: String) async throws -> [DeviceLinkingApproval] {
+            throw MarmotKitError.DeviceLinkingUnsupported
+        }
+
+        func historyTransferRecipients(accountRef: String, groupIdHex: String) async throws
+            -> [HistoryTransferRecipientFfi]
+        {
+            throw MarmotKitError.HistoryTransferUnsupported
+        }
+
+        func beginHistoryTransfer(accountRef: String, groupIdHex: String, recipientDevice: Data) async throws
+            -> HistoryTransfer
+        {
+            throw MarmotKitError.HistoryTransferUnsupported
+        }
+        func accountChatSharingTargets(accountRef: String) async throws -> AccountSharingTargetsFfi {
+            throw MarmotKitError.AccountSharingUnsupported
+        }
+        func beginAccountChatSharing(accountRef: String, recipientDevice: Data) async throws -> AccountSharingApproval {
+            throw MarmotKitError.AccountSharingUnsupported
+        }
+        func pendingAccountChatSharing(accountRef: String) async throws -> [AccountSharingApproval] {
+            throw MarmotKitError.AccountSharingUnsupported
+        }
+        func pendingHistoryRequests(accountRef: String) async throws -> [HistoryConsent] {
+            throw MarmotKitError.HistoryTransferUnsupported
+        }
+
+        func beginSelectedChatCopy(accountRef: String, groupIdHex: String, linkedRosterSelector: Data) async throws
+            -> SelectedChatCopy
+        {
+            throw MarmotKitError.SelectedChatCopyUnsupported
+        }
+        func receiveSelectedChatCopyRequest(accountRef: String, packet: Data) async throws -> SelectedChatConsent {
+            throw MarmotKitError.SelectedChatCopyUnsupported
+        }
+
+        func beginDeviceLinkingSession(accountRef: String) async throws -> DeviceLinkingSession {
+            throw MarmotKitError.DeviceLinkingUnsupported
+        }
+
+        func approveDeviceLinkingSession(accountRef: String, request: Data, target: Data?) async throws
+            -> DeviceLinkingSession
+        {
+            throw MarmotKitError.DeviceLinkingUnsupported
+        }
+    #endif
+
     func clearSyncCallThreadRecords() {
         syncCallThreadLock.lock()
         syncCallThreads = [:]
@@ -1004,6 +1085,14 @@ nonisolated final class FakeMarmotRuntime: MarmotRuntime, @unchecked Sendable {
         otherDisplayName: String,
         otherProfile: UserProfileMetadataFfi
     ) {
+        existingDirectConversationsByPeer[otherAccountIdHex.lowercased()] = .localMls(
+            .init(
+                groupIdHex: group.groupIdHex,
+                reusable: !group.pendingConfirmation && group.selfMembership == .member
+                    && !group.leaveRequestPending && !group.disbanding,
+                lifecycleState: .stable, selfMembership: group.selfMembership,
+                pendingConfirmation: group.pendingConfirmation, leaveRequestPending: group.leaveRequestPending,
+                disbanding: group.disbanding, archived: group.archived, activitySortAt: 0))
         profilesByAccountId[otherAccountIdHex] = otherProfile
         let details = GroupDetailsFfi(
             group: group,
@@ -1969,6 +2058,15 @@ nonisolated final class FakeMarmotRuntime: MarmotRuntime, @unchecked Sendable {
         storedAccounts.removeAll { $0.label == accountRef }
     }
 
+    func existingDirectConversation(accountRef: String, peerAccountId: String) async throws
+        -> DirectConversationDestination?
+    {
+        existingDirectConversationQueries.append((accountRef, peerAccountId))
+        await onDirectConversationLookup?()
+        if let existingDirectConversationError { throw existingDirectConversationError }
+        return existingDirectConversationsByPeer[peerAccountId.lowercased()]
+    }
+
     func createGroup(accountRef: String, name: String, memberRefs: [String], description: String?) async throws
         -> String
     {
@@ -1997,7 +2095,7 @@ nonisolated final class FakeMarmotRuntime: MarmotRuntime, @unchecked Sendable {
             }
             if let refusedMemberRef {
                 if let accountIdHex = missingKeyPackageAccountIdHexByMemberRef[refusedMemberRef] {
-                    throw MarmotKitError.MissingKeyPackage(account: accountIdHex)
+                    throw missingKeyPackageNotFound(account: accountIdHex)
                 }
                 if unresolvableMemberRefs.contains(refusedMemberRef) {
                     throw MarmotKitError.Publish(details: "no relay list for member")
@@ -2123,7 +2221,7 @@ nonisolated final class FakeMarmotRuntime: MarmotRuntime, @unchecked Sendable {
             missingKeyPackageAccountIdHexByMemberRef[$0] != nil || invalidKeyPackageMemberRefs.contains($0)
         }) {
             if let accountIdHex = missingKeyPackageAccountIdHexByMemberRef[refusedMemberRef] {
-                throw MarmotKitError.MissingKeyPackage(account: accountIdHex)
+                throw missingKeyPackageNotFound(account: accountIdHex)
             }
             throw MarmotKitError.InvalidKeyPackageEvent(details: "unusable key package event")
         }
@@ -3204,7 +3302,8 @@ nonisolated final class FakeMarmotRuntime: MarmotRuntime, @unchecked Sendable {
         if let sendTextError {
             throw sendTextError
         }
-        return localSendAcceptance ?? LocalSendAcceptanceFfi(clientToken: clientToken, messageIdHex: "text")
+        return localSendAcceptanceForToken?(clientToken) ?? localSendAcceptance
+            ?? LocalSendAcceptanceFfi(clientToken: clientToken, messageIdHex: "text")
     }
 
     func replyToMessageWithClientToken(
@@ -3282,7 +3381,8 @@ nonisolated final class FakeMarmotRuntime: MarmotRuntime, @unchecked Sendable {
     }
 
     func localSendStatus(accountRef: String, groupIdHex: String, clientToken: String) throws -> LocalSendStatusFfi? {
-        localSendStatuses[clientToken] ?? localSendStatusFallback
+        if let localSendStatusForToken { return try localSendStatusForToken(clientToken) }
+        return localSendStatuses[clientToken] ?? localSendStatusFallback
     }
 
     func retryGroupConvergence(accountRef: String, groupIdHex: String) async throws -> SendSummaryFfi {
@@ -3883,3 +3983,34 @@ struct ArchivedGroup: Equatable {
     let groupIdHex: String
     let archived: Bool
 }
+
+#if WN_EXPERIMENTAL_DEVICE_SYNC
+    extension AttachmentEntryFfi {
+        /// Existing media fixtures describe shared attachments rather than inline emoji.
+        init(
+            messageIdHex: String, sourceMessageIdHex: String, sender: String,
+            timelineAt: UInt64, receivedAt: UInt64, sourceEpoch: UInt64?,
+            category: AttachmentCategoryFfi, attachment: MediaAttachmentOutcomeFfi
+        ) {
+            self.init(
+                messageIdHex: messageIdHex, sourceMessageIdHex: sourceMessageIdHex, sender: sender,
+                timelineAt: timelineAt, receivedAt: receivedAt, sourceEpoch: sourceEpoch,
+                category: category, role: .shared, attachment: attachment)
+        }
+    }
+
+    extension PresentedChatRowFfi {
+        /// Existing chat fixtures do not model the newer core's draft lease.
+        init(
+            preview: SelectedChatPreviewFfi,
+            actions: ChatListRowActionsFfi,
+            row: ChatListRowFfi,
+            presentation: ConversationPresentationFfi,
+            avatarAsset: AvatarAssetFfi?
+        ) {
+            self.init(
+                draftVersion: nil, preview: preview, actions: actions, row: row,
+                presentation: presentation, avatarAsset: avatarAsset)
+        }
+    }
+#endif
