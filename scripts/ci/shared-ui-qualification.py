@@ -22,7 +22,7 @@ SELF = 'scripts/ci/shared-ui-qualification.py'
 WORKFLOW = '.github/workflows/mac-ci.yml'
 BEGIN = '  # SHARED_UI_FORMAT_JOBS_BEGIN\n'
 END = '  # SHARED_UI_FORMAT_JOBS_END\n'
-OPTIONS = 'options: [full, onboarding-mutations, shared-ui-format, shared-ui-raster-measure, shared-ui-raster-red-green, shared-ui-raster-pfp]'
+OPTIONS = 'options: [full, onboarding-mutations, shared-ui-format, shared-ui-raster-measure, shared-ui-raster-red-green, shared-ui-raster-pfp, shared-ui-cli-schema]'
 ORIGINAL_OPTIONS = 'options: [full, onboarding-mutations]'
 REF = 'refs/heads/ci/upstream-shared-ui-qualification-20261018'
 OUT = Path('build/shared-ui-qualification')
@@ -572,6 +572,45 @@ def format_feedback(result,save):
     result['format_passed'] = not patch; save(); require(not patch,'hosted-format-patch-must-be-empty')
 
 
+def cli_schema_metadata(result,save):
+    output = OUT / 'cli-schema'; output.mkdir(parents=True,exist_ok=True)
+    environment = dict(os.environ)
+    commands = [
+        ('test-details-help',['xcrun','xcresulttool','help','get','test-results','test-details'],256*1024),
+        ('test-details-schema',['xcrun','xcresulttool','get','test-results','test-details','--schema'],1024*1024),
+        ('legacy-object-help',['xcrun','xcresulttool','help','get','object'],256*1024),
+        ('format-description-help',['xcrun','xcresulttool','help','formatDescription'],256*1024),
+    ]
+    result['cli_metadata'] = {'commands':{},'maximum_total_output_bytes':2*1024*1024,
+        'App_build_or_test_executed':False,'SDK_consumed':False,'actual_native_schema_claim':False}
+    total = 0
+    for label,command,limit in commands:
+        require(total + limit <= 2*1024*1024,'fixed-total-cli-output-cap')
+        capture,data = bounded_capture(command,environment,30,limit)
+        total += len(data)
+        row = dict(capture,command=command,output_sha256=hashlib.sha256(data).hexdigest(),output_bytes=len(data),
+            successful_static_CLI_output=capture['exit_code'] == 0 and not capture['watchdog_triggered'] and not capture['output_limit_triggered'])
+        result['cli_metadata']['commands'][label] = row; save()
+        # Static CLI help/schema only, no result-bundle path or private input supplied.
+        try:
+            text = data.decode('utf-8')
+            require('\x00' not in text,'static-cli-text-only')
+            (output/(label+'.txt')).write_text(text)
+            try:
+                document = json.loads(text)
+                row['output_json'] = True
+                row['top_level_JSON_kind'] = type(document).__name__
+                if isinstance(document,dict): row['top_level_schema_keys'] = sorted(document)
+            except ValueError: row['output_json'] = False
+        except (UnicodeError,ValueError): row['output_text_unavailable'] = True
+        row['supported_schema_export'] = label == 'test-details-schema' and row['successful_static_CLI_output'] and row.get('output_json') is True
+        save()
+    result['cli_metadata']['output_bytes'] = total
+    result['cli_metadata']['capture_complete'] = all(not row['watchdog_triggered'] and not row['output_limit_triggered'] for row in result['cli_metadata']['commands'].values())
+    result['cli_metadata']['unsupported_commands_are_closed_evidence'] = True
+    save(); require(result['cli_metadata']['capture_complete'],'bounded-static-cli-capture-required')
+
+
 def main(args):
     os.umask(0o077); OUT.mkdir(parents=True,exist_ok=True)
     result = {'mode':args.mode,'phases':{},'component_GREEN':False,'counterfactual_runtime_RED_verified':False,
@@ -580,7 +619,10 @@ def main(args):
     original = None; permissions = None; before = None
     def save(): (OUT/'result.json').write_text(json.dumps(result,indent=2)+'\n')
     try:
-        result['source'] = guard(); result['parser_controls'] = parser_controls(); save()
+        result['source'] = guard(); save()
+        if args.mode == 'cli-schema':
+            cli_schema_metadata(result,save); return
+        result['parser_controls'] = parser_controls(); save()
         if args.mode == 'preflight':
             format_feedback(result,save); return
         require(Path(VIEW).read_text().count(OLD) == 1 and NEW not in Path(VIEW).read_text(),'one-exact-reviewed-renderer-condition')
@@ -615,5 +657,5 @@ def main(args):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(); parser.add_argument('--mode',choices=['preflight','measure','red-green','pfp'],default='preflight')
+    parser = argparse.ArgumentParser(); parser.add_argument('--mode',choices=['preflight','measure','red-green','pfp','cli-schema'],default='preflight')
     main(parser.parse_args())
