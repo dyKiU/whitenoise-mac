@@ -11,22 +11,30 @@ import SwiftUI
 
 struct MarkdownMessageView: View {
     @Environment(\.customEmojiGlyphs) private var customEmoji
-    let message: MessageItem
+    private let document: MarkdownDisplayDocument?
+    private let bodyText: String
     var trailingMetadata: Text?
 
     init(message: MessageItem, trailingMetadata: Text? = nil) {
-        self.message = message
+        self.document = message.contentMarkdown
+        self.bodyText = message.rawBubbleDisplayBody
         self.trailingMetadata = trailingMetadata
     }
 
+    init(document: MarkdownDisplayDocument?, fallbackText: String) {
+        self.document = document
+        self.bodyText = fallbackText
+        self.trailingMetadata = nil
+    }
+
     var body: some View {
-        if let inlineParagraph = message.contentMarkdown?.inlineParagraph {
+        if let inlineParagraph = document?.inlineParagraph {
             MessageLinkText(
                 text: inlineParagraph, layoutID: "inline", trailing: trailingMetadata, glyphs: customEmoji
             )
             .lineSpacing(2)
             .fixedSize(horizontal: false, vertical: true)
-        } else if let document = message.contentMarkdown {
+        } else if let document {
             VStack(alignment: .leading, spacing: 6) {
                 ForEach(document.blocks) { block in
                     MarkdownBlockView(block: block.block, layoutID: "\(block.id)")
@@ -48,7 +56,7 @@ struct MarkdownMessageView: View {
             // ScrollView/LazyVStack scroll-anchor resolution into a multi-second main-thread
             // layout loop on send (Instruments: continuous SelectionOverlay.updateNSView /
             // ScrollViewAdjustedState.adjustOffsetIfNeeded). See whitenoise-mac#205.
-            textWithMetadata(CustomEmojiTextBuilder.text(message.rawBubbleDisplayBody, glyphs: customEmoji))
+            textWithMetadata(CustomEmojiTextBuilder.text(bodyText, glyphs: customEmoji))
                 .lineSpacing(2)
                 .fixedSize(horizontal: false, vertical: true)
         }
