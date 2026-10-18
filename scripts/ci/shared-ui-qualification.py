@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 import subprocess
 
-BASE = '1c0ed6f4035f36c59718865a591695c614eeb4af'
+BASE = '2a60df8f95245328b43b324c325a31540b2488e5'
 PREVIOUS = '5db1dc879149ec8b168baa24cb860d8d32b9c02e'
 SELF = 'scripts/ci/shared-ui-qualification.py'
 WORKFLOW = '.github/workflows/mac-ci.yml'
