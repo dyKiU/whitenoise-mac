@@ -53,10 +53,13 @@ import Testing
             in: appearance)
         let staleControl = MarkdownDisplayDocument(blocks: stale.blocks, truncated: stale.truncated)
         #expect(
-            try rasterize(MarkdownMessageView(document: staleControl, fallbackText: "Synthetic timestamp"), in: appearance)
+            try rasterize(
+                MarkdownMessageView(document: staleControl, fallbackText: "Synthetic timestamp"), in: appearance)
                 != expected,
             "The cached Spanish text must distinguish a stale draw from the current locale")
-        #expect(try rasterize(MarkdownMessageView(message: native).environment(\.locale, locale), in: appearance) == expected)
+        #expect(
+            try rasterize(MarkdownMessageView(message: native).environment(\.locale, locale), in: appearance)
+                == expected)
         #expect(
             try rasterize(
                 MarkdownMessageView(document: stale, fallbackText: "Synthetic timestamp").environment(\.locale, locale),
