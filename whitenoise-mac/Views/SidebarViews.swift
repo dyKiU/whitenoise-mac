@@ -156,6 +156,7 @@ private struct AccountRailAvatar: View {
 }
 
 struct ChatListDrawerView: View {
+    @State private var conversationSource = ConversationSourcePreference.shared
     @Environment(WorkspaceState.self) private var workspace
     @Environment(\.locale) private var locale
     let model: ChatListViewModel?
@@ -210,7 +211,7 @@ struct ChatListDrawerView: View {
                 #if WN_EXPERIMENTAL_DEVICE_SYNC
                     let query = workspace.searchText.trimmingCharacters(in: .whitespacesAndNewlines)
                     let hasAutomaticRows =
-                        filter == .active
+                        conversationSource.showsSharedChats && filter == .active
                         && (automaticChats?.pairedRows.contains { row in
                             query.isEmpty
                                 || AutomaticChatPeerDisplay.title(row, workspace: workspace).localizedStandardContains(
@@ -235,10 +236,15 @@ struct ChatListDrawerView: View {
                 ScrollView {
                     LazyVStack(spacing: 3) {
                         #if WN_EXPERIMENTAL_DEVICE_SYNC
-                            if filter == .active {
+                            if conversationSource.showsSharedChats, filter == .active {
                                 AutomaticChatListSection(
                                     model: automaticChats, searchText: workspace.searchText,
-                                    excludedGroupIds: Set(visibleChats.map(\.id)), select: selectAutomaticChat,
+                                    excludedGroupIds: [], select: selectAutomaticChat,
+                                    isCollapsed: isCollapsed,
+                                    selectedGroupId: {
+                                        if case .chat(let id) = workspace.selection { return id }
+                                        return nil
+                                    }(),
                                     title: { AutomaticChatPeerDisplay.title($0, workspace: workspace) }
                                 )
                                 .task(
@@ -328,11 +334,17 @@ struct ChatListDrawerView: View {
         .background {
             MessagesSidebarBackground(level: .drawer)
         }
+        .onChange(of: conversationSource.showsSharedChats) { _, _ in
+            workspace.chatListFilter = .active
+        }
     }
 }
 
 extension ChatListDrawerView {
     fileprivate func visibleChats(for filter: ChatListFilter) -> [ChatItem] {
+        #if WN_EXPERIMENTAL_DEVICE_SYNC
+            guard !conversationSource.showsSharedChats else { return [] }
+        #endif
         let chats: [ChatItem]
         let useBoundedWindow = workspace.searchText
             .trimmingCharacters(in: .whitespacesAndNewlines)

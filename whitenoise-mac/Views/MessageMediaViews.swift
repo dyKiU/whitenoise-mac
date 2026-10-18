@@ -835,11 +835,7 @@ private extension View {
     /// the environment — exactly what whitenoise-mac#205 forbids across the transcript.
     @ViewBuilder
     func textSelectable(_ enabled: Bool) -> some View {
-        if enabled {
-            textSelection(.enabled)
-        } else {
-            textSelection(.disabled)
-        }
+        modifier(MessageTextSelection(enabled: enabled))
     }
 
     /// Chrome shared by every non-visual attachment presentation: the audio player, the

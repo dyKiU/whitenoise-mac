@@ -14,6 +14,7 @@ import SwiftUI
 /// to theme and language, where a choice about interaction was hard to find.
 struct PreferencesSettingsView: View {
     @Environment(WorkspaceState.self) private var workspace
+    @State private var conversationSource = ConversationSourcePreference.shared
     @State private var launchAtLogin = LaunchAtLoginController()
 
     var body: some View {
@@ -54,6 +55,21 @@ struct PreferencesSettingsView: View {
                     )
                 )
             }
+
+            #if WN_EXPERIMENTAL_DEVICE_SYNC
+                SettingsSection(
+                    footer: L10n.string("Show chats shared from linked devices instead of chats on this device.")
+                ) {
+                    WNToggle(
+                        L10n.string("Show shared chats"),
+                        systemImage: "bubble.left.and.bubble.right",
+                        isOn: Binding(
+                            get: { conversationSource.showsSharedChats },
+                            set: { conversationSource.setShowsSharedChats($0) }
+                        )
+                    )
+                }
+            #endif
 
             QuickReactionsSettingsSection()
         }

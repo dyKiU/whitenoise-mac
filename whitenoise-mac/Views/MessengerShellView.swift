@@ -183,6 +183,9 @@ private struct DetailPaneView: View {
                                 {
                                     AutomaticConversationView(
                                         model: model,
+                                        localAccountIdHex: workspace.activeAccount?.accountIdHex,
+                                        blockedAuthors: session.accountScope?.blockedUsers.blockedAccountIDs ?? [],
+                                        senderName: { AutomaticChatPeerDisplay.name($0, workspace: workspace) },
                                         title: { AutomaticChatPeerDisplay.title($0, workspace: workspace) }
                                     )
                                     .task(id: model.pairedHeader?.directPeerAccountIdHex) {
