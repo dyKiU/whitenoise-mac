@@ -10,6 +10,7 @@ import stat
 import time
 import hashlib
 import json
+import math
 import os
 import plistlib
 from pathlib import Path
@@ -137,64 +138,86 @@ def source_method(identifier):
 def native_inventory(tree,summary):
     result = {'status':'schema_unknown','definition_rows':[],'argument_leaf_rows':[],
         'definition_counts':None,'argument_leaf_counts':None,'summary_count_basis':None,
-        'unknown_node_count':0,'unexpected_test_definitions':0,
-        'node_type_diagnostics':{},'unknown_shapes':[]}
+        'unknown_node_count':0,'unexpected_test_definitions':0,'node_type_diagnostics':{},'unknown_shapes':[],
+        'argument_names_distinct_by_parent':{}}
     if not isinstance(tree,dict) or not isinstance(tree.get('testNodes'),list): return result
-    seen = set(); node_count = 0
-    def walk(value,parent=None,depth=0):
+    seen = set(); argument_names = {name:set() for name,labels in METHODS.items() if labels}
+    duplicate_arguments = set(); node_count = 0
+    containers = {'Test Plan','Device','Test Bundle','Unit test bundle','Test Suite'}
+    diagnostic_types = containers | {'Test Case','Test Case Run','Arguments','Argument','Test Argument','Test Iteration','Repetition','Test Case Group'}
+    argument_keys = {'duration','durationInSeconds','name','nodeType','result'}
+    def diagnostic(node,parent,unknown=False):
+        kind = node.get('nodeType')
+        category = kind if isinstance(kind,str) and kind in diagnostic_types else 'unapproved_type' if isinstance(kind,str) else 'nonstring_type'
+        result['node_type_diagnostics'][category] = result['node_type_diagnostics'].get(category,0) + 1
+        if unknown:
+            structural_keys = {'nodeType','children','result','status','nodeIdentifier','testIdentifier','nodeIdentifierURL','duration','durationInSeconds','name'}
+            status = node.get('result',node.get('status'))
+            shape = {'type_category':category,'type_sha256':hashlib.sha256(kind.encode()).hexdigest() if isinstance(kind,str) else None,
+                'known_structural_keys':sorted(structural_keys & set(node)),'other_key_count':len(set(node)-structural_keys),
+                'closed_result':status if isinstance(status,str) and status in STATUS_KEYS else 'unknown',
+                'parent_source_method_known':parent in METHODS,'children_count':len(node['children']) if isinstance(node.get('children'),list) else None}
+            if len(result['unknown_shapes']) < 32: result['unknown_shapes'].append(shape)
+            else: result['unknown_shape_records_truncated'] = True
+    def walk(value,parent=None,parent_kind=None,depth=0):
         nonlocal node_count
         node_count += 1
         if node_count > 20000 or depth > 48: raise ValueError('bounded-native-tree-limit')
         if isinstance(value,list):
-            for child in value: walk(child,parent,depth+1)
-        elif isinstance(value,dict):
-            kind = value.get('nodeType')
-            diagnostic_types = {'Test Plan','Device','Test Bundle','Unit test bundle','Test Suite','Test Case','Test Case Run',
-                'Arguments','Argument','Test Argument','Test Iteration','Repetition','Test Case Group'}
-            if isinstance(kind,str):
-                # Diagnostic classification never admits an execution schema.
-                category = kind if kind in diagnostic_types else 'unapproved_type'
-                result['node_type_diagnostics'][category] = result['node_type_diagnostics'].get(category,0) + 1
-                if kind not in {'Test Plan','Device','Test Bundle','Unit test bundle','Test Suite','Test Case','Test Case Run'}:
-                    structural_keys = ['nodeType','children','result','status','nodeIdentifier','testIdentifier','nodeIdentifierURL','duration','durationInSeconds','name']
-                    keys = sorted(k for k in structural_keys if k in value)
-                    status_value = value.get('result',value.get('status'))
-                    shape = {'type_category':category,'type_sha256':hashlib.sha256(kind.encode()).hexdigest(),
-                        'known_structural_keys':keys,'other_key_count':len(set(value)-set(structural_keys)),
-                        'closed_result':status_value if isinstance(status_value,str) and status_value in STATUS_KEYS else 'unknown',
-                        'parent_source_method_known':parent in METHODS,'children_count':len(value['children']) if isinstance(value.get('children'),list) else None}
-                    if len(result['unknown_shapes']) < 32: result['unknown_shapes'].append(shape)
-                    else: result['unknown_shape_records_truncated'] = True
-            if 'nodeType' in value and not isinstance(kind,str):
-                result['unknown_node_count'] += 1
-                result['node_type_diagnostics']['nonstring_type'] = result['node_type_diagnostics'].get('nonstring_type',0) + 1
-            if kind == 'Test Case':
-                name = source_method(value.get('nodeIdentifier',value.get('testIdentifier')))
-                status = value.get('result',value.get('status'))
-                if name is None or name in seen or not isinstance(status,str) or status not in STATUS_KEYS:
-                    result['unexpected_test_definitions'] += 1; parent = None
+            for child in value: walk(child,parent,parent_kind,depth+1)
+            return
+        if not isinstance(value,dict):
+            result['unknown_node_count'] += 1; return
+        kind = value.get('nodeType'); status = value.get('result',value.get('status'))
+        known = False; next_parent = None
+        if kind == 'Test Case':
+            name = source_method(value.get('nodeIdentifier',value.get('testIdentifier')))
+            if parent is not None or name is None or name in seen or not isinstance(status,str) or status not in STATUS_KEYS:
+                result['unexpected_test_definitions'] += 1
+            else:
+                seen.add(name); next_parent = name; known = True
+                result['definition_rows'].append({'method':name,'status':status})
+        elif kind == 'Arguments':
+            name = value.get('name'); seconds = value.get('durationInSeconds'); duration = value.get('duration')
+            valid = (set(value) == argument_keys and parent_kind == 'Test Case' and parent in argument_names
+                and isinstance(name,str) and 0 < len(name.encode()) <= 1024
+                and isinstance(duration,str) and 0 < len(duration) <= 64
+                and type(seconds) in {int,float} and math.isfinite(seconds) and seconds >= 0
+                and isinstance(status,str) and status in STATUS_KEYS)
+            if valid:
+                identity = hashlib.sha256(name.encode()).digest()  # Internal only; never exported.
+                if identity in argument_names[parent]: duplicate_arguments.add(parent)
                 else:
-                    seen.add(name); parent = name
-                    result['definition_rows'].append({'method':name,'status':status})
-            elif kind == 'Test Case Run':
-                status = value.get('result',value.get('status'))
-                if parent not in METHODS or not isinstance(status,str) or status not in STATUS_KEYS: result['unknown_node_count'] += 1
-                else:
-                    ordinal = 1 + sum(row['method'] == parent for row in result['argument_leaf_rows'])
+                    argument_names[parent].add(identity); known = True
+                    ordinal = len(argument_names[parent])
                     result['argument_leaf_rows'].append({'method':parent,'ordinal':ordinal,'status':status})
-            elif isinstance(kind,str) and kind not in {'Test Plan','Device','Test Bundle','Unit test bundle','Test Suite'}:
-                result['unknown_node_count'] += 1
-            for child in value.values():
-                if isinstance(child,(dict,list)): walk(child,parent,depth+1)
+        elif isinstance(kind,str) and kind in containers:
+            known = parent is None
+        # Test Case Run and every other unobserved execution schema remain unknown.
+        diagnostic(value,parent,not known)
+        if not known: result['unknown_node_count'] += 1
+        children = value.get('children')
+        if children is not None:
+            if not isinstance(children,list): result['unknown_node_count'] += 1
+            else: walk(children,next_parent,kind,depth+1)
+        # No nested node or alternate run tree can hide under an unreviewed key.
+        if any(isinstance(child,(dict,list)) for key,child in value.items() if key != 'children'):
+            result['unknown_node_count'] += 1
     walk(tree['testNodes'])
     result['visited_nodes'] = node_count
+    result['argument_names_distinct_by_parent'] = {name:name not in duplicate_arguments and len(names) == 2 for name,names in argument_names.items()}
     if seen != set(METHODS) or result['unexpected_test_definitions'] or result['unknown_node_count']: return result
-    # A nonparameterized definition with no run node represents its one leaf.
     for row in result['definition_rows']:
-        if not METHODS[row['method']] and not any(v['method'] == row['method'] for v in result['argument_leaf_rows']):
+        if not METHODS[row['method']]:
             result['argument_leaf_rows'].append({'method':row['method'],'ordinal':1,'status':row['status']})
-    if any(sum(row['method'] == name for row in result['argument_leaf_rows']) != (2 if labels else 1) for name,labels in METHODS.items()):
+    if (duplicate_arguments or not all(result['argument_names_distinct_by_parent'].values())
+        or any(sum(row['method'] == name for row in result['argument_leaf_rows']) != (2 if labels else 1) for name,labels in METHODS.items())):
         result['status'] = 'argument_leaf_inventory_unknown'; return result
+    for definition in result['definition_rows']:
+        statuses = [row['status'] for row in result['argument_leaf_rows'] if row['method'] == definition['method']]
+        aggregate = 'Failed' if 'Failed' in statuses else 'Skipped' if 'Skipped' in statuses else 'Passed'
+        if definition['status'] != aggregate:
+            result['status'] = 'definition_argument_status_mismatch'; return result
     def counts(rows):
         data = dict.fromkeys(COUNT_KEYS,0); data['totalTestCount'] = len(rows)
         for row in rows: data[STATUS_KEYS[row['status']]] += 1
@@ -204,51 +227,75 @@ def native_inventory(tree,summary):
     if not isinstance(summary,dict) or not all(type(summary.get(k)) is int and summary[k] >= 0 for k in COUNT_KEYS): return result
     original = {k:summary[k] for k in COUNT_KEYS}
     if original['totalTestCount'] != sum(original[k] for k in COUNT_KEYS[1:]): return result
-    for label in ['definition','argument_leaf']:
-        if result[label+'_counts'] == original:
-            result['summary_count_basis'] = label; result['status'] = 'complete'; break
+    # Actual Xcode26.6.2 measurements report three definitions, not five leaves.
+    if result['definition_counts'] == original:
+        result['summary_count_basis'] = 'definition'; result['status'] = 'complete'
+    else: result['status'] = 'definition_summary_count_mismatch'
     return result
 
 
 def parser_controls():
+    def argument(name,status='Passed'):
+        return {'nodeType':'Arguments','name':name,'duration':'0.1s','durationInSeconds':0.1,'result':status}
     def definition(name,status='Passed'):
         node = {'nodeType':'Test Case','nodeIdentifier':SUITE+'/'+name+'('+METHODS[name]+')','result':status}
-        if METHODS[name]: node['children'] = [{'nodeType':'Test Case Run','result':status},{'nodeType':'Test Case Run','result':status}]
+        if METHODS[name]: node['children'] = [argument('synthetic-appearance-a',status),argument('synthetic-appearance-b',status)]
         return node
-    tree = {'testNodes':[{'nodeType':'Test Suite','children':[definition(name) for name in METHODS]}]}
-    leaves = dict(totalTestCount=5,passedTests=5,failedTests=0,skippedTests=0)
-    definitions = dict(totalTestCount=3,passedTests=3,failedTests=0,skippedTests=0)
-    require(native_inventory(tree,leaves)['summary_count_basis'] == 'argument_leaf','leaf-summary-positive')
-    require(native_inventory(tree,definitions)['summary_count_basis'] == 'definition','definition-summary-positive')
-    bad = [copy.deepcopy(tree) for _ in range(5)]
-    bad[0]['testNodes'][0]['children'].pop()
-    bad[1]['testNodes'][0]['children'].append(definition(TARGET))
-    bad[2]['testNodes'][0]['children'][0]['children'].pop()
-    bad[3]['testNodes'][0]['children'][0]['nodeIdentifier'] = 'private payload'
-    bad[4]['testNodes'][0]['children'][0]['children'][0]['result'] = 'Unknown'
-    for value in bad: require(native_inventory(value,leaves)['status'] != 'complete','no-invented-native-coverage')
-    wrong = dict(leaves,totalTestCount=True)
-    require(native_inventory(tree,wrong)['status'] != 'complete','bool-count-not-execution')
-    malformed_status = copy.deepcopy(tree); malformed_status['testNodes'][0]['children'][0]['result'] = {}
-    require(native_inventory(malformed_status,leaves)['status'] != 'complete','nonstring-result-unknown')
-    malformed_type = copy.deepcopy(tree); malformed_type['testNodes'][0]['children'][0]['nodeType'] = {}
-    require(native_inventory(malformed_type,leaves)['status'] != 'complete','nonstring-node-type-unknown')
-    bundle_tree = {'testNodes':[{'nodeType':'Unit test bundle','children':tree['testNodes']}]}
-    require(native_inventory(bundle_tree,leaves)['status'] == 'complete','observed-unit-test-bundle-container-positive')
-    arguments_tree = copy.deepcopy(tree)
-    arguments_tree['testNodes'][0]['children'][0]['children'][0]['nodeType'] = 'Arguments'
-    observed = native_inventory(arguments_tree,leaves)
-    require(observed['status'] != 'complete' and observed['node_type_diagnostics'].get('Arguments') == 1
-        and observed['unknown_shapes'][0]['type_category'] == 'Arguments','diagnostics-not-acceptance')
-    private_type_tree = copy.deepcopy(arguments_tree)
-    private_type_tree['testNodes'][0]['children'][0]['children'][0]['nodeType'] = 'DO_NOT_EXPORT_VALUE'
-    observed = native_inventory(private_type_tree,leaves)
-    require('DO_NOT_EXPORT_VALUE' not in json.dumps(observed) and observed['status'] != 'complete','unapproved-type-hash-only')
+    def sample():
+        return {'testNodes':[{'nodeType':'Test Plan','children':[{'nodeType':'Unit test bundle','children':[
+            {'nodeType':'Test Suite','children':[definition(name) for name in METHODS]}]}]}]}
+    def cases(value): return value['testNodes'][0]['children'][0]['children'][0]['children']
+    tree = sample(); summary = dict(totalTestCount=3,passedTests=3,failedTests=0,skippedTests=0)
+    row = native_inventory(tree,summary)
+    require(row['status'] == 'complete' and row['definition_counts']['passedTests'] == 3
+        and row['argument_leaf_counts']['passedTests'] == 5 and row['summary_count_basis'] == 'definition','observed-three-definitions-five-distinct-leaves')
+    failure = sample(); target = next(row for row in cases(failure) if source_method(row['nodeIdentifier']) == TARGET)
+    target['result'] = 'Failed'
+    for child in target['children']: child['result'] = 'Failed'
+    failed_summary = dict(totalTestCount=3,passedTests=2,failedTests=1,skippedTests=0)
+    row = native_inventory(failure,failed_summary)
+    require(row['status'] == 'complete' and row['argument_leaf_counts']['passedTests'] == 3
+        and row['argument_leaf_counts']['failedTests'] == 2,'observed-parameterized-failure-counts-kept-separate')
+    bad = []
+    def altered(change):
+        value = sample(); change(value); bad.append(value)
+    altered(lambda value:cases(value).pop())
+    altered(lambda value:cases(value).append(copy.deepcopy(cases(value)[0])))
+    altered(lambda value:cases(value)[0]['children'].pop())
+    altered(lambda value:cases(value)[0]['children'].append(argument('third-distinct')))
+    altered(lambda value:cases(value)[0]['children'][1].update(name='synthetic-appearance-a'))
+    altered(lambda value:cases(value)[0]['children'][0].update(nodeType='Test Case Run'))
+    altered(lambda value:cases(value)[0]['children'][0].update(children=[]))
+    altered(lambda value:cases(value)[0]['children'][0].pop('duration'))
+    altered(lambda value:cases(value)[0]['children'][0].update(extra='DO_NOT_EXPORT_VALUE'))
+    altered(lambda value:cases(value)[0]['children'][0].update(result='Unknown'))
+    altered(lambda value:cases(value)[0]['children'][0].update(result={}))
+    altered(lambda value:cases(value)[0]['children'][0].update(name=None))
+    altered(lambda value:cases(value)[0]['children'][0].update(name=''))
+    altered(lambda value:cases(value)[0]['children'][0].update(durationInSeconds=True))
+    altered(lambda value:cases(value)[0]['children'][0].update(duration={}))
+    altered(lambda value:cases(value)[0].update(nodeIdentifier='PRIVATE_VALUE'))
+    altered(lambda value:cases(value)[0].update(nodeType={}))
+    altered(lambda value:cases(value)[0].update(result={}))
+    altered(lambda value:cases(value)[1].update(children=[argument('synthetic-appearance-a')]))
+    altered(lambda value:cases(value)[0].update(children=[{'nodeType':'Test Suite','children':cases(value)[0]['children']}]))
+    altered(lambda value:cases(value)[0].update(children=[copy.deepcopy(cases(value)[0])]))
+    altered(lambda value:cases(value)[0]['children'][0].update(nodeType='UnapprovedPrivateType'))
+    altered(lambda value:cases(value)[0].update(result='Failed'))
+    for value in bad: require(native_inventory(value,summary)['status'] != 'complete','no-unobserved-or-duplicate-execution-schema')
+    for wrong in [dict(summary,totalTestCount=True),dict(totalTestCount=5,passedTests=5,failedTests=0,skippedTests=0),
+        dict(totalTestCount=3,passedTests=2,failedTests=0,skippedTests=1)]:
+        require(native_inventory(tree,wrong)['status'] != 'complete','native-definition-summary-source-remains-exact')
+    row = native_inventory(tree,summary)
+    require('synthetic-appearance-a' not in json.dumps(row) and 'synthetic-appearance-b' not in json.dumps(row), 'no-argument-name-or-internal-hash-export')
+    private_type = sample(); cases(private_type)[0]['children'][0]['nodeType'] = 'UnapprovedPrivateType'
+    require('UnapprovedPrivateType' not in json.dumps(native_inventory(private_type,summary)), 'unapproved-type-hash-only')
     require(binary_placement(('Debug','White Noise Unit Host.app'),'app') == 'debug_isolated_app','known-app-placement')
     require(binary_placement(('Debug','whitenoise-macTests.xctest'),'test') == 'debug_standalone_unit_test_bundle','known-standalone-placement')
     require(binary_placement(('Debug','White Noise Unit Host.app','Contents','PlugIns','whitenoise-macTests.xctest'),'test') == 'debug_isolated_app_plugins_unit_test_bundle','known-plugin-placement')
     require(binary_placement(('PRIVATE_DIRECTORY','whitenoise-macTests.xctest'),'test') == 'other_owned_products_placement','unknown-placement-remains-unknown')
-    return {'positive':3,'negative':8,'closed_shape_controls':2,'placement_controls':4,'runtime_bodies':0,'schema_fixtures_not_actual_execution':True}
+    return {'observed_schema_positive':2,'execution_schema_negative':len(bad),'summary_negative':3,
+        'privacy_controls':2,'placement_controls':4,'runtime_bodies':0,'schema_fixtures_not_actual_execution':True}
 
 
 def summary_safe(raw):
@@ -324,6 +371,58 @@ def binary_placement(parts,role):
     return 'other_owned_products_placement'
 
 
+MACHO_MAGICS = {b'\xfe\xed\xfa\xce',b'\xce\xfa\xed\xfe',b'\xfe\xed\xfa\xcf',b'\xcf\xfa\xed\xfe',
+    b'\xca\xfe\xba\xbe',b'\xbe\xba\xfe\xca',b'\xca\xfe\xba\xbf',b'\xbf\xba\xfe\xca'}
+
+
+def actual_macho_siblings(directory,expected_executable,safe_chain,products):
+    names = {'executable':expected_executable,'debug_dylib':expected_executable + '.debug.dylib','preview_dylib':'__preview.dylib'}
+    result = {'status':'unknown','images':{role:{'present':False,'sha256':None} for role in names},
+        'unknown_macho_sibling_count':0,'uninspectable_sibling_count':0,'entries_examined':0}
+    if not safe_chain(directory,products): return result
+    try:
+        # Bounded directory enumeration; never follow arbitrary sibling links.
+        with os.scandir(directory) as entries:
+            for entry in entries:
+                result['entries_examined'] += 1
+                if result['entries_examined'] > 32:
+                    result['directory_limit_exceeded'] = True; return result
+                path = Path(entry.path)
+                role = next((role for role,name in names.items() if entry.name == name),None)
+                if role is not None: result['images'][role]['present'] = True
+                if entry.is_symlink():
+                    result['uninspectable_sibling_count'] += 1; continue
+                if not entry.is_file(follow_symlinks=False):
+                    if role is not None: result['uninspectable_sibling_count'] += 1
+                    continue
+                if not safe_chain(path,products,regular=True):
+                    result['uninspectable_sibling_count'] += 1; continue
+                before = path.stat()
+                with path.open('rb') as stream: magic = stream.read(4)
+                macho = magic in MACHO_MAGICS
+                if role is None:
+                    if macho: result['unknown_macho_sibling_count'] += 1
+                    continue
+                image = result['images'][role]
+                image['regular_nonsymlink'] = True; image['macho_header'] = macho
+                if not macho or not 0 < before.st_size <= 1024**3:
+                    result['uninspectable_sibling_count'] += 1; continue
+                digest = hashlib.sha256()
+                with path.open('rb') as stream:
+                    for block in iter(lambda:stream.read(1024*1024),b''): digest.update(block)
+                after = path.stat()
+                unchanged = (before.st_size,before.st_mtime_ns,before.st_ino) == (after.st_size,after.st_mtime_ns,after.st_ino)
+                if not unchanged:
+                    result['uninspectable_sibling_count'] += 1; continue
+                image.update(sha256=digest.hexdigest(),bytes=before.st_size,stable_during_hash=True)
+    except OSError:
+        result['uninspectable_sibling_count'] += 1; return result
+    if result['unknown_macho_sibling_count'] or result['uninspectable_sibling_count']: return result
+    if (result['images']['executable']['present'] and all(not image['present'] or image['sha256'] is not None for image in result['images'].values())):
+        result['status'] = 'complete'
+    return result
+
+
 def actual_binary_inventory():
     derived = OUT / 'DerivedData'; products = derived / 'Build/Products'
     result = {'status':'unknown','search_root':'owned_DerivedData_Build_Products',
@@ -386,7 +485,9 @@ def actual_binary_inventory():
             with binary.open('rb') as stream:
                 for block in iter(lambda:stream.read(1024*1024),b''): digest.update(block)
             record['sha256'] = digest.hexdigest()
-            if record['placement'] != 'other_owned_products_placement': record['status'] = 'known'
+            record['macho_images'] = actual_macho_siblings(path/'Contents/MacOS',expected_executable,safe_chain,products)
+            if (record['placement'] != 'other_owned_products_placement' and record['macho_images']['status'] == 'complete'
+                and record['macho_images']['images']['executable']['sha256'] == record['sha256']): record['status'] = 'known'
     if all(bucket['candidate_count'] == 1 and len(bucket['records']) == 1 and bucket['records'][0]['status'] == 'known'
         for bucket in result['roles'].values()): result['status'] = 'complete'
     return result
@@ -445,6 +546,8 @@ def execute(label,expected,save,result):
     row['binary_inventory'] = actual_binary_inventory()
     row['binaries'] = {role:bucket['records'][0]['sha256'] for role,bucket in row['binary_inventory']['roles'].items()
         if bucket['candidate_count'] == 1 and len(bucket['records']) == 1 and bucket['records'][0]['status'] == 'known'}
+    row['actual_image_inventory'] = {role:bucket['records'][0]['macho_images']['images'] for role,bucket in row['binary_inventory']['roles'].items()
+        if bucket['candidate_count'] == 1 and len(bucket['records']) == 1 and bucket['records'][0]['status'] == 'known'}
     if inventory['status'] == 'complete' and row['build_succeeded'] and row['sdk']['actual_resolved_frameworks']:
         definitions = inventory['definition_rows']; leaves = inventory['argument_leaf_rows']
         row['green'] = (row['exit_code'] == 0 and all(v['status'] == 'Passed' for v in definitions+leaves)
@@ -496,7 +599,8 @@ def main(args):
             a,b,c = [result['phases'][key] for key in ['baseline','mutant','restored']]
             require(a['source_expected_sha256'] == c['source_expected_sha256'] != b['source_expected_sha256'],'exact-original-source-restoration')
             require(a['sdk'] == b['sdk'] == c['sdk'],'same-resolved-published-sdk')
-            require(a['binaries'] == c['binaries'] and a['binaries'] != b['binaries'],'actual-binary-restoration-required')
+            require(a['binaries'] == c['binaries'] and a['actual_image_inventory'] == c['actual_image_inventory']
+                and a['actual_image_inventory'] != b['actual_image_inventory'],'actual-whole-image-restoration-required')
             result['component_mutation_qualified'] = True
     except Exception as error:
         result['exception_type'] = type(error).__name__
