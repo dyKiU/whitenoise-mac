@@ -41,8 +41,8 @@ struct MarkdownMessageView: View {
 
 private struct MarkdownMessageContent: View {
     @Environment(\.customEmojiGlyphs) private var customEmoji
-    let bodyText: String
     let document: MarkdownDisplayDocument?
+    let bodyText: String
     let trailingMetadata: Text?
 
     var body: some View {
