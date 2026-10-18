@@ -10,7 +10,11 @@ import subprocess
 BASE = '1c0ed6f4035f36c59718865a591695c614eeb4af'
 PREVIOUS = '5db1dc879149ec8b168baa24cb860d8d32b9c02e'
 SELF = 'scripts/ci/shared-ui-qualification.py'
-WORKFLOW = '.github/workflows/upstream-shared-ui-qualification.yml'
+WORKFLOW = '.github/workflows/mac-ci.yml'
+BEGIN = '  # SHARED_UI_FORMAT_JOBS_BEGIN\n'
+END = '  # SHARED_UI_FORMAT_JOBS_END\n'
+OPTIONS = 'options: [full, onboarding-mutations, shared-ui-format]'
+ORIGINAL_OPTIONS = 'options: [full, onboarding-mutations]'
 REF = 'refs/heads/ci/upstream-shared-ui-qualification-20261018'
 OUT = Path('build/shared-ui-qualification')
 FILES = [
@@ -64,14 +68,23 @@ def guard():
     subprocess.run(['git','merge-base','--is-ancestor',BASE,head],check=True)
     require(subprocess.run(['git','diff','--quiet','HEAD']).returncode == 0,'tracked-pristine')
     expected = tree(BASE); current = tree('HEAD')
-    require(SELF not in expected and WORKFLOW not in expected and set(current) == set(expected)|{SELF,WORKFLOW},'whole-source-inventory')
+    require(SELF not in expected and WORKFLOW in expected and set(current) == set(expected)|{SELF},'whole-source-inventory')
     for name,(mode,blob) in current.items():
         require((mode == '120000' and Path(name).is_symlink()) or (mode != '120000' and not Path(name).is_symlink()),'actual-symlink-mode')
         if mode != '120000': require(bool(Path(name).stat().st_mode & 0o111) == (mode == '100755'),'actual-executable-mode')
         data = os.fsencode(os.readlink(name)) if mode == '120000' else Path(name).read_bytes()
         require(hashlib.sha1(b'blob ' + str(len(data)).encode() + b'\0' + data).hexdigest() == blob,'tracked-bytes:' + name)
-        if name in {SELF,WORKFLOW}: require(mode == '100644','owned-metadata-mode')
-        else: require(current[name] == expected[name],'whole-baseline-contents-modes:' + name)
+        if name == SELF:
+            require(mode == '100644','owned-metadata-mode')
+        elif name == WORKFLOW:
+            text = data.decode()
+            require(text.count(BEGIN) == text.count(END) == text.count(OPTIONS) == 1,'one-owned-workflow-overlay')
+            before,rest = text.split(BEGIN); _,after = rest.split(END)
+            restored = (before + after).replace(OPTIONS,ORIGINAL_OPTIONS,1).encode()
+            restored_blob = hashlib.sha1(b'blob ' + str(len(restored)).encode() + b'\0' + restored).hexdigest()
+            require((mode,restored_blob) == expected[name],'exact-original-workflow-reconstruction')
+        else:
+            require(current[name] == expected[name],'whole-baseline-contents-modes:' + name)
     require(not git('ls-files','--others','--exclude-standard'),'no-untracked-source')
     require(git('diff','--name-only',PREVIOUS,BASE,'--','*.swift').splitlines() == FILES,'exact-seventeen-integrated-Swift-files')
     return {'source_sha':head,'source_tree':git('rev-parse','HEAD^{tree}'),'baseline':BASE,
