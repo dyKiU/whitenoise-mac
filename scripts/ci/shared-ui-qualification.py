@@ -187,8 +187,7 @@ def native_inventory(tree,summary):
             if status == 'Failed' and isinstance(children,list) and len(children) == 1:
                 child = children[0]
                 if (isinstance(child,dict) and set(child) == {'nodeType','name'} and child.get('nodeType') == 'Failure Message'
-                    and isinstance(child.get('name'),str) and 0 < len(child['name'].encode()) <= 1024*1024
-                    and child['name'].startswith('Expectation failed:')):
+                    and isinstance(child.get('name'),str) and 0 < len(child['name'].encode()) <= 1024*1024):
                     failed_message = child['name']; failure_child_known = True
             valid = (set(value) == keys and failure_child_known and parent_kind == 'Test Case' and parent in argument_names
                 and isinstance(name,str) and 0 < len(name.encode()) <= 1024
@@ -269,7 +268,7 @@ def parser_controls():
     failure = sample(); target = next(row for row in cases(failure) if source_method(row['nodeIdentifier']) == TARGET)
     target['result'] = 'Failed'
     for child in target['children']:
-        child['result'] = 'Failed'; child['children'] = [{'nodeType':'Failure Message','name':'Expectation failed: SYNTHETIC_PRIVATE_ASSERTION'}]
+        child['result'] = 'Failed'; child['children'] = [{'nodeType':'Failure Message','name':'SYNTHETIC_CALIBRATED_NATIVE_FAILURE_DISPLAY'}]
     failed_summary = dict(totalTestCount=3,passedTests=2,failedTests=1,skippedTests=0)
     row = native_inventory(failure,failed_summary)
     require(row['status'] == 'complete' and row['argument_leaf_counts']['passedTests'] == 3
@@ -281,7 +280,7 @@ def parser_controls():
     bad_failure(lambda child:child['children'].append(copy.deepcopy(child['children'][0])))
     bad_failure(lambda child:child['children'][0].update(nodeType='Source Code Reference'))
     bad_failure(lambda child:child['children'][0].update(name=None))
-    bad_failure(lambda child:child['children'][0].update(name='Other issue'))
+    bad_failure(lambda child:child['children'][0].update(name=''))
     bad_failure(lambda child:child['children'][0].update(children=[]))
     bad_failure(lambda child:child.update(result='Passed'))
     for value in failed_bad: require(native_inventory(value,failed_summary)['status'] != 'complete','strict-observed-failure-message-child')
@@ -669,7 +668,9 @@ def native_issue_exports(bundle,environment,row,save):
         if capture['exit_code'] != 0 or capture['watchdog_triggered'] or capture['output_limit_triggered']: continue
         try:
             document = json.loads(data)
-            if label == 'legacy': closed['legacy'],hashes = legacy_native_issues(document)
+            if label == 'legacy':
+                closed['legacy'],hashes = legacy_information_only(document)
+                calibration_legacy_walk(bundle,document,environment,save,None,app_row=row)
             else: closed['modern_details'] = modern_details_shape(document)
         except (ValueError,UnicodeError): closed[label]['status'] = 'json_schema_unknown'
         save()  # Closed actual issue facts persist BEFORE test-tree/oracle parsing.
@@ -788,11 +789,11 @@ def execute(label,expected,save,result):
     if inventory['status'] == 'complete' and row['build_succeeded'] and row['sdk']['actual_resolved_frameworks']:
         definitions = inventory['definition_rows']; leaves = inventory['argument_leaf_rows']
         row['green'] = (row['exit_code'] == 0 and all(v['status'] == 'Passed' for v in definitions+leaves)
-            and row['native_issue_provenance']['legacy']['no_native_failure_issues'] and row['binary_inventory']['status'] == 'complete' and set(row['binaries']) == {'app','test'})
+            and row.get('typed_legacy_failure_sources',{}).get('no_native_failure_issues') is True and row['binary_inventory']['status'] == 'complete' and set(row['binaries']) == {'app','test'})
         row['counterfactual_RED'] = (row['exit_code'] not in {None,0} and not row.get('watchdog_triggered')
             and all(v['status'] == ('Failed' if v['method'] == TARGET else 'Passed') for v in definitions+leaves)
             and inventory['failed_argument_message_count'] == 2
-            and row['native_issue_provenance']['legacy']['source_site_RED_proven']
+            and row.get('typed_legacy_failure_sources',{}).get('source_site_RED_proven') is True
             and row['binary_inventory']['status'] == 'complete' and set(row['binaries']) == {'app','test'})
     row['source_pristine'] = fingerprint() == expected; save(); return row
 
@@ -1005,12 +1006,132 @@ def calibration_parser_controls():
         'run_shape_negative':len(bad_details),'privacy':1,'actual_native_bodies':0}
 
 
-def calibration_legacy_walk(bundle,root,environment,save,result):
+def legacy_information_only(document):
+    try:
+        report,hashes = legacy_native_issues(document)
+    except (ValueError,UnicodeError):
+        report,hashes = {'status':'informational_export_rejected','source_site_RED_proven':False,'no_native_failure_issues':False},[]
+    report['root_aggregate_is_informational_not_qualification_authority'] = True
+    return report,hashes
+
+
+def app_record_uuid(records,uuid,provenance):
+    require(isinstance(uuid,str) and 0 < len(uuid.encode()) <= 256 and bool(uuid.strip()),'nonempty-typed-failure-uuid')
+    if uuid in records:
+        require(records[uuid] == provenance,'conflicting-native-failure-uuid-provenance')
+        return False
+    records[uuid] = provenance
+    return True
+
+
+def app_legacy_method(value):
+    if not isinstance(value,str) or len(value.encode()) > 2048: return None
+    known = source_method(value)
+    if known is not None: return known
+    for method,labels in METHODS.items():
+        signature = method+'('+labels+')'
+        if value in {signature,SUITE+'.'+signature,SUITE+'/'+SUITE+'/'+signature}: return method
+    return None
+
+
+def app_typed_route_known(report):
+    if report.get('traversal_complete') is not True: return False
+    objects = report.get('objects',[]); shapes = report.get('node_shapes',[])
+    return (any(row.get('via') == 'ActionResult.testsRef' for row in objects)
+        and any(row.get('type') == 'ActionTestPlanRunSummaries' and row.get('via') == 'referenced' for row in shapes)
+        and {row.get('role') for row in shapes if row.get('type') == 'ActionTestMetadata'} == set(METHODS))
+
+
+def app_typed_source_verdict(report):
+    verdict = {'source_site_RED_proven':False,'no_native_failure_issues':False}
+    if (not app_typed_route_known(report) or type(report.get('root_error_summary_count')) is not int
+        or report['root_error_summary_count'] != 0 or not isinstance(report.get('typed_failure_sources'),list)): return verdict
+    rows = report['typed_failure_sources']
+    verdict['no_native_failure_issues'] = not rows
+    references = {row['ordinal'] for row in report.get('objects',[]) if row.get('via') == 'ActionTestMetadata.summaryRef'
+        and row.get('context_role') == TARGET and type(row.get('ordinal')) is int and row['ordinal'] > 0}
+    if len(rows) != 2 or len(references) != 2: return verdict
+    if any(row.get('role') != TARGET or row.get('known_fixed_file') is not True
+        or row.get('typed_record_uuid_present') is not True or type(row.get('native_line_number')) is not int
+        or not 63 <= row['native_line_number'] <= 66 or type(row.get('summary_reference_ordinal')) is not int for row in rows): return verdict
+    verdict['source_site_RED_proven'] = {row['summary_reference_ordinal'] for row in rows} == references
+    return verdict
+
+
+def app_typed_issue_parser_controls():
+    report = {'traversal_complete':True,'root_error_summary_count':0,
+        'node_shapes':[{'type':'ActionTestPlanRunSummaries','via':'referenced'}]+[{'type':'ActionTestMetadata','role':method} for method in METHODS],
+        'objects':[{'ordinal':1,'via':'ActionResult.testsRef','context_role':'unknown'},
+        {'ordinal':2,'via':'ActionTestMetadata.summaryRef','context_role':TARGET},
+        {'ordinal':3,'via':'ActionTestMetadata.summaryRef','context_role':TARGET}],
+        'typed_failure_sources':[{'role':TARGET,'known_fixed_file':True,'typed_record_uuid_present':True,
+            'native_line_number':63,'summary_reference_ordinal':2},
+            {'role':TARGET,'known_fixed_file':True,'typed_record_uuid_present':True,'native_line_number':65,'summary_reference_ordinal':3}]}
+    require(app_typed_source_verdict(report)['source_site_RED_proven'],'calibrated-typed-per-argument-source-positive')
+    empty = dict(report,typed_failure_sources=[])
+    require(app_typed_source_verdict(empty)['no_native_failure_issues'],'complete-typed-empty-source-positive')
+    route_bad = []
+    value = copy.deepcopy(empty); value['objects'] = [row for row in value['objects'] if row['via'] != 'ActionResult.testsRef']; route_bad.append(value)
+    value = copy.deepcopy(empty); value['node_shapes'] = [row for row in value['node_shapes'] if row['type'] != 'ActionTestPlanRunSummaries']; route_bad.append(value)
+    value = copy.deepcopy(empty); value['node_shapes'].pop(); route_bad.append(value)
+    value = copy.deepcopy(empty); value['node_shapes'][-1]['role'] = 'unknown'; route_bad.append(value)
+    for value in route_bad: require(not app_typed_source_verdict(value)['no_native_failure_issues'],'missing-typed-tests-route-is-not-empty-GREEN')
+    bad = []
+    def altered(change):
+        value = copy.deepcopy(report); change(value); bad.append(value)
+    altered(lambda value:value.update(traversal_complete=False))
+    altered(lambda value:value.update(root_error_summary_count=1))
+    altered(lambda value:value.update(root_error_summary_count=False))
+    altered(lambda value:value.update(root_error_summary_count=None))
+    altered(lambda value:value['typed_failure_sources'].pop())
+    altered(lambda value:value['typed_failure_sources'].append(copy.deepcopy(value['typed_failure_sources'][0])))
+    for field,wrong in [('role',next(name for name in METHODS if name != TARGET)),('known_fixed_file',False),
+        ('typed_record_uuid_present',False),('native_line_number',62),('native_line_number',67),('native_line_number',True),
+        ('summary_reference_ordinal',3),('summary_reference_ordinal',True)]:
+        altered(lambda value,field=field,wrong=wrong:value['typed_failure_sources'][0].update({field:wrong}))
+    altered(lambda value:value['objects'][1].update(context_role='unknown'))
+    altered(lambda value:value['objects'][1].update(via='ActionResult.testsRef'))
+    for value in bad: require(not app_typed_source_verdict(value)['source_site_RED_proven'],'no-foreign-or-ambiguous-typed-source-RED')
+    for method,labels in METHODS.items():
+        require(app_legacy_method(method+'('+labels+')') == method,'calibrated-bare-summary-name')
+        require(app_legacy_method(SUITE+'/'+method+'('+labels+')') == method,'calibrated-qualified-summary-identifier')
+    require(app_legacy_method('ForeignSuite/'+TARGET+'(appearance:)') is None,'no-foreign-summary-role')
+    require(app_legacy_method(TARGET+'(appearance: PRIVATE_VALUE)') is None,'no-argument-display-as-method-authority')
+    provenance = ('SYNTHETIC_FIXED_FILE',63,TARGET,2); records = {}
+    require(app_record_uuid(records,'synthetic-native-uuid',provenance),'new-native-uuid-positive')
+    require(not app_record_uuid(records,'synthetic-native-uuid',provenance),'identical-native-record-repeat-positive')
+    uuid_negatives = 0
+    for bad_uuid in ['', ' ',None]:
+        rejected = False
+        try: app_record_uuid({},bad_uuid,provenance)
+        except (ValueError,UnicodeError): rejected = True
+        require(rejected,'no-empty-native-uuid'); uuid_negatives += 1
+    for index,wrong in enumerate(['OTHER_FILE',64,'OTHER_METHOD',3]):
+        conflicting = list(provenance); conflicting[index] = wrong; rejected = False
+        try: app_record_uuid(dict(records),'synthetic-native-uuid',tuple(conflicting))
+        except ValueError: rejected = True
+        require(rejected,'no-hidden-conflicting-native-uuid'); uuid_negatives += 1
+    malformed_information = {'_type':{'_name':'ActionsInvocationRecord'},'issues':{'_type':{'_name':'ResultIssueSummaries'},
+        'testFailureSummaries':{'_type':{'_name':'Array'},'_values':[{'_type':{'_name':'TestFailureIssueSummary'},
+            'message':{'_type':{'_name':'String'},'_value':'\ud800'}}]}}}
+    informational,_ = legacy_information_only(malformed_information)
+    require(informational['source_site_RED_proven'] is False and app_typed_source_verdict(report)['source_site_RED_proven'],
+        'unknown-aggregate-display-never-gates-authoritative-source')
+    return {'source_positive':2,'source_negative':len(bad),'identity_positive':len(METHODS)*2,'identity_negative':2,
+        'uuid_positive':2,'uuid_negative':uuid_negatives,'empty_GREEN_route_negative':len(route_bad),'aggregate_independence':1,'runtime_bodies':0}
+
+
+def calibration_legacy_walk(bundle,root,environment,save,result,app_row=None):
     report = {'objects':[],'typed_failure_sources':[],'references_requested':0,'maximum_references':16,
         'maximum_reference_bytes':8*1024*1024,'reference_captured_bytes':0,'unknown_shapes':0,'complete':False,
         'raw_reference_ids_names_messages_paths_exported':False}
-    result['calibration']['legacy_traversal'] = report; save()
-    queue = [(root,'root','unknown')]; seen = set(); references = []; visited = 0; source_records = set()
+    if app_row is None: result['calibration']['legacy_traversal'] = report
+    else:
+        app_row['typed_legacy_failure_sources'] = report
+        report['root_error_summary_count'] = None
+        report['required_source'] = {'file':TEST,'line_range':[63,66],'method':TARGET,'coordinate_source':'calibrated_typed_ActionTestFailureSummary_lineNumber_no_conversion'}
+    save()
+    queue = [(root,'root','unknown')]; seen = set(); references = []; visited = 0; source_records = set(); app_uuid_provenance = {}
     allowed_types = {'ActionsInvocationRecord','ActionRecord','ActionResult','ActionTestPlanRunSummaries','ActionTestPlanRunSummary',
         'ActionTestableSummary','ActionTestSummaryGroup','ActionTestMetadata','ActionTestSummary','ActionTestFailureSummary'}
     child_fields = {'ActionsInvocationRecord':['actions'],'ActionRecord':['actionResult'],
@@ -1043,24 +1164,38 @@ def calibration_legacy_walk(bundle,root,environment,save,result):
         try:
             for field in ['identifier','name']:
                 if field in value:
-                    identified = calibration_role(calibration_string(value[field]))
+                    identified = calibration_role(calibration_string(value[field])) if app_row is None else app_legacy_method(calibration_string(value[field])) or 'unknown'
                     if identified != 'unknown': role = identified
+            if kind == 'ActionsInvocationRecord' and app_row is not None:
+                issues = value.get('issues'); require(legacy_type(issues,'ResultIssueSummaries'),'typed-root-issue-container')
+                report['root_error_summary_count'] = len(legacy_array(issues['errorSummaries'])) if 'errorSummaries' in issues else 0
             shape = {'ordinal':visited,'type':kind,'role':role,'via':via,
                 'known_keys':sorted(set(value)&{'_type','actions','actionResult','testsRef','summaries','testableSummaries','tests','subtests','identifier','identifierURL','name','testStatus','summaryRef','failureSummaries','fileName','lineNumber','sourceCodeContext','arguments'}),
                 'other_key_count':len(set(value)-{'_type','actions','actionResult','testsRef','summaries','testableSummaries','tests','subtests','identifier','identifierURL','name','testStatus','summaryRef','failureSummaries','fileName','lineNumber','sourceCodeContext','arguments'})}
             report.setdefault('node_shapes',[]).append(shape)
+            if app_row is not None and kind == 'ActionTestMetadata' and 'summaryRef' not in value:
+                report['unknown_shapes'] += 1
             if kind == 'ActionTestFailureSummary':
                 filename = calibration_string(value.get('fileName')); line = calibration_integer(value.get('lineNumber'))
-                known_file = filename == CALIBRATION_FILE or filename.endswith('/'+CALIBRATION_FILE)
+                if app_row is None: known_file = filename == CALIBRATION_FILE or filename.endswith('/'+CALIBRATION_FILE)
+                else:
+                    basename = Path(TEST).name
+                    known_file = filename in {TEST,basename,'whitenoise_macTests/'+basename} or filename.endswith('/'+TEST)
                 # Distinct native failure UUIDs establish two actual records, but identifiers never leave memory.
                 uuid = calibration_string(value.get('uuid'),256) if 'uuid' in value else None
                 identity = (uuid,filename,line)
-                if identity not in source_records:
-                    source_records.add(identity)
-                    report['typed_failure_sources'].append({'role':role,'known_fixed_file':known_file,'native_line_number':line,
-                        'matches_literal_line':known_file and line == CALIBRATION_LINE,'line_delta_from_literal':line-CALIBRATION_LINE,
-                        'typed_record_uuid_present':uuid is not None})
+                keep = identity not in source_records if app_row is None else app_record_uuid(app_uuid_provenance,uuid,(filename,line,role,len(seen)))
+                if keep:
+                    if app_row is None: source_records.add(identity)
+                    if app_row is None:
+                        report['typed_failure_sources'].append({'role':role,'known_fixed_file':known_file,'native_line_number':line,
+                            'matches_literal_line':known_file and line == CALIBRATION_LINE,'line_delta_from_literal':line-CALIBRATION_LINE,
+                            'typed_record_uuid_present':uuid is not None})
+                    else:
+                        report['typed_failure_sources'].append({'role':role,'known_fixed_file':known_file,'native_line_number':line,
+                            'typed_record_uuid_present':uuid is not None,'summary_reference_ordinal':len(seen)})
             for field in child_fields.get(kind,[]):
+                if app_row is not None and field == 'failureSummaries' and kind != 'ActionTestSummary': continue
                 if field not in value: continue
                 if field == 'actionResult': queue.append((value[field],field,role))
                 else: queue.extend((child,field,role) for child in legacy_array(value[field]))
@@ -1073,7 +1208,12 @@ def calibration_legacy_walk(bundle,root,environment,save,result):
         except ValueError: report['unknown_shapes'] += 1
         save()
     report['visited_nodes'] = visited
-    report['complete'] = calibration_sources_complete(report,bool(queue or references))
+    if app_row is None: report['complete'] = calibration_sources_complete(report,bool(queue or references))
+    else:
+        report['traversal_complete'] = (not queue and not references and not report['unknown_shapes']
+            and not any(report.get(flag) for flag in ['watchdog_reached','byte_limit_reached','reference_limit_reached','node_limit_reached']))
+        report['complete'] = report['traversal_complete']
+        report.update(app_typed_source_verdict(report))
     save(); return report
 
 
@@ -1166,11 +1306,11 @@ def main(args):
             native_calibration(result,save); return
         if args.mode == 'cli-schema':
             cli_schema_metadata(result,save); return
-        result['parser_controls'] = parser_controls(); result['native_issue_parser_controls'] = native_issue_parser_controls(); save()
+        result['parser_controls'] = parser_controls(); result['native_issue_parser_controls'] = native_issue_parser_controls(); result['app_typed_issue_parser_controls'] = app_typed_issue_parser_controls(); save()
         if args.mode == 'preflight':
             format_feedback(result,save); return
         require(Path(VIEW).read_text().count(OLD) == 1 and NEW not in Path(VIEW).read_text(),'one-exact-reviewed-renderer-condition')
-        sdk_identity(OUT); before = fingerprint(); original = Path(VIEW).read_bytes(); permissions = Path(VIEW).stat().st_mode
+        sdk_identity(OUT); before = fingerprint(); require(sum(Path(name).name == Path(TEST).name for name in before) == 1,'one-whole-tree-source-basename'); original = Path(VIEW).read_bytes(); permissions = Path(VIEW).stat().st_mode
         labels = ['measured-baseline'] if args.mode == 'measure' else ['baseline','mutant','restored'] if args.mode == 'pfp' else ['mutant','restored']
         for label in labels:
             content = original.replace(OLD.encode(),NEW.encode(),1) if label == 'mutant' else original
