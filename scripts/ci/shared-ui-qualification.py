@@ -13,8 +13,10 @@ import json
 import math
 import os
 import plistlib
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import subprocess
+import shutil
+import zipfile
 import urllib.parse
 
 BASE = '2a60df8f95245328b43b324c325a31540b2488e5'
@@ -23,7 +25,7 @@ SELF = 'scripts/ci/shared-ui-qualification.py'
 WORKFLOW = '.github/workflows/mac-ci.yml'
 BEGIN = '  # SHARED_UI_FORMAT_JOBS_BEGIN\n'
 END = '  # SHARED_UI_FORMAT_JOBS_END\n'
-OPTIONS = 'options: [full, onboarding-mutations, shared-ui-format, shared-ui-raster-measure, shared-ui-raster-red-green, shared-ui-raster-pfp, shared-ui-cli-schema, shared-ui-native-calibration]'
+OPTIONS = 'options: [full, onboarding-mutations, shared-ui-format, shared-ui-raster-measure, shared-ui-raster-red-green, shared-ui-raster-pfp, shared-ui-cli-schema, shared-ui-native-calibration, shared-ui-archive-summary]'
 ORIGINAL_OPTIONS = 'options: [full, onboarding-mutations]'
 REF = 'refs/heads/ci/upstream-shared-ui-qualification-20261018'
 OUT = Path('build/shared-ui-qualification')
@@ -1293,6 +1295,167 @@ def native_calibration(result,save):
     save(); require(result['calibration']['native_typed_source_calibration_verified'],'synthetic-typed-native-source-calibration-pending')
 
 
+ARCHIVE_RUN = 39127424696
+ARCHIVE_ID = 12136628289
+ARCHIVE_BYTES = 103432154
+ARCHIVE_SHA256 = '7c38636fd89b8ee9420bc1366adaec5fc7a1f053b2de9ba4aa04406edccbd691'
+ARCHIVE_SOURCE = '2a60df8f95245328b43b324c325a31540b2488e5'
+ARCHIVE_MERGE = 'b2585ba68cee4f896d96fe563d2fab59d8a7cf1b'
+ARCHIVE_BASE = '42c88ab5a4c9cc28521c503e26737d6e27b0694f'
+ARCHIVE_TREE = '986c763da53e4c7d1db4e81f33c2ee776dfb1dc8'
+
+
+def archive_closed_summary(raw):
+    result = {'status':'unknown','native_summary':{},'devicesAndConfigurations':[],
+        'configuration_status':'unknown','configuration_counts_are_not_summed':True,
+        'raw_device_configuration_or_test_identifiers_exported':False}
+    if not isinstance(raw,dict): return result
+    if not all(type(raw.get(key)) is int and raw[key] >= 0 for key in COUNT_KEYS): return result
+    if raw['totalTestCount'] != sum(raw[key] for key in COUNT_KEYS[1:]) or not raw['totalTestCount']: return result
+    result['native_summary'] = {key:raw[key] for key in COUNT_KEYS}
+    if isinstance(raw.get('result'),str) and raw['result'] in {'Passed','Failed','Skipped'}: result['native_summary']['result'] = raw['result']
+    else: return result
+    for key in ['expectedFailures']:
+        if key in raw:
+            if type(raw[key]) is not int or raw[key] < 0: return result
+            result['native_summary'][key] = raw[key]
+    for key in ['startTime','finishTime']:
+        if type(raw.get(key)) in {int,float} and math.isfinite(raw[key]): result['native_summary'][key] = raw[key]
+    configurations = raw.get('devicesAndConfigurations')
+    if 'devicesAndConfigurations' not in raw: result['configuration_status'] = 'not_present'
+    elif isinstance(configurations,list) and len(configurations) <= 32:
+        result['configuration_status'] = 'complete'
+        for index,row in enumerate(configurations):
+            closed = {'ordinal':index+1}
+            if not isinstance(row,dict): result['configuration_status'] = 'unknown'; break
+            for key in ['totalTestCount','passedTests','failedTests','skippedTests','expectedFailures']:
+                if key in row:
+                    if type(row[key]) is not int or row[key] < 0: result['configuration_status'] = 'unknown'; break
+                    closed[key] = row[key]
+            if not {'passedTests','failedTests','skippedTests'} <= set(closed): result['configuration_status'] = 'unknown'
+            result['devicesAndConfigurations'].append(closed)
+    if result['configuration_status'] == 'unknown': return result
+    result['status'] = 'complete'; return result
+
+
+def archive_member_parts(name):
+    require(isinstance(name,str) and 0 < len(name.encode()) <= 4096 and '\\' not in name and '\x00' not in name,'bounded-safe-archive-member')
+    parts = PurePosixPath(name).parts
+    require(parts and not name.startswith('/') and all(part not in {'.','..',''} for part in parts)
+        and '/'.join(parts) == name.rstrip('/'),'no-archive-path-normalization-or-traversal')
+    return parts
+
+
+def archive_summary_parser_controls():
+    raw = dict(totalTestCount=3,passedTests=3,failedTests=0,skippedTests=0,result='Passed',
+        devicesAndConfigurations=[dict(passedTests=5,failedTests=0,skippedTests=0)])
+    good = archive_closed_summary(raw)
+    require(good['status'] == 'complete' and good['native_summary']['totalTestCount'] == 3
+        and good['devicesAndConfigurations'][0]['passedTests'] == 5,'native-config-definition-counts-stay-separate')
+    negative = []
+    for key in COUNT_KEYS:
+        for bad in [None,True,-1,'0']: negative.append(dict(raw,**{key:bad}))
+    negative.append(dict(raw,totalTestCount=0,passedTests=0))
+    negative.append(dict(raw,totalTestCount=4))
+    negative.append(dict(raw,result={}))
+    negative.append(dict(raw,devicesAndConfigurations=None))
+    negative.append(dict(raw,devicesAndConfigurations=[dict(passedTests=True,failedTests=0,skippedTests=0)]))
+    for value in negative: require(archive_closed_summary(value)['status'] != 'complete','invalid-native-archive-counts-rejected')
+    require(archive_member_parts('TestResults.xcresult/Data/public-synthetic') == ('TestResults.xcresult','Data','public-synthetic'),'wrapped-safe-archive-path')
+    require(archive_member_parts('Info.plist') == ('Info.plist',),'bare-safe-archive-path')
+    path_negative = 0
+    for name in ['../private','/absolute','Data/../escape','./Info.plist','Data//normalized','Data\\private','Data/\x00bad']:
+        rejected = False
+        try: archive_member_parts(name)
+        except ValueError: rejected = True
+        require(rejected,'unsafe-archive-member-rejected'); path_negative += 1
+    return {'summary_positive':1,'summary_negative':len(negative),'path_positive':2,'path_negative':path_negative,'actual_tests_executed':0}
+
+
+def archive_summary_export(result,save):
+    result['archive_summary_parser_controls'] = archive_summary_parser_controls(); save()
+    root = OUT/'archive-summary'; require(not root.exists(),'fresh-owned-archive-export-root'); root.mkdir()
+    before = fingerprint(); environment = dict(os.environ)
+    require(bool(environment.get('GH_TOKEN')),'read-only-Actions-token-required')
+    record = {'source_run':ARCHIVE_RUN,'source_artifact':ARCHIVE_ID,'source_head_sha':ARCHIVE_SOURCE,
+        'source_PR_merge_sha':ARCHIVE_MERGE,'source_tree':ARCHIVE_TREE,'App_build_or_test_executed':False,
+        'SDK_download_or_packaging_executed':False,'archive_summary_complete':False,
+        'full_or_native_sync_qualification_claim':False,'raw_bundle_or_private_output_uploaded':False}
+    result['archive_summary_export'] = record; save()
+    def api(path):
+        capture,data = bounded_capture(['gh','api','repos/dyKiU/whitenoise-mac/'+path],environment,30,256*1024)
+        require(capture['exit_code'] == 0 and not capture['watchdog_triggered'] and not capture['output_limit_triggered'],'bounded-readonly-GitHub-metadata')
+        return json.loads(data)
+    run = api('actions/runs/'+str(ARCHIVE_RUN))
+    require(run.get('id') == ARCHIVE_RUN and run.get('head_sha') == ARCHIVE_SOURCE and run.get('status') == 'completed'
+        and run.get('conclusion') == 'success' and run.get('event') == 'pull_request' and run.get('path') == WORKFLOW
+        and run.get('repository',{}).get('full_name') == 'dyKiU/whitenoise-mac','immutable-successful-original-CI-run')
+    artifact = api('actions/artifacts/'+str(ARCHIVE_ID))
+    require(artifact.get('id') == ARCHIVE_ID and artifact.get('name') == 'mac-unit-test-results'
+        and artifact.get('size_in_bytes') == ARCHIVE_BYTES and artifact.get('digest') == 'sha256:'+ARCHIVE_SHA256
+        and artifact.get('expired') is False and artifact.get('workflow_run',{}).get('id') == ARCHIVE_RUN
+        and artifact.get('workflow_run',{}).get('head_sha') == ARCHIVE_SOURCE,'exact-pinned-native-artifact')
+    source = api('git/commits/'+ARCHIVE_SOURCE); merge = api('git/commits/'+ARCHIVE_MERGE)
+    require(source.get('tree',{}).get('sha') == merge.get('tree',{}).get('sha') == ARCHIVE_TREE
+        and [parent.get('sha') for parent in merge.get('parents',[])] == [ARCHIVE_BASE,ARCHIVE_SOURCE], 'exact-tested-PR-merge-tree')
+    record['source_and_artifact_metadata_verified'] = True
+    record['artifact'] = {'id':ARCHIVE_ID,'bytes':ARCHIVE_BYTES,'sha256':ARCHIVE_SHA256,'run_url':run.get('html_url')}; save()
+    require(shutil.disk_usage(root).free >= ARCHIVE_BYTES+3*1024**3,'archive-export-disk-reserve')
+    archive = root/'source-artifact.zip'
+    capture,_ = bounded_capture(['gh','api','repos/dyKiU/whitenoise-mac/actions/artifacts/'+str(ARCHIVE_ID)+'/zip'],environment,120,ARCHIVE_BYTES,private_log=archive)
+    record['archive_download_capture'] = capture; save()
+    require(capture['exit_code'] == 0 and not capture['watchdog_triggered'] and not capture['output_limit_triggered']
+        and archive.stat().st_size == ARCHIVE_BYTES,'complete-bounded-original-artifact-download')
+    digest = hashlib.sha256()
+    with archive.open('rb') as stream:
+        for block in iter(lambda:stream.read(1024*1024),b''): digest.update(block)
+    record['archive_sha256_verified'] = digest.hexdigest() == ARCHIVE_SHA256; save()
+    require(record['archive_sha256_verified'],'original-artifact-ZIP-digest')
+    bundle = root/'TestResults.xcresult'; bundle.mkdir(); members = []; total = 0
+    with zipfile.ZipFile(archive) as zip_file:
+        infos = zip_file.infolist(); require(0 < len(infos) <= 50000,'bounded-XCResult-ZIP-inventory')
+        paths = [archive_member_parts(info.filename) for info in infos]
+        wrapped = all(parts[0] == 'TestResults.xcresult' for parts in paths)
+        relative = [parts[1:] if wrapped else parts for parts in paths]
+        require(('Info.plist',) in relative,'known-XCResult-root-anchor')
+        seen = set()
+        for info,parts in zip(infos,relative):
+            if not parts:
+                require(info.is_dir(),'wrapped-root-directory-only'); continue
+            require(parts not in seen and not info.flag_bits & 1,'unique-unencrypted-archive-members'); seen.add(parts)
+            kind = stat.S_IFMT(info.external_attr >> 16)
+            require(kind in {0,stat.S_IFREG,stat.S_IFDIR} and (kind != stat.S_IFDIR or info.is_dir()),'no-archive-symlink-or-special-files')
+            require(0 <= info.file_size <= 256*1024*1024,'bounded-native-archive-member-size')
+            total += info.file_size; require(total <= 1024**3,'bounded-native-archive-total-size')
+            members.append((info,parts))
+        record['archive_inventory'] = {'entries':len(infos),'uncompressed_bytes':total,'layout':'wrapped_known_bundle' if wrapped else 'bare_bundle_contents',
+            'safe_relative_regular_files_only':True}; save()
+        require(shutil.disk_usage(root).free >= total+2*1024**3,'native-extraction-disk-reserve')
+        for info,parts in members:
+            path = bundle.joinpath(*parts)
+            if info.is_dir(): path.mkdir(parents=True,exist_ok=True); continue
+            path.parent.mkdir(parents=True,exist_ok=True)
+            written = 0
+            with zip_file.open(info) as source_stream,path.open('xb') as output:
+                for block in iter(lambda:source_stream.read(1024*1024),b''):
+                    written += len(block); require(written <= info.file_size,'exact-member-extraction-size'); output.write(block)
+            require(written == info.file_size,'complete-member-extraction-size')
+    capture,data = bounded_capture(['xcrun','xcresulttool','get','test-results','summary','--path',str(bundle)],environment,90,2*1024*1024)
+    record['native_summary_capture'] = capture; save()
+    require(capture['exit_code'] == 0 and not capture['watchdog_triggered'] and not capture['output_limit_triggered'],'bounded-existing-native-summary-export')
+    record['counts'] = archive_closed_summary(json.loads(data)); save()
+    require(record['counts']['status'] == 'complete','actual-existing-native-summary-counts-required')
+    skipped = record['counts']['native_summary']['skippedTests']
+    record['skips'] = {'count':skipped,'identifiers':[] if skipped == 0 else None,
+        'identifiers_complete':skipped == 0,'raw_test_identifiers_exported':False}
+    record['tested_source_declared_SDK'] = sdk_identity(OUT)
+    record['tested_source_declared_SDK']['actual_binary_digest_available_in_original_summary'] = None
+    record['tested_source_declared_SDK']['this_exporter_consumed_SDK'] = False
+    record['whole_source_modes_pristine'] = fingerprint() == before
+    record['archive_summary_complete'] = record['whole_source_modes_pristine']; save()
+    require(record['archive_summary_complete'],'source-pristine-after-archive-export')
+
+
 def main(args):
     os.umask(0o077); OUT.mkdir(parents=True,exist_ok=True)
     result = {'mode':args.mode,'phases':{},'component_GREEN':False,'counterfactual_runtime_RED_verified':False,
@@ -1302,6 +1465,8 @@ def main(args):
     def save(): (OUT/'result.json').write_text(json.dumps(result,indent=2)+'\n')
     try:
         result['source'] = guard(); save()
+        if args.mode == 'archive-summary':
+            archive_summary_export(result,save); return
         if args.mode == 'native-calibration':
             native_calibration(result,save); return
         if args.mode == 'cli-schema':
@@ -1341,5 +1506,5 @@ def main(args):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(); parser.add_argument('--mode',choices=['preflight','measure','red-green','pfp','cli-schema','native-calibration'],default='preflight')
+    parser = argparse.ArgumentParser(); parser.add_argument('--mode',choices=['preflight','measure','red-green','pfp','cli-schema','native-calibration','archive-summary'],default='preflight')
     main(parser.parse_args())
