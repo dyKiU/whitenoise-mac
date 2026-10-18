@@ -121,10 +121,17 @@ import Testing
             }
             return predicate()
         }
+        private func runtimeWithoutStorage() -> FakeMarmotRuntime {
+            // These fakes never open storage; avoid sweeping unrelated on-disk test roots.
+            let storagePath = FileManager.default.temporaryDirectory
+                .appendingPathComponent("automatic-pending-\(UUID().uuidString)", isDirectory: true).path
+            return FakeMarmotRuntime(accounts: [], storageRoot: .explicit(storagePath))
+        }
+
         private func ready() async throws -> (AccountConversationViewModel, PendingConversation, PendingSendState) {
             let original = PendingConversation(snapshot(sequence: 1))
             let state = PendingSendState()
-            let runtime = FakeMarmotRuntime(accounts: [])
+            let runtime = runtimeWithoutStorage()
             runtime.localSendAcceptanceForToken = { token in .init(clientToken: token, messageIdHex: state.eventId) }
             runtime.localSendStatusForToken = { _ in try state.status() }
             let model = AccountConversationViewModel(
@@ -135,10 +142,39 @@ import Testing
             return (model, original, state)
         }
 
+        @Test func nativeMarkdownProjectionClearsOnDeletionAndAccountRetirement() async throws {
+            let (model, original, state) = try await ready()
+            defer { model.invalidate() }
+            var replacement = snapshot(sequence: 2, eventId: state.eventId)
+            guard case .pairedSource(var message) = replacement.rows[0] else {
+                Issue.record("Expected source-attested synthetic row")
+                return
+            }
+            message.contentTokens = .init(
+                blocks: [.paragraph(inlines: [.text(content: "Synthetic rendered text")])],
+                truncated: false, blankLinesBefore: Data())
+            replacement.rows = [.pairedSource(row: message)]
+            original.emit(replacement)
+            #expect(await waitFor { model.markdownByMessageId[state.eventId] != nil })
+            replacement.sequence = 3
+            message.deleted = true
+            replacement.rows = [.pairedSource(row: message)]
+            original.emit(replacement)
+            #expect(await waitFor { model.snapshot?.sequence == 3 })
+            #expect(model.markdownByMessageId.isEmpty)
+            replacement.sequence = 4
+            message.deleted = false
+            replacement.rows = [.pairedSource(row: message)]
+            original.emit(replacement)
+            #expect(await waitFor { model.markdownByMessageId[state.eventId] != nil })
+            model.invalidate()
+            #expect(model.markdownByMessageId.isEmpty)
+        }
+
         @Test func observedCanonicalRowBeforeAdmissionReturnsDoesNotLeaveDuplicatePendingBubble() async throws {
             let original = PendingConversation(snapshot(sequence: 1))
             let state = PendingSendState()
-            let runtime = FakeMarmotRuntime(accounts: [])
+            let runtime = runtimeWithoutStorage()
             runtime.localSendAcceptanceForToken = { token in .init(clientToken: token, messageIdHex: state.eventId) }
             runtime.localSendStatusForToken = { _ in try state.status() }
             runtime.messageActionGateEnabled = true

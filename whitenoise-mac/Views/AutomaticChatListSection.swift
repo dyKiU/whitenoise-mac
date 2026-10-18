@@ -2,11 +2,27 @@ import MarmotKit
 import SwiftUI
 
 #if WN_EXPERIMENTAL_DEVICE_SYNC
+    enum PairedChatSidebarPresentation {
+        /// Display values only; actions continue to use the original paired conversation owner.
+        static func item(_ row: PairedChatSummaryFfi, title: String) -> ChatItem {
+            ChatItem(
+                id: row.groupIdHex, title: title, subtitle: L10n.string("Shared from a linked device"),
+                preview: L10n.string("Shared from a linked device"), updatedAt: nil,
+                avatarSeed: row.directPeerAccountIdHex ?? row.groupIdHex, pictureURL: nil,
+                unreadCount: 0, isDirect: row.directPeerAccountIdHex != nil,
+                directPeerAccountIdHex: row.directPeerAccountIdHex,
+                hasAuthoritativeConversationKind: true
+            )
+        }
+    }
+
     struct AutomaticChatListSection: View {
         let model: AccountChatListViewModel?
         let searchText: String
         let excludedGroupIds: Set<String>
         let select: (String) -> Void
+        var isCollapsed = false
+        var selectedGroupId: String?
         var title: (PairedChatSummaryFfi) -> String = {
             PairedChatDisplayTitle.resolve(
                 name: $0.name, directPeerAccountIdHex: $0.directPeerAccountIdHex, peerDisplayName: nil)
@@ -26,20 +42,12 @@ import SwiftUI
                 Button {
                     select(row.groupIdHex)
                 } label: {
-                    HStack {
-                        Image(systemName: "link")
-                        VStack(alignment: .leading) {
-                            Text(verbatim: title(row))
-                                .lineLimit(1)
-                            Text("Shared from a linked device")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                        Spacer()
+                    let display = PairedChatSidebarPresentation.item(row, title: title(row))
+                    if isCollapsed {
+                        CollapsedChatRowContent(chat: display, isSelected: selectedGroupId == row.groupIdHex)
+                    } else {
+                        ChatRowContent(chat: display, isSelected: selectedGroupId == row.groupIdHex)
                     }
-                    .padding(8)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
             }

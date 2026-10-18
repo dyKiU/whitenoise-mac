@@ -5,6 +5,7 @@ import Observation
 #if WN_EXPERIMENTAL_DEVICE_SYNC
     struct PairedPendingText: Identifiable {
         let id: String
+        let createdAt = Date()
         let text: String
         let replyToMessageIdHex: String?
         var acceptedMessageIdHex: String?
@@ -19,6 +20,7 @@ import Observation
         let groupIdHex: String
         private(set) var snapshot: AccountConversationWindowSnapshotFfi?
         private(set) var pendingTexts: [String: PairedPendingText] = [:]
+        private(set) var markdownByMessageId: [String: MarkdownDisplayDocument] = [:]
         private(set) var isLoading = false
         private(set) var error: AutomaticChatPresentationError?
         @ObservationIgnored private let observations: any AccountChatObserving
@@ -60,6 +62,7 @@ import Observation
             owner?.cancel()
             owner = nil
             snapshot = nil
+            markdownByMessageId = [:]
             pendingTexts = [:]
             isLoading = false
             error = nil
@@ -185,6 +188,15 @@ import Observation
             if case .pairedSource(let header) = replacement.header, header.groupIdHex != groupIdHex {
                 throw AutomaticChatPresentationError.invalidSnapshot
             }
+            var markdown: [String: MarkdownDisplayDocument] = [:]
+            for row in replacement.rows {
+                if case .pairedSource(let message) = row,
+                    message.canonicalChat, !message.deleted, !message.contentTokens.blocks.isEmpty
+                {
+                    markdown[message.messageIdHex] = MarkdownDisplayDocument(document: message.contentTokens)
+                }
+            }
+            markdownByMessageId = markdown
             snapshot = replacement
             reconcileObservedPendingTexts()
             isLoading = false
@@ -207,6 +219,7 @@ import Observation
             original.cancel()
             owner = nil
             snapshot = nil
+            markdownByMessageId = [:]
             pendingTexts = [:]
             isLoading = false
             error = .unavailable

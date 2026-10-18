@@ -11,30 +11,37 @@ import MarmotKit
 import SwiftUI
 
 struct MarkdownMessageView: View {
-    let message: MessageItem
+    private let document: MarkdownDisplayDocument?
+    private let bodyText: String
     var trailingMetadata: Text?
 
     init(message: MessageItem, trailingMetadata: Text? = nil) {
-        self.message = message
+        self.document = message.contentMarkdown
+        self.bodyText = message.rawBubbleDisplayBody
         self.trailingMetadata = trailingMetadata
     }
 
+    init(document: MarkdownDisplayDocument?, fallbackText: String) {
+        self.document = document
+        self.bodyText = fallbackText
+        self.trailingMetadata = nil
+    }
+
     var body: some View {
-        // Only documents with a `<t:…>` timestamp pay for re-formatting at draw time.
-        if let document = message.contentMarkdown, document.timestamps != .none {
+        // Both native and shared documents refresh timestamps at draw time.
+        if let document, document.timestamps != .none {
             MarkdownTimestampRefresher(document: document) { refreshed in
-                MarkdownMessageContent(message: message, document: refreshed, trailingMetadata: trailingMetadata)
+                MarkdownMessageContent(document: refreshed, bodyText: bodyText, trailingMetadata: trailingMetadata)
             }
         } else {
-            MarkdownMessageContent(
-                message: message, document: message.contentMarkdown, trailingMetadata: trailingMetadata)
+            MarkdownMessageContent(document: document, bodyText: bodyText, trailingMetadata: trailingMetadata)
         }
     }
 }
 
 private struct MarkdownMessageContent: View {
     @Environment(\.customEmojiGlyphs) private var customEmoji
-    let message: MessageItem
+    let bodyText: String
     let document: MarkdownDisplayDocument?
     let trailingMetadata: Text?
 
@@ -67,7 +74,7 @@ private struct MarkdownMessageContent: View {
             // ScrollView/LazyVStack scroll-anchor resolution into a multi-second main-thread
             // layout loop on send (Instruments: continuous SelectionOverlay.updateNSView /
             // ScrollViewAdjustedState.adjustOffsetIfNeeded). See whitenoise-mac#205.
-            textWithMetadata(CustomEmojiTextBuilder.text(message.rawBubbleDisplayBody, glyphs: customEmoji))
+            textWithMetadata(CustomEmojiTextBuilder.text(bodyText, glyphs: customEmoji))
                 .lineSpacing(2)
                 .fixedSize(horizontal: false, vertical: true)
         }
