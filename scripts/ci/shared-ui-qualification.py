@@ -576,16 +576,14 @@ def cli_schema_metadata(result,save):
     output = OUT / 'cli-schema'; output.mkdir(parents=True,exist_ok=True)
     environment = dict(os.environ)
     commands = [
-        ('test-details-help',['xcrun','xcresulttool','help','get','test-results','test-details'],256*1024),
-        ('test-details-schema',['xcrun','xcresulttool','get','test-results','test-details','--schema'],1024*1024),
-        ('legacy-object-help',['xcrun','xcresulttool','help','get','object'],256*1024),
-        ('format-description-help',['xcrun','xcresulttool','help','formatDescription'],256*1024),
+        ('format-description-get-help',['xcrun','xcresulttool','help','formatDescription','get'],256*1024),
+        ('legacy-format-schema',['xcrun','xcresulttool','formatDescription','get','--format','json'],2*1024*1024),
     ]
-    result['cli_metadata'] = {'commands':{},'maximum_total_output_bytes':2*1024*1024,
+    result['cli_metadata'] = {'commands':{},'maximum_total_output_bytes':4*1024*1024,
         'App_build_or_test_executed':False,'SDK_consumed':False,'actual_native_schema_claim':False}
     total = 0
     for label,command,limit in commands:
-        require(total + limit <= 2*1024*1024,'fixed-total-cli-output-cap')
+        require(total + limit <= 4*1024*1024,'fixed-total-cli-output-cap')
         capture,data = bounded_capture(command,environment,30,limit)
         total += len(data)
         row = dict(capture,command=command,output_sha256=hashlib.sha256(data).hexdigest(),output_bytes=len(data),
@@ -603,7 +601,7 @@ def cli_schema_metadata(result,save):
                 if isinstance(document,dict): row['top_level_schema_keys'] = sorted(document)
             except ValueError: row['output_json'] = False
         except (UnicodeError,ValueError): row['output_text_unavailable'] = True
-        row['supported_schema_export'] = label == 'test-details-schema' and row['successful_static_CLI_output'] and row.get('output_json') is True
+        row['supported_schema_export'] = label == 'legacy-format-schema' and row['successful_static_CLI_output'] and row.get('output_json') is True
         save()
     result['cli_metadata']['output_bytes'] = total
     result['cli_metadata']['capture_complete'] = all(not row['watchdog_triggered'] and not row['output_limit_triggered'] for row in result['cli_metadata']['commands'].values())
