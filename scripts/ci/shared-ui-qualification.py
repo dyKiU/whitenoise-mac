@@ -4,12 +4,14 @@ import argparse
 import copy
 import difflib
 import re
+import selectors
 import signal
 import stat
 import time
 import hashlib
 import json
 import os
+import plistlib
 from pathlib import Path
 import subprocess
 
@@ -135,7 +137,8 @@ def source_method(identifier):
 def native_inventory(tree,summary):
     result = {'status':'schema_unknown','definition_rows':[],'argument_leaf_rows':[],
         'definition_counts':None,'argument_leaf_counts':None,'summary_count_basis':None,
-        'unknown_node_count':0,'unexpected_test_definitions':0}
+        'unknown_node_count':0,'unexpected_test_definitions':0,
+        'node_type_diagnostics':{},'unknown_shapes':[]}
     if not isinstance(tree,dict) or not isinstance(tree.get('testNodes'),list): return result
     seen = set(); node_count = 0
     def walk(value,parent=None,depth=0):
@@ -146,21 +149,40 @@ def native_inventory(tree,summary):
             for child in value: walk(child,parent,depth+1)
         elif isinstance(value,dict):
             kind = value.get('nodeType')
+            diagnostic_types = {'Test Plan','Device','Test Bundle','Unit test bundle','Test Suite','Test Case','Test Case Run',
+                'Arguments','Argument','Test Argument','Test Iteration','Repetition','Test Case Group'}
+            if isinstance(kind,str):
+                # Diagnostic classification never admits an execution schema.
+                category = kind if kind in diagnostic_types else 'unapproved_type'
+                result['node_type_diagnostics'][category] = result['node_type_diagnostics'].get(category,0) + 1
+                if kind not in {'Test Plan','Device','Test Bundle','Unit test bundle','Test Suite','Test Case','Test Case Run'}:
+                    structural_keys = ['nodeType','children','result','status','nodeIdentifier','testIdentifier','nodeIdentifierURL','duration','durationInSeconds','name']
+                    keys = sorted(k for k in structural_keys if k in value)
+                    status_value = value.get('result',value.get('status'))
+                    shape = {'type_category':category,'type_sha256':hashlib.sha256(kind.encode()).hexdigest(),
+                        'known_structural_keys':keys,'other_key_count':len(set(value)-set(structural_keys)),
+                        'closed_result':status_value if isinstance(status_value,str) and status_value in STATUS_KEYS else 'unknown',
+                        'parent_source_method_known':parent in METHODS,'children_count':len(value['children']) if isinstance(value.get('children'),list) else None}
+                    if len(result['unknown_shapes']) < 32: result['unknown_shapes'].append(shape)
+                    else: result['unknown_shape_records_truncated'] = True
+            if 'nodeType' in value and not isinstance(kind,str):
+                result['unknown_node_count'] += 1
+                result['node_type_diagnostics']['nonstring_type'] = result['node_type_diagnostics'].get('nonstring_type',0) + 1
             if kind == 'Test Case':
                 name = source_method(value.get('nodeIdentifier',value.get('testIdentifier')))
                 status = value.get('result',value.get('status'))
-                if name is None or name in seen or status not in STATUS_KEYS:
+                if name is None or name in seen or not isinstance(status,str) or status not in STATUS_KEYS:
                     result['unexpected_test_definitions'] += 1; parent = None
                 else:
                     seen.add(name); parent = name
                     result['definition_rows'].append({'method':name,'status':status})
             elif kind == 'Test Case Run':
                 status = value.get('result',value.get('status'))
-                if parent not in METHODS or status not in STATUS_KEYS: result['unknown_node_count'] += 1
+                if parent not in METHODS or not isinstance(status,str) or status not in STATUS_KEYS: result['unknown_node_count'] += 1
                 else:
                     ordinal = 1 + sum(row['method'] == parent for row in result['argument_leaf_rows'])
                     result['argument_leaf_rows'].append({'method':parent,'ordinal':ordinal,'status':status})
-            elif isinstance(kind,str) and kind not in {'Test Plan','Device','Test Bundle','Test Suite'}:
+            elif isinstance(kind,str) and kind not in {'Test Plan','Device','Test Bundle','Unit test bundle','Test Suite'}:
                 result['unknown_node_count'] += 1
             for child in value.values():
                 if isinstance(child,(dict,list)): walk(child,parent,depth+1)
@@ -207,7 +229,26 @@ def parser_controls():
     for value in bad: require(native_inventory(value,leaves)['status'] != 'complete','no-invented-native-coverage')
     wrong = dict(leaves,totalTestCount=True)
     require(native_inventory(tree,wrong)['status'] != 'complete','bool-count-not-execution')
-    return {'positive':2,'negative':6,'runtime_bodies':0,'schema_fixtures_not_actual_execution':True}
+    malformed_status = copy.deepcopy(tree); malformed_status['testNodes'][0]['children'][0]['result'] = {}
+    require(native_inventory(malformed_status,leaves)['status'] != 'complete','nonstring-result-unknown')
+    malformed_type = copy.deepcopy(tree); malformed_type['testNodes'][0]['children'][0]['nodeType'] = {}
+    require(native_inventory(malformed_type,leaves)['status'] != 'complete','nonstring-node-type-unknown')
+    bundle_tree = {'testNodes':[{'nodeType':'Unit test bundle','children':tree['testNodes']}]}
+    require(native_inventory(bundle_tree,leaves)['status'] == 'complete','observed-unit-test-bundle-container-positive')
+    arguments_tree = copy.deepcopy(tree)
+    arguments_tree['testNodes'][0]['children'][0]['children'][0]['nodeType'] = 'Arguments'
+    observed = native_inventory(arguments_tree,leaves)
+    require(observed['status'] != 'complete' and observed['node_type_diagnostics'].get('Arguments') == 1
+        and observed['unknown_shapes'][0]['type_category'] == 'Arguments','diagnostics-not-acceptance')
+    private_type_tree = copy.deepcopy(arguments_tree)
+    private_type_tree['testNodes'][0]['children'][0]['children'][0]['nodeType'] = 'DO_NOT_EXPORT_VALUE'
+    observed = native_inventory(private_type_tree,leaves)
+    require('DO_NOT_EXPORT_VALUE' not in json.dumps(observed) and observed['status'] != 'complete','unapproved-type-hash-only')
+    require(binary_placement(('Debug','White Noise Unit Host.app'),'app') == 'debug_isolated_app','known-app-placement')
+    require(binary_placement(('Debug','whitenoise-macTests.xctest'),'test') == 'debug_standalone_unit_test_bundle','known-standalone-placement')
+    require(binary_placement(('Debug','White Noise Unit Host.app','Contents','PlugIns','whitenoise-macTests.xctest'),'test') == 'debug_isolated_app_plugins_unit_test_bundle','known-plugin-placement')
+    require(binary_placement(('PRIVATE_DIRECTORY','whitenoise-macTests.xctest'),'test') == 'other_owned_products_placement','unknown-placement-remains-unknown')
+    return {'positive':3,'negative':8,'closed_shape_controls':2,'placement_controls':4,'runtime_bodies':0,'schema_fixtures_not_actual_execution':True}
 
 
 def summary_safe(raw):
@@ -226,6 +267,131 @@ def sdk_identity(output):
         'actual_resolved_frameworks':[],'native_sync_qualified':False}
 
 
+def bounded_capture(command,environment,timeout,limit,private_log=None):
+    """In-flight combined output cap; only this command's own process group."""
+    process = subprocess.Popen(command,env=environment,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,start_new_session=True)
+    selector = selectors.DefaultSelector(); selector.register(process.stdout,selectors.EVENT_READ)
+    deadline = time.monotonic() + timeout; data = bytearray(); received = 0
+    state = {'exit_code':None,'watchdog_triggered':False,'output_limit_triggered':False,'captured_bytes':0}
+    stream = private_log.open('xb') if private_log is not None else None
+    def stop():
+        try: os.killpg(process.pid,signal.SIGTERM)
+        except ProcessLookupError: pass
+        try: process.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            try: os.killpg(process.pid,signal.SIGKILL)
+            except ProcessLookupError: pass
+            process.wait()
+    try:
+        while selector.get_map():
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                state['watchdog_triggered'] = True; stop(); break
+            ready = selector.select(min(remaining,1))
+            for key,_ in ready:
+                chunk = os.read(key.fileobj.fileno(),65536)
+                if not chunk:
+                    selector.unregister(key.fileobj); continue
+                if received + len(chunk) > limit:
+                    state['output_limit_triggered'] = True; stop(); break
+                received += len(chunk)
+                if stream is not None: stream.write(chunk)
+                else: data.extend(chunk)
+            if state['output_limit_triggered']: break
+        if not state['watchdog_triggered'] and not state['output_limit_triggered']:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                state['watchdog_triggered'] = True; stop()
+            else:
+                try: state['exit_code'] = process.wait(timeout=remaining)
+                except subprocess.TimeoutExpired:
+                    state['watchdog_triggered'] = True; stop()
+        state['captured_bytes'] = received
+        return state,bytes(data)
+    finally:
+        if process.poll() is None: stop()
+        selector.close(); process.stdout.close()
+        if stream is not None: stream.close()
+
+
+def binary_placement(parts,role):
+    if role == 'app' and tuple(parts) == ('Debug','White Noise Unit Host.app'):
+        return 'debug_isolated_app'
+    if role == 'test' and tuple(parts) == ('Debug','whitenoise-macTests.xctest'):
+        return 'debug_standalone_unit_test_bundle'
+    if role == 'test' and tuple(parts) == ('Debug','White Noise Unit Host.app','Contents','PlugIns','whitenoise-macTests.xctest'):
+        return 'debug_isolated_app_plugins_unit_test_bundle'
+    return 'other_owned_products_placement'
+
+
+def actual_binary_inventory():
+    derived = OUT / 'DerivedData'; products = derived / 'Build/Products'
+    result = {'status':'unknown','search_root':'owned_DerivedData_Build_Products',
+        'search_complete':False,'roles':{'app':{'candidate_count':0,'records':[]},'test':{'candidate_count':0,'records':[]}}}
+    def safe_chain(path,root,regular=False):
+        try:
+            relative = path.relative_to(root)
+            if root.is_symlink() or not root.is_dir(): return False
+            cursor = root
+            for part in relative.parts:
+                cursor = cursor / part
+                if cursor.is_symlink(): return False
+            if not path.resolve(strict=True).is_relative_to(root.resolve(strict=True)): return False
+            return stat.S_ISREG(path.lstat().st_mode) if regular else path.is_dir()
+        except (OSError,ValueError): return False
+    if not safe_chain(products,derived): return result
+    known = {'app':('White Noise Unit Host.app','White Noise Unit Host','dev.ipf.whitenoise.mac.tests'),
+        'test':('whitenoise-macTests.xctest','whitenoise-macTests','dev.ipf.whitenoise-macTests')}
+    visited = 0; candidates = {'app':[],'test':[]}
+    for directory,dirs,_ in os.walk(products,followlinks=False):
+        visited += 1
+        if visited > 10000 or len(Path(directory).relative_to(products).parts) > 16:
+            result['search_limit_exceeded'] = True; return result
+        retained = []
+        for name in dirs:
+            path = Path(directory) / name
+            for role,(bundle,_,_) in known.items():
+                if name == bundle: candidates[role].append(path)
+            if path.is_symlink() or name.endswith(('.framework','.xcframework','.bundle','.dSYM','.xctest')): continue
+            retained.append(name)
+        dirs[:] = retained
+    result['search_complete'] = True; result['visited_directories'] = visited
+    for role,paths in candidates.items():
+        bucket = result['roles'][role]; bucket['candidate_count'] = len(paths)
+        if len(paths) > 16:
+            bucket['candidate_records_truncated'] = True; continue
+        _,expected_executable,expected_identifier = known[role]
+        for path in paths:
+            record = {'placement':binary_placement(path.relative_to(products).parts,role),'status':'unknown',
+                'bundle_chain_nonsymlink':safe_chain(path,products),'plist_regular_nonsymlink':False,
+                'known_executable':False,'known_bundle_identifier':False,'executable_regular_nonsymlink':False,'sha256':None}
+            bucket['records'].append(record)
+            info = path / 'Contents/Info.plist'
+            if not record['bundle_chain_nonsymlink'] or not safe_chain(info,products,regular=True): continue
+            record['plist_regular_nonsymlink'] = True
+            if info.stat().st_size > 1024*1024: continue
+            try: metadata = plistlib.loads(info.read_bytes())
+            except (OSError,ValueError,plistlib.InvalidFileException): continue
+            if not isinstance(metadata,dict): continue
+            executable = metadata.get('CFBundleExecutable')
+            record['known_executable'] = executable == expected_executable
+            record['known_bundle_identifier'] = metadata.get('CFBundleIdentifier') == expected_identifier
+            if not record['known_executable'] or not record['known_bundle_identifier']: continue
+            binary = path / 'Contents/MacOS' / expected_executable
+            record['executable_regular_nonsymlink'] = safe_chain(binary,products,regular=True)
+            if not record['executable_regular_nonsymlink']: continue
+            record['executable_mode'] = bool(binary.lstat().st_mode & 0o111)
+            if not record['executable_mode']: continue
+            digest = hashlib.sha256()
+            with binary.open('rb') as stream:
+                for block in iter(lambda:stream.read(1024*1024),b''): digest.update(block)
+            record['sha256'] = digest.hexdigest()
+            if record['placement'] != 'other_owned_products_placement': record['status'] = 'known'
+    if all(bucket['candidate_count'] == 1 and len(bucket['records']) == 1 and bucket['records'][0]['status'] == 'known'
+        for bucket in result['roles'].values()): result['status'] = 'complete'
+    return result
+
+
 def execute(label,expected,save,result):
     require(fingerprint() == expected,'before-runtime-source-mode-pristine')
     output = OUT / label; output.mkdir(parents=True,exist_ok=True)
@@ -237,24 +403,17 @@ def execute(label,expected,save,result):
     row = {'phase':label,'command':command,'runtime_summary':None,'runtime_inventory':None,'actual_runtime_counts_known':False,
         'green':False,'counterfactual_RED':False,'source_expected_sha256':hashlib.sha256(json.dumps(expected,sort_keys=True).encode()).hexdigest()}
     result['phases'][label] = row; save(); start = time.monotonic()
-    with log.open('x') as stream:
-        process = subprocess.Popen(command,env=environment,stdout=stream,stderr=subprocess.STDOUT,start_new_session=True)
-        try:
-            row['exit_code'] = process.wait(timeout=1800)
-        except subprocess.TimeoutExpired:
-            row['exit_code'] = None; row['watchdog_triggered'] = True
-            os.killpg(process.pid,signal.SIGTERM)
-            try: process.wait(timeout=20)
-            except subprocess.TimeoutExpired:
-                os.killpg(process.pid,signal.SIGKILL); process.wait()
+    capture,_ = bounded_capture(command,environment,1800,64*1024*1024,private_log=log)
+    row.update(capture)
     row['wall_seconds'] = round(time.monotonic()-start,3); row['bundle_exists'] = bundle.exists(); save()
     require(fingerprint() == expected,'after-runtime-source-mode-pristine')
-    if not bundle.exists(): return row
+    if not bundle.exists() or row.get('watchdog_triggered') or row.get('output_limit_triggered'): return row
     exports = {}
     for kind in ['summary','tests']:
         try:
-            data = subprocess.check_output(['xcrun','xcresulttool','get','test-results',kind,'--path',str(bundle)],timeout=90)
-            require(len(data) <= 8*1024*1024,'bounded-native-export')
+            capture,data = bounded_capture(['xcrun','xcresulttool','get','test-results',kind,'--path',str(bundle)],environment,90,8*1024*1024)
+            row.setdefault('native_export_capture',{})[kind] = capture; save()
+            require(capture['exit_code'] == 0 and not capture['watchdog_triggered'] and not capture['output_limit_triggered'],'bounded-native-export')
             exports[kind] = json.loads(data)
         except (subprocess.SubprocessError,ValueError):
             row['native_export_failed'] = kind; save(); return row
@@ -283,17 +442,17 @@ def execute(label,expected,save,result):
                     for block in iter(lambda:stream.read(1024*1024),b''): digest.update(block)
                 files[str(path.relative_to(framework))] = digest.hexdigest()
         row['sdk']['actual_resolved_frameworks'].append({'bundle_name':framework.name,'files':files})
-    app = OUT/'DerivedData/Build/Products/Debug/White Noise Unit Host.app/Contents/MacOS/White Noise Unit Host'
-    test = OUT/'DerivedData/Build/Products/Debug/whitenoise-macTests.xctest/Contents/MacOS/whitenoise-macTests'
-    row['binaries'] = {str(path.relative_to(OUT)):hashlib.sha256(path.read_bytes()).hexdigest() for path in [app,test] if path.is_file()}
+    row['binary_inventory'] = actual_binary_inventory()
+    row['binaries'] = {role:bucket['records'][0]['sha256'] for role,bucket in row['binary_inventory']['roles'].items()
+        if bucket['candidate_count'] == 1 and len(bucket['records']) == 1 and bucket['records'][0]['status'] == 'known'}
     if inventory['status'] == 'complete' and row['build_succeeded'] and row['sdk']['actual_resolved_frameworks']:
         definitions = inventory['definition_rows']; leaves = inventory['argument_leaf_rows']
         row['green'] = (row['exit_code'] == 0 and all(v['status'] == 'Passed' for v in definitions+leaves)
-            and not issue_lines and bool(row['binaries']))
+            and not issue_lines and row['binary_inventory']['status'] == 'complete' and set(row['binaries']) == {'app','test'})
         row['counterfactual_RED'] = (row['exit_code'] not in {None,0} and not row.get('watchdog_triggered')
             and all(v['status'] == ('Failed' if v['method'] == TARGET else 'Passed') for v in definitions+leaves)
             and len(locations) == len(issue_lines) == 2 and all(v['expectation_failure'] and 63 <= v['line'] <= 66 for v in locations)
-            and bool(row['binaries']))
+            and row['binary_inventory']['status'] == 'complete' and set(row['binaries']) == {'app','test'})
     row['source_pristine'] = fingerprint() == expected; save(); return row
 
 
