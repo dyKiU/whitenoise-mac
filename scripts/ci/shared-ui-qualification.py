@@ -15,6 +15,7 @@ import os
 import plistlib
 from pathlib import Path
 import subprocess
+import urllib.parse
 
 BASE = '2a60df8f95245328b43b324c325a31540b2488e5'
 PREVIOUS = '5db1dc879149ec8b168baa24cb860d8d32b9c02e'
@@ -139,12 +140,12 @@ def native_inventory(tree,summary):
     result = {'status':'schema_unknown','definition_rows':[],'argument_leaf_rows':[],
         'definition_counts':None,'argument_leaf_counts':None,'summary_count_basis':None,
         'unknown_node_count':0,'unexpected_test_definitions':0,'node_type_diagnostics':{},'unknown_shapes':[],
-        'argument_names_distinct_by_parent':{}}
+        'argument_names_distinct_by_parent':{},'failed_argument_message_count':0,'_private_failure_message_hashes':[]}
     if not isinstance(tree,dict) or not isinstance(tree.get('testNodes'),list): return result
     seen = set(); argument_names = {name:set() for name,labels in METHODS.items() if labels}
     duplicate_arguments = set(); node_count = 0
     containers = {'Test Plan','Device','Test Bundle','Unit test bundle','Test Suite'}
-    diagnostic_types = containers | {'Test Case','Test Case Run','Arguments','Argument','Test Argument','Test Iteration','Repetition','Test Case Group'}
+    diagnostic_types = containers | {'Test Case','Test Case Run','Arguments','Argument','Test Argument','Test Iteration','Repetition','Test Case Group','Failure Message'}
     argument_keys = {'duration','durationInSeconds','name','nodeType','result'}
     def diagnostic(node,parent,unknown=False):
         kind = node.get('nodeType')
@@ -179,7 +180,17 @@ def native_inventory(tree,summary):
                 result['definition_rows'].append({'method':name,'status':status})
         elif kind == 'Arguments':
             name = value.get('name'); seconds = value.get('durationInSeconds'); duration = value.get('duration')
-            valid = (set(value) == argument_keys and parent_kind == 'Test Case' and parent in argument_names
+            failed_message = None
+            keys = argument_keys | {'children'} if status == 'Failed' else argument_keys
+            children = value.get('children')
+            failure_child_known = status != 'Failed'
+            if status == 'Failed' and isinstance(children,list) and len(children) == 1:
+                child = children[0]
+                if (isinstance(child,dict) and set(child) == {'nodeType','name'} and child.get('nodeType') == 'Failure Message'
+                    and isinstance(child.get('name'),str) and 0 < len(child['name'].encode()) <= 1024*1024
+                    and child['name'].startswith('Expectation failed:')):
+                    failed_message = child['name']; failure_child_known = True
+            valid = (set(value) == keys and failure_child_known and parent_kind == 'Test Case' and parent in argument_names
                 and isinstance(name,str) and 0 < len(name.encode()) <= 1024
                 and isinstance(duration,str) and 0 < len(duration) <= 64
                 and type(seconds) in {int,float} and math.isfinite(seconds) and seconds >= 0
@@ -191,6 +202,9 @@ def native_inventory(tree,summary):
                     argument_names[parent].add(identity); known = True
                     ordinal = len(argument_names[parent])
                     result['argument_leaf_rows'].append({'method':parent,'ordinal':ordinal,'status':status})
+                    if failed_message is not None:
+                        result['failed_argument_message_count'] += 1
+                        result['_private_failure_message_hashes'].append(hashlib.sha256(failed_message.encode()).hexdigest())
         elif isinstance(kind,str) and kind in containers:
             known = parent is None
         # Test Case Run and every other unobserved execution schema remain unknown.
@@ -199,6 +213,9 @@ def native_inventory(tree,summary):
         children = value.get('children')
         if children is not None:
             if not isinstance(children,list): result['unknown_node_count'] += 1
+            elif kind == 'Arguments' and known and status == 'Failed':
+                # Exactly one observed Failure Message was checked above; it is a diagnostic, never an execution leaf.
+                for child in children: diagnostic(child,parent)
             else: walk(children,next_parent,kind,depth+1)
         # No nested node or alternate run tree can hide under an unreviewed key.
         if any(isinstance(child,(dict,list)) for key,child in value.items() if key != 'children'):
@@ -251,11 +268,23 @@ def parser_controls():
         and row['argument_leaf_counts']['passedTests'] == 5 and row['summary_count_basis'] == 'definition','observed-three-definitions-five-distinct-leaves')
     failure = sample(); target = next(row for row in cases(failure) if source_method(row['nodeIdentifier']) == TARGET)
     target['result'] = 'Failed'
-    for child in target['children']: child['result'] = 'Failed'
+    for child in target['children']:
+        child['result'] = 'Failed'; child['children'] = [{'nodeType':'Failure Message','name':'Expectation failed: SYNTHETIC_PRIVATE_ASSERTION'}]
     failed_summary = dict(totalTestCount=3,passedTests=2,failedTests=1,skippedTests=0)
     row = native_inventory(failure,failed_summary)
     require(row['status'] == 'complete' and row['argument_leaf_counts']['passedTests'] == 3
         and row['argument_leaf_counts']['failedTests'] == 2,'observed-parameterized-failure-counts-kept-separate')
+    failed_bad = []
+    def bad_failure(change):
+        value = copy.deepcopy(failure); change(next(row for row in cases(value) if source_method(row['nodeIdentifier']) == TARGET)['children'][0]); failed_bad.append(value)
+    bad_failure(lambda child:child.pop('children'))
+    bad_failure(lambda child:child['children'].append(copy.deepcopy(child['children'][0])))
+    bad_failure(lambda child:child['children'][0].update(nodeType='Source Code Reference'))
+    bad_failure(lambda child:child['children'][0].update(name=None))
+    bad_failure(lambda child:child['children'][0].update(name='Other issue'))
+    bad_failure(lambda child:child['children'][0].update(children=[]))
+    bad_failure(lambda child:child.update(result='Passed'))
+    for value in failed_bad: require(native_inventory(value,failed_summary)['status'] != 'complete','strict-observed-failure-message-child')
     bad = []
     def altered(change):
         value = sample(); change(value); bad.append(value)
@@ -286,7 +315,7 @@ def parser_controls():
     for wrong in [dict(summary,totalTestCount=True),dict(totalTestCount=5,passedTests=5,failedTests=0,skippedTests=0),
         dict(totalTestCount=3,passedTests=2,failedTests=0,skippedTests=1)]:
         require(native_inventory(tree,wrong)['status'] != 'complete','native-definition-summary-source-remains-exact')
-    row = native_inventory(tree,summary)
+    row = native_inventory(tree,summary); row.pop('_private_failure_message_hashes',None)
     require('synthetic-appearance-a' not in json.dumps(row) and 'synthetic-appearance-b' not in json.dumps(row), 'no-argument-name-or-internal-hash-export')
     private_type = sample(); cases(private_type)[0]['children'][0]['nodeType'] = 'UnapprovedPrivateType'
     require('UnapprovedPrivateType' not in json.dumps(native_inventory(private_type,summary)), 'unapproved-type-hash-only')
@@ -294,7 +323,7 @@ def parser_controls():
     require(binary_placement(('Debug','whitenoise-macTests.xctest'),'test') == 'debug_standalone_unit_test_bundle','known-standalone-placement')
     require(binary_placement(('Debug','White Noise Unit Host.app','Contents','PlugIns','whitenoise-macTests.xctest'),'test') == 'debug_isolated_app_plugins_unit_test_bundle','known-plugin-placement')
     require(binary_placement(('PRIVATE_DIRECTORY','whitenoise-macTests.xctest'),'test') == 'other_owned_products_placement','unknown-placement-remains-unknown')
-    return {'observed_schema_positive':2,'execution_schema_negative':len(bad),'summary_negative':3,
+    return {'observed_schema_positive':2,'execution_schema_negative':len(bad),'failed_argument_schema_negative':len(failed_bad),'summary_negative':3,
         'privacy_controls':2,'placement_controls':4,'runtime_bodies':0,'schema_fixtures_not_actual_execution':True}
 
 
@@ -493,6 +522,203 @@ def actual_binary_inventory():
     return result
 
 
+def legacy_type(value,name):
+    return isinstance(value,dict) and isinstance(value.get('_type'),dict) and value['_type'].get('_name') == name
+
+
+def legacy_string(value,limit):
+    if not legacy_type(value,'String') or not isinstance(value.get('_value'),str) or len(value['_value'].encode()) > limit:
+        raise ValueError('closed-legacy-string-shape')
+    return value['_value']
+
+
+def legacy_array(value):
+    if not legacy_type(value,'Array') or not isinstance(value.get('_values',[]),list) or len(value.get('_values',[])) > 64:
+        raise ValueError('bounded-legacy-array-shape')
+    return value.get('_values',[])
+
+
+def legacy_case_method(value):
+    if not isinstance(value,str) or len(value.encode()) > 2048: return None
+    for prefix in ['whitenoise-macTests.','whitenoise_macTests.','whitenoise-macTests/','whitenoise_macTests/']:
+        if value.startswith(prefix): value = value[len(prefix):]; break
+    # Native issue identity retains the exact known suite+source method; parameter display values remain internal.
+    for name,labels in METHODS.items():
+        for separator in ['.','/']:
+            base = SUITE + separator + name
+            if value == base + '(' + labels + ')': return name
+            if labels and value.startswith(base + '(' + labels) and value.endswith(')') and '\n' not in value and '\r' not in value:
+                return name
+    return None
+
+
+def native_document_location(value):
+    row = {'status':'unknown','file':None,'starting_line':None,'ending_line':None,
+        'starting_column':None,'ending_column':None,'only_original_shared_assertion':False,
+        'coordinate_source':'unmodified_native_DocumentLocation_fragment_no_offset_conversion',
+        'typed_document_location':False,'file_scheme':False,'known_file_suffix':False,'fragment_key_count':None,
+        'known_fragment_keys':[],'other_fragment_key_count':None}
+    try:
+        if not legacy_type(value,'DocumentLocation'): return row
+        row['typed_document_location'] = True
+        url = legacy_string(value.get('url'),4096)
+        legacy_string(value.get('concreteTypeName'),256)  # Type name is validated, never exported.
+        parsed = urllib.parse.urlsplit(url)
+        path = urllib.parse.unquote(parsed.path)
+        row['file_scheme'] = parsed.scheme == 'file'
+        row['known_file_suffix'] = path.endswith('/' + TEST)
+        if (parsed.scheme != 'file' or parsed.netloc not in {'','localhost'} or parsed.query
+            or not path.endswith('/' + TEST) or '..' in Path(path).parts or '%' in path): return row
+        row['file'] = TEST
+        fields = urllib.parse.parse_qs(parsed.fragment,keep_blank_values=True,strict_parsing=True)
+        allowed = {'StartingLineNumber','EndingLineNumber','StartingColumnNumber','EndingColumnNumber','CharacterRangeLoc','CharacterRangeLen'}
+        row['fragment_key_count'] = len(fields)
+        row['known_fragment_keys'] = sorted(set(fields)&allowed)
+        row['other_fragment_key_count'] = len(set(fields)-allowed)
+        if set(fields)-allowed or not {'StartingLineNumber','EndingLineNumber'} <= set(fields): return row
+        for key,values in fields.items():
+            if len(values) != 1 or re.fullmatch(r'[0-9]{1,8}',values[0]) is None: return row
+        row['starting_line'] = int(fields['StartingLineNumber'][0]); row['ending_line'] = int(fields['EndingLineNumber'][0])
+        for source,target in [('StartingColumnNumber','starting_column'),('EndingColumnNumber','ending_column')]:
+            if source in fields: row[target] = int(fields[source][0])
+        row['status'] = 'known_source_url'
+        row['only_original_shared_assertion'] = 63 <= row['starting_line'] <= row['ending_line'] <= 66
+    except (ValueError,UnicodeError): pass
+    return row
+
+
+def legacy_native_issues(document):
+    report = {'status':'schema_unknown','issues':[],'unknown_issue_count':0,'root_error_summary_count':None,
+        'test_failure_summary_count':None,'source_site_RED_proven':False,'no_native_failure_issues':False,
+        'raw_messages_URLs_values_or_argument_names_exported':False}
+    payloads = []
+    try:
+        if not legacy_type(document,'ActionsInvocationRecord') or not legacy_type(document.get('issues'),'ResultIssueSummaries'):
+            return report,payloads
+        issues = document['issues']
+        errors = legacy_array(issues['errorSummaries']) if 'errorSummaries' in issues else []
+        failures = legacy_array(issues['testFailureSummaries']) if 'testFailureSummaries' in issues else []
+        report['root_error_summary_count'] = len(errors); report['test_failure_summary_count'] = len(failures)
+        report['test_failure_array_field_present'] = 'testFailureSummaries' in issues
+        report['error_summary_array_field_present'] = 'errorSummaries' in issues
+        for value in failures:
+            row = {'typed_test_failure':False,'method':None,'expectation_failed':False,'producing_target_known':False,'native_source':None,'known':False}
+            report['issues'].append(row)
+            try:
+                if not legacy_type(value,'TestFailureIssueSummary'): raise ValueError('typed-native-test-failure-required')
+                row['typed_test_failure'] = True
+                row['known_issue_keys'] = sorted(set(value)&{'_type','issueType','message','testCaseName','producingTarget','documentLocationInCreatingWorkspace','compactMessage'})
+                row['other_issue_key_count'] = len(set(value)-set(row['known_issue_keys']))
+                message = legacy_string(value.get('message'),1024*1024)
+                issue_type = legacy_string(value.get('issueType'),256)
+                row['issue_class'] = issue_type if issue_type in {'Assertion Failure','Swift Testing Failure','Uncategorized'} else 'other_native_issue_class'
+                row['expectation_failed'] = message.startswith('Expectation failed:')
+                row['method'] = legacy_case_method(legacy_string(value.get('testCaseName'),2048))
+                target = value.get('producingTarget')
+                row['producing_target_known'] = target is None or legacy_string(target,256) in {'whitenoise-macTests','whitenoise_macTests'}
+                row['native_source'] = native_document_location(value.get('documentLocationInCreatingWorkspace'))
+                row['known'] = (row['method'] == TARGET and row['issue_class'] in {'Assertion Failure','Swift Testing Failure'} and row['expectation_failed'] and row['producing_target_known']
+                    and row['native_source']['status'] == 'known_source_url' and row['native_source']['only_original_shared_assertion'])
+                if row['known']: payloads.append(hashlib.sha256(message.encode()).hexdigest())
+            except ValueError: pass
+            if not row['known']: report['unknown_issue_count'] += 1
+        report['status'] = 'complete' if not report['unknown_issue_count'] else 'unknown_native_issue'
+        report['no_native_failure_issues'] = report['status'] == 'complete' and not errors and not failures
+        report['source_site_RED_proven'] = (report['status'] == 'complete' and not errors and len(failures) == len(payloads) == 2)
+    except ValueError: pass
+    return report,payloads
+
+
+def modern_details_shape(document):
+    result = {'status':'unknown','known_test_identity':False,'node_type_counts':{},'source_reference_shapes':[],
+        'source_locations_interpreted':False,'raw_names_details_values_exported':False}
+    if not isinstance(document,dict): return result
+    result['known_test_identity'] = source_method(document.get('testIdentifier')) == TARGET
+    if not isinstance(document.get('testRuns'),list): return result
+    known_types = {'Test Plan','Unit test bundle','UI test bundle','Test Suite','Test Case','Device','Test Plan Configuration',
+        'Arguments','Repetition','Test Case Run','Failure Message','Source Code Reference','Attachment','Expression','Test Value','Runtime Warning'}
+    pending = [(document['testRuns'],0)]; visited = 0
+    while pending:
+        value,depth = pending.pop(); visited += 1
+        if visited > 20000 or depth > 48: result['status'] = 'schema_limit'; return result
+        if isinstance(value,list): pending.extend((v,depth+1) for v in value)
+        elif isinstance(value,dict):
+            kind = value.get('nodeType')
+            category = kind if isinstance(kind,str) and kind in known_types else 'unknown_type'
+            result['node_type_counts'][category] = result['node_type_counts'].get(category,0) + 1
+            if kind == 'Source Code Reference' and len(result['source_reference_shapes']) < 16:
+                keys = {'nodeIdentifier','nodeIdentifierURL','nodeType','name','details','duration','durationInSeconds','result','tags','children'}
+                result['source_reference_shapes'].append({'known_keys':sorted(set(value)&keys),'other_key_count':len(set(value)-keys)})
+            pending.extend((child,depth+1) for child in value.values() if isinstance(child,(dict,list)))
+    result['status'] = 'closed_shape_only'; return result
+
+
+def native_issue_exports(bundle,environment,row,save):
+    closed = {'legacy':{'status':'export_unknown','source_site_RED_proven':False,'no_native_failure_issues':False},
+        'modern_details':{'status':'export_unknown'},'capture':{},'message_representation_comparison':'not_yet_compared',
+        'message_equality_is_qualification_gate':False}
+    row['native_issue_provenance'] = closed; save()
+    hashes = []
+    commands = [
+        ('legacy',['xcrun','xcresulttool','get','object','--legacy','--format','json','--path',str(bundle)],4*1024*1024),
+        ('modern_details',['xcrun','xcresulttool','get','test-results','test-details','--path',str(bundle),'--test-id',SUITE+'/'+TARGET+'(appearance:)'],2*1024*1024),
+    ]
+    for label,command,limit in commands:
+        capture,data = bounded_capture(command,environment,90,limit)
+        closed['capture'][label] = capture; save()
+        if capture['exit_code'] != 0 or capture['watchdog_triggered'] or capture['output_limit_triggered']: continue
+        try:
+            document = json.loads(data)
+            if label == 'legacy': closed['legacy'],hashes = legacy_native_issues(document)
+            else: closed['modern_details'] = modern_details_shape(document)
+        except (ValueError,UnicodeError): closed[label]['status'] = 'json_schema_unknown'
+        save()  # Closed actual issue facts persist BEFORE test-tree/oracle parsing.
+    return hashes
+
+
+def native_issue_parser_controls():
+    def string(value): return {'_type':{'_name':'String'},'_value':value}
+    def array(values): return {'_type':{'_name':'Array'},'_values':values}
+    def issue():
+        return {'_type':{'_name':'TestFailureIssueSummary'},'issueType':string('Assertion Failure'),
+            'message':string('Expectation failed: SYNTHETIC_PRIVATE_VALUE'),
+            'testCaseName':string(SUITE+'.'+TARGET+'(appearance:)'),'producingTarget':string('whitenoise-macTests'),
+            'documentLocationInCreatingWorkspace':{'_type':{'_name':'DocumentLocation'},
+                'concreteTypeName':string('DVTTextDocumentLocation'),
+                'url':string('file:///synthetic-checkout/'+TEST+'#StartingLineNumber=63&EndingLineNumber=66')}}
+    def document(values):
+        return {'_type':{'_name':'ActionsInvocationRecord'},'issues':{'_type':{'_name':'ResultIssueSummaries'},
+            'testFailureSummaries':array(values),'errorSummaries':array([])}}
+    good = document([issue(),issue()]); report,hashes = legacy_native_issues(good)
+    require(report['source_site_RED_proven'] and len(hashes) == 2,'typed-two-native-expectations-positive')
+    empty,_ = legacy_native_issues(document([])); require(empty['no_native_failure_issues'],'native-empty-control-positive')
+    bad = []
+    def altered(change):
+        value = copy.deepcopy(good); change(value); bad.append(value)
+    def failures(value): return value['issues']['testFailureSummaries']['_values']
+    altered(lambda value:failures(value).pop())
+    altered(lambda value:failures(value).append(issue()))
+    altered(lambda value:failures(value)[0]['message'].update(_value='Other failure: SYNTHETIC_PRIVATE_VALUE'))
+    altered(lambda value:failures(value)[0]['testCaseName'].update(_value='ForeignSuite.'+TARGET+'(appearance:)'))
+    altered(lambda value:failures(value)[0]['producingTarget'].update(_value='ForeignTarget'))
+    altered(lambda value:failures(value)[0]['documentLocationInCreatingWorkspace']['url'].update(_value='file:///synthetic/'+TEST+'#StartingLineNumber=60&EndingLineNumber=62'))
+    altered(lambda value:failures(value)[0]['documentLocationInCreatingWorkspace']['url'].update(_value='file:///synthetic/'+TEST+'#StartingLineNumber=55&EndingLineNumber=59'))
+    altered(lambda value:failures(value)[0]['documentLocationInCreatingWorkspace']['url'].update(_value='file:///synthetic/Foreign.swift#StartingLineNumber=63&EndingLineNumber=66'))
+    altered(lambda value:failures(value)[0]['documentLocationInCreatingWorkspace']['url'].update(_value='https://private.invalid/'+TEST+'#StartingLineNumber=63&EndingLineNumber=66'))
+    altered(lambda value:failures(value)[0]['documentLocationInCreatingWorkspace']['url'].update(_value='file:///synthetic/'+TEST+'#StartingLineNumber=63&StartingLineNumber=64&EndingLineNumber=66'))
+    altered(lambda value:failures(value)[0]['documentLocationInCreatingWorkspace'].pop('url'))
+    altered(lambda value:failures(value)[0]['documentLocationInCreatingWorkspace']['url'].update(_value='file:///synthetic/'+TEST+'#StartingLineNumber=63&EndingLineNumber=66&PRIVATE=1'))
+    altered(lambda value:value['issues']['errorSummaries'].update(_values=[{'_type':{'_name':'IssueSummary'}}]))
+    altered(lambda value:value['_type'].update(_name='ForeignObject'))
+    altered(lambda value:value['issues'].update(errorSummaries=None))
+    altered(lambda value:value['issues'].update(testFailureSummaries=None))
+    altered(lambda value:failures(value)[0]['issueType'].update(_value='Unknown native class'))
+    altered(lambda value:failures(value)[0]['issueType'].update(_value='Uncategorized'))
+    for value in bad: require(not legacy_native_issues(value)[0]['source_site_RED_proven'],'no-false-native-issue-site-RED')
+    require('SYNTHETIC_PRIVATE_VALUE' not in json.dumps(report) and 'synthetic-checkout' not in json.dumps(report),'no-private-native-issue-export')
+    return {'positive':2,'negative':len(bad),'privacy':1,'runtime_bodies':0}
+
+
 def execute(label,expected,save,result):
     require(fingerprint() == expected,'before-runtime-source-mode-pristine')
     output = OUT / label; output.mkdir(parents=True,exist_ok=True)
@@ -509,7 +735,7 @@ def execute(label,expected,save,result):
     row['wall_seconds'] = round(time.monotonic()-start,3); row['bundle_exists'] = bundle.exists(); save()
     require(fingerprint() == expected,'after-runtime-source-mode-pristine')
     if not bundle.exists() or row.get('watchdog_triggered') or row.get('output_limit_triggered'): return row
-    exports = {}
+    exports = {}; legacy_message_hashes = []
     for kind in ['summary','tests']:
         try:
             capture,data = bounded_capture(['xcrun','xcresulttool','get','test-results',kind,'--path',str(bundle)],environment,90,8*1024*1024)
@@ -518,8 +744,18 @@ def execute(label,expected,save,result):
             exports[kind] = json.loads(data)
         except (subprocess.SubprocessError,ValueError):
             row['native_export_failed'] = kind; save(); return row
-        if kind == 'summary': row['runtime_summary'] = summary_safe(exports[kind]); save()  # Counts precede inventory parsing.
-    inventory = native_inventory(exports['tests'],exports['summary']); row['runtime_inventory'] = inventory
+        if kind == 'summary':
+            row['runtime_summary'] = summary_safe(exports[kind]); save()  # Actual counts precede every issue/inventory parser.
+            legacy_message_hashes = native_issue_exports(bundle,environment,row,save)
+    inventory = native_inventory(exports['tests'],exports['summary'])
+    modern_message_hashes = inventory.pop('_private_failure_message_hashes',[])
+    provenance = row['native_issue_provenance']
+    provenance['message_representation_comparison'] = ('same_multiset' if sorted(legacy_message_hashes) == sorted(modern_message_hashes)
+        else 'different_tool_representations') if legacy_message_hashes and modern_message_hashes else 'unknown_or_no_failures'
+    provenance['legacy_known_message_count'] = len(legacy_message_hashes)
+    provenance['modern_known_failure_message_count'] = len(modern_message_hashes)
+    # Internal message hashes are discarded; source/target/counts qualify, serialization equality is informative only.
+    row['runtime_inventory'] = inventory
     row['actual_runtime_counts_known'] = inventory['status'] == 'complete'; save()
     require(log.stat().st_size <= 64*1024*1024,'bounded-private-runtime-log')
     raw = log.read_text(errors='replace')
@@ -529,6 +765,7 @@ def execute(label,expected,save,result):
     for line in issue_lines:
         match = re.search(r'MarkdownRendererParityTests\.swift:([0-9]+):([0-9]+):',line)
         if match: locations.append({'file':TEST,'line':int(match[1]),'column':int(match[2]),'expectation_failure':'Expectation failed' in line})
+    row['console_issue_locations_are_diagnostic_only'] = True
     row['safe_issue_locations'] = locations[:32]; row['unknown_issue_count'] = len(issue_lines)-len(locations)
     row['issue_locations_truncated'] = len(locations) > 32
     row['build_succeeded'] = '** TEST BUILD SUCCEEDED **' in raw
@@ -551,10 +788,11 @@ def execute(label,expected,save,result):
     if inventory['status'] == 'complete' and row['build_succeeded'] and row['sdk']['actual_resolved_frameworks']:
         definitions = inventory['definition_rows']; leaves = inventory['argument_leaf_rows']
         row['green'] = (row['exit_code'] == 0 and all(v['status'] == 'Passed' for v in definitions+leaves)
-            and not issue_lines and row['binary_inventory']['status'] == 'complete' and set(row['binaries']) == {'app','test'})
+            and row['native_issue_provenance']['legacy']['no_native_failure_issues'] and row['binary_inventory']['status'] == 'complete' and set(row['binaries']) == {'app','test'})
         row['counterfactual_RED'] = (row['exit_code'] not in {None,0} and not row.get('watchdog_triggered')
             and all(v['status'] == ('Failed' if v['method'] == TARGET else 'Passed') for v in definitions+leaves)
-            and len(locations) == len(issue_lines) == 2 and all(v['expectation_failure'] and 63 <= v['line'] <= 66 for v in locations)
+            and inventory['failed_argument_message_count'] == 2
+            and row['native_issue_provenance']['legacy']['source_site_RED_proven']
             and row['binary_inventory']['status'] == 'complete' and set(row['binaries']) == {'app','test'})
     row['source_pristine'] = fingerprint() == expected; save(); return row
 
@@ -620,7 +858,7 @@ def main(args):
         result['source'] = guard(); save()
         if args.mode == 'cli-schema':
             cli_schema_metadata(result,save); return
-        result['parser_controls'] = parser_controls(); save()
+        result['parser_controls'] = parser_controls(); result['native_issue_parser_controls'] = native_issue_parser_controls(); save()
         if args.mode == 'preflight':
             format_feedback(result,save); return
         require(Path(VIEW).read_text().count(OLD) == 1 and NEW not in Path(VIEW).read_text(),'one-exact-reviewed-renderer-condition')
