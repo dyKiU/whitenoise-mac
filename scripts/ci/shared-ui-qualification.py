@@ -577,7 +577,7 @@ def cli_schema_metadata(result,save):
     environment = dict(os.environ)
     commands = [
         ('format-description-get-help',['xcrun','xcresulttool','help','formatDescription','get'],256*1024),
-        ('legacy-format-schema',['xcrun','xcresulttool','formatDescription','get','--format','json'],2*1024*1024),
+        ('legacy-format-schema',['xcrun','xcresulttool','formatDescription','get','--legacy','--format','json'],2*1024*1024),
     ]
     result['cli_metadata'] = {'commands':{},'maximum_total_output_bytes':4*1024*1024,
         'App_build_or_test_executed':False,'SDK_consumed':False,'actual_native_schema_claim':False}
