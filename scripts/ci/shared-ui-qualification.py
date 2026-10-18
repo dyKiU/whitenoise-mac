@@ -23,7 +23,7 @@ SELF = 'scripts/ci/shared-ui-qualification.py'
 WORKFLOW = '.github/workflows/mac-ci.yml'
 BEGIN = '  # SHARED_UI_FORMAT_JOBS_BEGIN\n'
 END = '  # SHARED_UI_FORMAT_JOBS_END\n'
-OPTIONS = 'options: [full, onboarding-mutations, shared-ui-format, shared-ui-raster-measure, shared-ui-raster-red-green, shared-ui-raster-pfp, shared-ui-cli-schema]'
+OPTIONS = 'options: [full, onboarding-mutations, shared-ui-format, shared-ui-raster-measure, shared-ui-raster-red-green, shared-ui-raster-pfp, shared-ui-cli-schema, shared-ui-native-calibration]'
 ORIGINAL_OPTIONS = 'options: [full, onboarding-mutations]'
 REF = 'refs/heads/ci/upstream-shared-ui-qualification-20261018'
 OUT = Path('build/shared-ui-qualification')
@@ -847,6 +847,312 @@ def cli_schema_metadata(result,save):
     save(); require(result['cli_metadata']['capture_complete'],'bounded-static-cli-capture-required')
 
 
+CALIBRATION_SWIFT = '''import Testing
+
+@Suite
+struct NativeIssueCalibration {
+    @Test
+    func passingControl() {
+        #expect(2 + 2 == 4)
+    }
+
+    @Test(arguments: [0, 1])
+    func knownSourceFailure(value: Int) {
+        #expect(value == 99)
+    }
+}
+'''
+CALIBRATION_FILE = 'NativeIssueCalibration.swift'
+CALIBRATION_LINE = 12
+CALIBRATION_PROJECT = '''// !$*UTF8*$!
+{
+ archiveVersion = 1;
+ classes = {};
+ objectVersion = 56;
+ objects = {
+  A00000000000000000000001 = { isa = PBXBuildFile; fileRef = A00000000000000000000002; };
+  A00000000000000000000002 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeIssueCalibration.swift; sourceTree = "<group>"; };
+  A00000000000000000000003 = { isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NativeIssueCalibration.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+  A00000000000000000000004 = { isa = PBXGroup; children = (A00000000000000000000002, A00000000000000000000005); sourceTree = "<group>"; };
+  A00000000000000000000005 = { isa = PBXGroup; children = (A00000000000000000000003); name = Products; sourceTree = "<group>"; };
+  A00000000000000000000006 = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A00000000000000000000001); runOnlyForDeploymentPostprocessing = 0; };
+  A00000000000000000000007 = { isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+  A00000000000000000000008 = { isa = PBXNativeTarget; buildConfigurationList = A0000000000000000000000C; buildPhases = (A00000000000000000000006,A00000000000000000000007); buildRules = (); dependencies = (); name = NativeIssueCalibration; productName = NativeIssueCalibration; productReference = A00000000000000000000003; productType = "com.apple.product-type.bundle.unit-test"; };
+  A00000000000000000000009 = { isa = PBXProject; attributes = { LastUpgradeCheck = 2600; }; buildConfigurationList = A0000000000000000000000B; compatibilityVersion = "Xcode 14.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = (en,Base); mainGroup = A00000000000000000000004; productRefGroup = A00000000000000000000005; projectDirPath = ""; projectRoot = ""; targets = (A00000000000000000000008); };
+  A0000000000000000000000A = { isa = XCBuildConfiguration; buildSettings = { SDKROOT = macosx; MACOSX_DEPLOYMENT_TARGET = 15.0; }; name = Debug; };
+  A0000000000000000000000B = { isa = XCConfigurationList; buildConfigurations = (A0000000000000000000000A); defaultConfigurationIsVisible = 0; defaultConfigurationName = Debug; };
+  A0000000000000000000000C = { isa = XCConfigurationList; buildConfigurations = (A0000000000000000000000D); defaultConfigurationIsVisible = 0; defaultConfigurationName = Debug; };
+  A0000000000000000000000D = { isa = XCBuildConfiguration; buildSettings = { CODE_SIGNING_ALLOWED = NO; CODE_SIGNING_REQUIRED = NO; GENERATE_INFOPLIST_FILE = YES; PRODUCT_BUNDLE_IDENTIFIER = org.example.NativeIssueCalibration; PRODUCT_NAME = NativeIssueCalibration; SWIFT_VERSION = 6.0; SWIFT_OPTIMIZATION_LEVEL = "-Onone"; SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG; DEBUG_INFORMATION_FORMAT = dwarf; ENABLE_TESTABILITY = YES; TEST_HOST = ""; BUNDLE_LOADER = ""; LD_RUNPATH_SEARCH_PATHS = "$(inherited) @loader_path/../Frameworks"; }; name = Debug; };
+ };
+ rootObject = A00000000000000000000009;
+}
+'''
+CALIBRATION_SCHEME = '''<?xml version="1.0" encoding="UTF-8"?>
+<Scheme LastUpgradeVersion="2600" version="1.3">
+ <BuildAction parallelizeBuildables="NO" buildImplicitDependencies="NO">
+  <BuildActionEntries><BuildActionEntry buildForTesting="YES" buildForRunning="NO" buildForProfiling="NO" buildForArchiving="NO" buildForAnalyzing="NO">
+   <BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="A00000000000000000000008" BuildableName="NativeIssueCalibration.xctest" BlueprintName="NativeIssueCalibration" ReferencedContainer="container:NativeIssueCalibration.xcodeproj"/>
+  </BuildActionEntry></BuildActionEntries>
+ </BuildAction>
+ <TestAction buildConfiguration="Debug" selectedDebuggerIdentifier="Xcode.DebuggerFoundation.Debugger.LLDB" selectedLauncherIdentifier="Xcode.IDEFoundation.Launcher.LLDB" shouldUseLaunchSchemeArgsEnv="NO">
+  <Testables><TestableReference skipped="NO" parallelizable="NO"><BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="A00000000000000000000008" BuildableName="NativeIssueCalibration.xctest" BlueprintName="NativeIssueCalibration" ReferencedContainer="container:NativeIssueCalibration.xcodeproj"/></TestableReference></Testables>
+ </TestAction>
+</Scheme>
+'''
+
+
+def calibration_string(value,limit=2048):
+    return legacy_string(value,limit)
+
+
+def calibration_integer(value):
+    require(legacy_type(value,'Int') and isinstance(value.get('_value'),str)
+        and re.fullmatch(r'[0-9]{1,8}',value['_value']) is not None,'calibration-typed-integer')
+    return int(value['_value'])
+
+
+def calibration_role(value):
+    if not isinstance(value,str) or len(value.encode()) > 2048: return 'unknown'
+    for role,name in [('failing_parameterized','knownSourceFailure(value:)'),('passing_control','passingControl()')]:
+        if value in {name,'NativeIssueCalibration/'+name,'NativeIssueCalibration.'+name,'NativeIssueCalibration/NativeIssueCalibration/'+name}:
+            return role
+    return 'unknown'
+
+
+def calibration_modern_details(document):
+    report = {'known_target_identity':False,'nodes':[],'source_reference_count':0,
+        'distinct_source_run_count':0,'unknown_node_count':0,'complete':False,
+        'only_synthetic_fixed_file_suffixes_exported':True}
+    if not isinstance(document,dict): return report
+    report['known_target_identity'] = calibration_role(document.get('testIdentifier')) == 'failing_parameterized'
+    pending = [(document.get('testRuns'),None,None,0)]; runs = set(); visited = 0
+    known_types = {'Arguments','Test Case Run','Source Code Reference','Failure Message','Test Value','Expression'}
+    while pending:
+        value,parent,run,depth = pending.pop(); visited += 1
+        if visited > 1024 or depth > 24: report['limit_reached'] = True; return report
+        if isinstance(value,list):
+            pending.extend((child,parent,run,depth+1) for child in reversed(value)); continue
+        if not isinstance(value,dict): report['unknown_node_count'] += 1; continue
+        kind = value.get('nodeType'); known_kind = isinstance(kind,str) and kind in known_types
+        index = len(report['nodes']); status = value.get('result')
+        row = {'index':index,'parent':parent,'type':kind if known_kind else 'unknown',
+            'closed_result':status if isinstance(status,str) and status in STATUS_KEYS else 'unknown',
+            'known_keys':sorted(set(value)&{'nodeType','name','children','result','duration','durationInSeconds','nodeIdentifier','details'}),
+            'other_key_count':len(set(value)-{'nodeType','name','children','result','duration','durationInSeconds','nodeIdentifier','details'})}
+        report['nodes'].append(row)
+        if not known_kind: report['unknown_node_count'] += 1
+        if kind == 'Test Case Run': run = index
+        if kind == 'Source Code Reference':
+            report['source_reference_count'] += 1; row['run_index'] = run
+            name = value.get('name'); row['fixed_file_name_present'] = isinstance(name,str) and name.count(CALIBRATION_FILE) == 1
+            # All calibration source is synthetic. Prefix paths are never exported; retain only bounded known-file suffix syntax.
+            if row['fixed_file_name_present']:
+                suffix = name.split(CALIBRATION_FILE,1)[1]
+                if len(suffix) <= 256 and re.fullmatch(r'[A-Za-z0-9_:;()./#=& +\-]*',suffix): row['synthetic_source_suffix'] = suffix
+                else: row['synthetic_source_suffix_unknown'] = True
+            if run is not None: runs.add(run)
+        children = value.get('children')
+        if children is not None:
+            if not isinstance(children,list): report['unknown_node_count'] += 1
+            else: pending.append((children,index,run,depth+1))
+    report['distinct_source_run_count'] = len(runs)
+    report['complete'] = report['known_target_identity'] and report['source_reference_count'] == len(runs) == 2 and not report['unknown_node_count']
+    return report
+
+
+def calibration_summary_valid(summary):
+    return isinstance(summary,dict) and all(type(summary.get(k)) is int and summary[k] == v
+        for k,v in {'totalTestCount':2,'passedTests':1,'failedTests':1,'skippedTests':0}.items())
+
+
+def calibration_sources_complete(report,pending):
+    rows = report['typed_failure_sources']
+    return (not pending and not report['unknown_shapes']
+        and not any(report.get(flag) for flag in ['watchdog_reached','byte_limit_reached','reference_limit_reached','node_limit_reached'])
+        and len(rows) == 2 and all(row['known_fixed_file'] and row['matches_literal_line'] and row['typed_record_uuid_present'] for row in rows))
+
+
+def calibration_parser_controls():
+    summary = dict(totalTestCount=2,passedTests=1,failedTests=1,skippedTests=0)
+    require(calibration_summary_valid(summary),'calibration-exact-count-positive')
+    bad_counts = []
+    for key in COUNT_KEYS:
+        for bad in [True,False,None,-1,'1']:
+            bad_counts.append(dict(summary,**{key:bad}))
+    for value in bad_counts: require(not calibration_summary_valid(value),'calibration-no-bool-null-counts')
+    row = {'known_fixed_file':True,'matches_literal_line':True,'typed_record_uuid_present':True}
+    report = {'typed_failure_sources':[dict(row),dict(row)],'unknown_shapes':0}
+    require(calibration_sources_complete(report,False),'calibration-complete-sources-positive')
+    negatives = 0
+    for flag in ['watchdog_reached','byte_limit_reached','reference_limit_reached','node_limit_reached']:
+        require(not calibration_sources_complete(dict(report,**{flag:True}),False),'calibration-truncation-never-complete'); negatives += 1
+    require(not calibration_sources_complete(report,True),'calibration-pending-work-never-complete'); negatives += 1
+    require(not calibration_sources_complete(dict(report,unknown_shapes=1),False),'calibration-unknown-source-never-complete'); negatives += 1
+    require(not calibration_sources_complete(dict(report,typed_failure_sources=[dict(row)]),False),'calibration-exact-source-count'); negatives += 1
+    details = {'testIdentifier':'NativeIssueCalibration/knownSourceFailure(value:)','testRuns':[
+        {'nodeType':'Test Case Run','children':[{'nodeType':'Source Code Reference','name':'SYNTHETIC_PRIVATE_PREFIX/'+CALIBRATION_FILE+':12'}]},
+        {'nodeType':'Test Case Run','children':[{'nodeType':'Source Code Reference','name':'SYNTHETIC_PRIVATE_PREFIX/'+CALIBRATION_FILE+':12'}]}]}
+    observed = calibration_modern_details(details)
+    require(observed['complete'],'calibration-two-distinct-runs-positive')
+    require('SYNTHETIC_PRIVATE_PREFIX' not in json.dumps(observed),'calibration-no-source-prefix-export')
+    bad_details = []
+    value = copy.deepcopy(details); value['testRuns'][0]['children'].extend(value['testRuns'].pop()['children']); bad_details.append(value)
+    value = copy.deepcopy(details); value['testRuns'][0]['nodeType'] = 'Unobserved'; bad_details.append(value)
+    value = copy.deepcopy(details); value['testIdentifier'] = 'OtherSuite/knownSourceFailure(value:)'; bad_details.append(value)
+    value = copy.deepcopy(details); value['testRuns'][0]['children'] = {}; bad_details.append(value)
+    for value in bad_details: require(not calibration_modern_details(value)['complete'],'calibration-run-shape-failclosed')
+    return {'positive':3,'count_negative':len(bad_counts),'source_completion_negative':negatives,
+        'run_shape_negative':len(bad_details),'privacy':1,'actual_native_bodies':0}
+
+
+def calibration_legacy_walk(bundle,root,environment,save,result):
+    report = {'objects':[],'typed_failure_sources':[],'references_requested':0,'maximum_references':16,
+        'maximum_reference_bytes':8*1024*1024,'reference_captured_bytes':0,'unknown_shapes':0,'complete':False,
+        'raw_reference_ids_names_messages_paths_exported':False}
+    result['calibration']['legacy_traversal'] = report; save()
+    queue = [(root,'root','unknown')]; seen = set(); references = []; visited = 0; source_records = set()
+    allowed_types = {'ActionsInvocationRecord','ActionRecord','ActionResult','ActionTestPlanRunSummaries','ActionTestPlanRunSummary',
+        'ActionTestableSummary','ActionTestSummaryGroup','ActionTestMetadata','ActionTestSummary','ActionTestFailureSummary'}
+    child_fields = {'ActionsInvocationRecord':['actions'],'ActionRecord':['actionResult'],
+        'ActionTestPlanRunSummaries':['summaries'],'ActionTestPlanRunSummary':['testableSummaries'],
+        'ActionTestableSummary':['tests','failureSummaries'],'ActionTestSummaryGroup':['subtests','failureSummaries'],
+        'ActionTestSummary':['failureSummaries']}
+    deadline = time.monotonic()+180
+    while queue or references:
+        if time.monotonic() >= deadline: report['watchdog_reached'] = True; break
+        if not queue:
+            reference,parent_type,parent_role = references.pop(0)
+            if reference in seen: continue
+            if len(seen) >= 16: report['reference_limit_reached'] = True; break
+            seen.add(reference); report['references_requested'] += 1
+            remaining = deadline-time.monotonic(); byte_budget = 8*1024*1024-report['reference_captured_bytes']
+            if remaining <= 0: report['watchdog_reached'] = True; break
+            if byte_budget <= 0: report['byte_limit_reached'] = True; break
+            capture,data = bounded_capture(['xcrun','xcresulttool','get','object','--legacy','--path',str(bundle),'--id',reference,'--format','json'],environment,min(30,remaining),min(2*1024*1024,byte_budget))
+            report['reference_captured_bytes'] += len(data)
+            report['objects'].append({'ordinal':len(seen),'via':parent_type,'context_role':parent_role,'capture':capture}); save()
+            if capture['exit_code'] != 0 or capture['watchdog_triggered'] or capture['output_limit_triggered']: report['unknown_shapes'] += 1; break
+            try: queue.append((json.loads(data),'referenced',parent_role))
+            except ValueError: report['unknown_shapes'] += 1; break
+            continue
+        value,via,role = queue.pop(0); visited += 1
+        if visited > 2048: report['node_limit_reached'] = True; break
+        if not isinstance(value,dict) or not isinstance(value.get('_type'),dict): report['unknown_shapes'] += 1; continue
+        kind = value['_type'].get('_name')
+        if not isinstance(kind,str) or kind not in allowed_types: report['unknown_shapes'] += 1; continue
+        try:
+            for field in ['identifier','name']:
+                if field in value:
+                    identified = calibration_role(calibration_string(value[field]))
+                    if identified != 'unknown': role = identified
+            shape = {'ordinal':visited,'type':kind,'role':role,'via':via,
+                'known_keys':sorted(set(value)&{'_type','actions','actionResult','testsRef','summaries','testableSummaries','tests','subtests','identifier','identifierURL','name','testStatus','summaryRef','failureSummaries','fileName','lineNumber','sourceCodeContext','arguments'}),
+                'other_key_count':len(set(value)-{'_type','actions','actionResult','testsRef','summaries','testableSummaries','tests','subtests','identifier','identifierURL','name','testStatus','summaryRef','failureSummaries','fileName','lineNumber','sourceCodeContext','arguments'})}
+            report.setdefault('node_shapes',[]).append(shape)
+            if kind == 'ActionTestFailureSummary':
+                filename = calibration_string(value.get('fileName')); line = calibration_integer(value.get('lineNumber'))
+                known_file = filename == CALIBRATION_FILE or filename.endswith('/'+CALIBRATION_FILE)
+                # Distinct native failure UUIDs establish two actual records, but identifiers never leave memory.
+                uuid = calibration_string(value.get('uuid'),256) if 'uuid' in value else None
+                identity = (uuid,filename,line)
+                if identity not in source_records:
+                    source_records.add(identity)
+                    report['typed_failure_sources'].append({'role':role,'known_fixed_file':known_file,'native_line_number':line,
+                        'matches_literal_line':known_file and line == CALIBRATION_LINE,'line_delta_from_literal':line-CALIBRATION_LINE,
+                        'typed_record_uuid_present':uuid is not None})
+            for field in child_fields.get(kind,[]):
+                if field not in value: continue
+                if field == 'actionResult': queue.append((value[field],field,role))
+                else: queue.extend((child,field,role) for child in legacy_array(value[field]))
+            for field in ['testsRef','summaryRef']:
+                if field not in value: continue
+                reference = value[field]; require(legacy_type(reference,'Reference'),'typed-calibration-reference')
+                token = calibration_string(reference.get('id'),1024)
+                require(bool(token) and '\n' not in token and '\x00' not in token,'bounded-calibration-reference-token')
+                references.append((token,kind+'.'+field,role))
+        except ValueError: report['unknown_shapes'] += 1
+        save()
+    report['visited_nodes'] = visited
+    report['complete'] = calibration_sources_complete(report,bool(queue or references))
+    save(); return report
+
+
+def native_calibration(result,save):
+    result['calibration_parser_controls'] = calibration_parser_controls(); save()
+    root = OUT/'native-calibration'; require(not root.exists(),'fresh-owned-calibration-root')
+    root.mkdir(); project = root/'NativeIssueCalibration.xcodeproj'; scheme = project/'xcshareddata/xcschemes/NativeIssueCalibration.xcscheme'
+    scheme.parent.mkdir(parents=True)
+    files = {root/CALIBRATION_FILE:CALIBRATION_SWIFT,project/'project.pbxproj':CALIBRATION_PROJECT,scheme:CALIBRATION_SCHEME}
+    require(CALIBRATION_SWIFT.splitlines()[CALIBRATION_LINE-1].strip() == '#expect(value == 99)','literal-calibration-source-line')
+    before = fingerprint(); manifest = {}
+    for path,data in files.items():
+        path.write_text(data); path.chmod(0o600)
+        manifest[str(path.relative_to(root))] = {'sha256':hashlib.sha256(data.encode()).hexdigest(),'mode':stat.S_IMODE(path.stat().st_mode)}
+    result['calibration'] = {'project_files':manifest,'expected_source_line':CALIBRATION_LINE,'App_build_executed':False,
+        'MarmotKit_or_private_SDK_consumed':False,'account_or_relay_data_used':False,'product_behavior_qualification':False,
+        'native_typed_source_calibration_verified':False}
+    save(); bundle = root/'Results.xcresult'
+    environment = dict(os.environ)
+    command = ['xcodebuild','test','-project',str(project),'-scheme','NativeIssueCalibration','-configuration','Debug',
+        '-destination','platform=macOS,arch=arm64','-derivedDataPath',str(root/'DerivedData'),'-resultBundlePath',str(bundle),
+        '-parallel-testing-enabled','NO','-disableAutomaticPackageResolution','-skipPackageUpdates',
+        'ARCHS=arm64','ONLY_ACTIVE_ARCH=YES','CODE_SIGNING_ALLOWED=NO','CODE_SIGNING_REQUIRED=NO']
+    capture,synthetic_output = bounded_capture(command,environment,120,4*1024*1024)
+    (root/'synthetic-build-output.txt').write_bytes(synthetic_output)
+    result['calibration']['synthetic_build_output'] = {'bytes':len(synthetic_output),'sha256':hashlib.sha256(synthetic_output).hexdigest(),
+        'source':'only_owned_synthetic_xcodebuild_stdout_stderr_no_App_or_environment_dump'}
+    result['calibration']['build_test_capture'] = capture; save()
+    require(fingerprint() == before,'calibration-original-whole-source-modes-pristine')
+    result['calibration']['generated_inputs_pristine'] = all(not path.is_symlink() and path.read_text() == data and stat.S_IMODE(path.stat().st_mode) == 0o600 for path,data in files.items())
+    save(); require(bundle.is_dir() and not capture['watchdog_triggered'] and not capture['output_limit_triggered'],'actual-bounded-calibration-result-required')
+    exports = {}
+    commands = [('summary',['get','test-results','summary']),('tests',['get','test-results','tests']),
+        ('details',['get','test-results','test-details','--test-id','NativeIssueCalibration/knownSourceFailure(value:)']),
+        ('legacy',['get','object','--legacy','--format','json'])]
+    for label,args in commands:
+        capture,data = bounded_capture(['xcrun','xcresulttool',*args,'--path',str(bundle)],environment,30,2*1024*1024)
+        result['calibration'].setdefault('export_capture',{})[label] = capture; save()
+        if capture['exit_code'] != 0 or capture['watchdog_triggered'] or capture['output_limit_triggered']: continue
+        try: exports[label] = json.loads(data)
+        except ValueError: continue
+        if label == 'summary': result['calibration']['actual_summary'] = summary_safe(exports[label]); save()
+        elif label == 'details': result['calibration']['modern_details'] = calibration_modern_details(exports[label]); save()
+    if 'legacy' in exports: calibration_legacy_walk(bundle,exports['legacy'],environment,save,result)
+    if 'tests' in exports:
+        # Closed structural projection only; names, arguments, failure text and host paths are not exported.
+        counts = {}; shapes = []; nodes = 0; pending = [exports['tests']]
+        while pending:
+            value = pending.pop(); nodes += 1
+            if nodes > 2048: result['calibration']['modern_tree_limit_reached'] = True; break
+            if isinstance(value,list): pending.extend(value)
+            elif isinstance(value,dict):
+                kind = value.get('nodeType')
+                if isinstance(kind,str):
+                    category = kind if kind in {'Test Plan','Unit test bundle','Test Suite','Test Case','Arguments','Failure Message','Test Case Run'} else 'other'
+                    counts[category] = counts.get(category,0)+1
+                    if len(shapes) < 128:
+                        children = value.get('children')
+                        row = {'type':category,'known_keys':sorted(set(value)&{'nodeType','name','children','result','duration','durationInSeconds','nodeIdentifier','nodeIdentifierURL'}),
+                            'other_key_count':len(set(value)-{'nodeType','name','children','result','duration','durationInSeconds','nodeIdentifier','nodeIdentifierURL'}),
+                            'closed_result':value.get('result') if isinstance(value.get('result'),str) and value['result'] in STATUS_KEYS else 'unknown',
+                            'name_nonempty_string':isinstance(value.get('name'),str) and bool(value['name']),
+                            'children_count':len(children) if isinstance(children,list) else None}
+                        if kind == 'Failure Message': row['expectation_prefix_present_in_synthetic_name'] = isinstance(value.get('name'),str) and value['name'].startswith('Expectation failed:')
+                        shapes.append(row)
+                pending.extend(child for child in value.values() if isinstance(child,(dict,list)))
+        result['calibration']['modern_tree_type_counts'] = counts
+        result['calibration']['modern_tree_node_shapes'] = shapes
+    summary = result['calibration'].get('actual_summary',{})
+    result['calibration']['whole_source_modes_pristine'] = fingerprint() == before
+    result['calibration']['native_typed_source_calibration_verified'] = (result['calibration']['whole_source_modes_pristine']
+        and result['calibration']['build_test_capture']['exit_code'] not in {None,0}
+        and calibration_summary_valid(summary)
+        and result['calibration'].get('modern_details',{}).get('complete') is True
+        and result['calibration'].get('legacy_traversal',{}).get('complete') is True
+        and result['calibration']['generated_inputs_pristine'])
+    save(); require(result['calibration']['native_typed_source_calibration_verified'],'synthetic-typed-native-source-calibration-pending')
+
+
 def main(args):
     os.umask(0o077); OUT.mkdir(parents=True,exist_ok=True)
     result = {'mode':args.mode,'phases':{},'component_GREEN':False,'counterfactual_runtime_RED_verified':False,
@@ -856,6 +1162,8 @@ def main(args):
     def save(): (OUT/'result.json').write_text(json.dumps(result,indent=2)+'\n')
     try:
         result['source'] = guard(); save()
+        if args.mode == 'native-calibration':
+            native_calibration(result,save); return
         if args.mode == 'cli-schema':
             cli_schema_metadata(result,save); return
         result['parser_controls'] = parser_controls(); result['native_issue_parser_controls'] = native_issue_parser_controls(); save()
@@ -893,5 +1201,5 @@ def main(args):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(); parser.add_argument('--mode',choices=['preflight','measure','red-green','pfp','cli-schema'],default='preflight')
+    parser = argparse.ArgumentParser(); parser.add_argument('--mode',choices=['preflight','measure','red-green','pfp','cli-schema','native-calibration'],default='preflight')
     main(parser.parse_args())
