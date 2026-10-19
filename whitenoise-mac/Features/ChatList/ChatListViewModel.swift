@@ -49,6 +49,10 @@ final class ChatListViewModel {
         }
     }
 
+    func isBlocked(accountID: String) -> Bool {
+        blockedUsersModel?.isBlocked(accountID: accountID) == true
+    }
+
     func stop() {
         subscriptionTask?.cancel()
         subscriptionTask = nil
