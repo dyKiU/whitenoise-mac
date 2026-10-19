@@ -22,6 +22,7 @@ if [[ -e "$result_bundle" ]]; then
 fi
 
 source "$repo_root/scripts/local-device-sync-settings.sh"
+validate_sdk_build_arguments "$@"
 
 settings=(
   -project "$repo_root/whitenoise-mac.xcodeproj"

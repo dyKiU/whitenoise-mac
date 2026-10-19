@@ -88,7 +88,7 @@ struct ChatInviteRuleTests {
         )
     }
 
-    #if WN_EXPERIMENTAL_DEVICE_SYNC
+    #if WN_CURRENT_SDK_API || WN_EXPERIMENTAL_DEVICE_SYNC
         @Test func obsoletePublicationUsesGenericErrorWithoutAnInviteOrAccountDisclosure() {
             let account = String(repeating: "ab", count: 32)
             let error = MarmotKitError.MissingKeyPackage(account: account, reason: .obsoleteOnly)

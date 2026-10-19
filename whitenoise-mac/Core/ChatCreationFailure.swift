@@ -32,7 +32,7 @@ nonisolated enum ChatCreationFailure: Equatable {
             return
         }
         switch marmotError {
-        #if WN_EXPERIMENTAL_DEVICE_SYNC
+        #if WN_CURRENT_SDK_API || WN_EXPERIMENTAL_DEVICE_SYNC
             case .MissingKeyPackage(let account, .notFound):
                 let trimmed = account.trimmingCharacters(in: .whitespacesAndNewlines)
                 self = .notOnWhiteNoise(account: trimmed.isEmpty ? nil : trimmed)

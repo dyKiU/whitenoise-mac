@@ -40,3 +40,6 @@ coverage/
 reviews/
 
 trees/
+
+# Verified ephemeral SDK original-source receipt; never commit.
+/Vendored/MarmotKit/LOCAL_BUILD_INPUTS/

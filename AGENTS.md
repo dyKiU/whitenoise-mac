@@ -100,6 +100,10 @@ native device-linking runtime methods only after checking the installed local
 framework, generated Swift, source/builder identity and feature cohort. Use the
 same flag with `scripts/test-isolated.sh`; never enable it for published bindings.
 Keep fresh pairing and chat delivery acceptance separate from runtime smoke tests.
+Verified current SDK overlays also define `WN_CURRENT_SDK_API` for public API
+shape changes. A `WN_SDK_PROFILE=default` overlay requires explicit SDK source/run
+provenance and keeps private sync disabled. Use the stable settings helper; do
+not enable either capability flag directly for published bindings.
 
 For a reviewed local experimental cohort, use `scripts/sync-local-bindings.sh`
 with a clean MDK checkout/full SHA and explicit `EXPERIMENTAL_DEVICE_SYNC=1`.

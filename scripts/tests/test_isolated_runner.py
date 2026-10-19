@@ -16,7 +16,8 @@ class IsolatedRunnerTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         (self.root / 'scripts').mkdir()
-        for name in ['test-isolated.sh', 'local-device-sync-settings.sh']:
+        for name in ['test-isolated.sh', 'local-device-sync-settings.sh',
+                     'local-sdk-profile-settings.sh', 'validate_local_sdk_profile.py', 'sdk_profiles.py']:
             shutil.copy2(SCRIPT.parent / name, self.root / 'scripts' / name)
         (self.root / 'tools').mkdir()
         tool = self.root / 'tools/xcodebuild'
@@ -37,6 +38,10 @@ if args[0] == 'build-for-testing':
                         CALLS=str(self.root / 'calls.jsonl'), WN_TEST_DERIVED_DATA=str(self.root / 'derived'),
                         WN_TEST_RESULT_BUNDLE=str(self.root / 'results.xcresult'), WN_EXPERIMENTAL_DEVICE_SYNC='0')
         self.env.pop('WN_TEST_JOBS', None)
+        for name in ['WN_SDK_PROFILE', 'WN_CURRENT_SDK_API', 'WN_SDK_SOURCE_SHA', 'WN_SDK_RUN_ID',
+                     'OTHER_SWIFT_FLAGS', 'SWIFT_ACTIVE_COMPILATION_CONDITIONS', 'SWIFT_FLAGS',
+                     'XCODE_XCCONFIG_FILE']:
+            self.env.pop(name, None)
 
     def run_script(self, *args):
         result = subprocess.run(['/bin/bash', str(self.root / 'scripts/test-isolated.sh'), *args],

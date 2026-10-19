@@ -493,7 +493,7 @@ extension AttachmentTransferStatusFfi {
         switch state {
         case .queued, .downloading, .verifyingCiphertext, .decrypting, .verifyingPlaintext:
             true
-        #if WN_EXPERIMENTAL_DEVICE_SYNC
+        #if WN_CURRENT_SDK_API || WN_EXPERIMENTAL_DEVICE_SYNC
             case .storageBlocked:
                 false
         #endif
@@ -506,7 +506,7 @@ extension AttachmentTransferStatusFfi {
 
     var canRetry: Bool {
         switch state {
-        #if WN_EXPERIMENTAL_DEVICE_SYNC
+        #if WN_CURRENT_SDK_API || WN_EXPERIMENTAL_DEVICE_SYNC
             case .storageBlocked:
                 true
         #endif
@@ -521,7 +521,7 @@ extension AttachmentTransferStatusFfi {
 
     var canRemove: Bool {
         switch state {
-        #if WN_EXPERIMENTAL_DEVICE_SYNC
+        #if WN_CURRENT_SDK_API || WN_EXPERIMENTAL_DEVICE_SYNC
             case .storageBlocked:
                 true
         #endif

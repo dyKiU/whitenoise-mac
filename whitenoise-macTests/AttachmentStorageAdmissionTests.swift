@@ -3,7 +3,7 @@ import Testing
 
 @testable import whitenoise_mac
 
-#if WN_EXPERIMENTAL_DEVICE_SYNC
+#if WN_CURRENT_SDK_API || WN_EXPERIMENTAL_DEVICE_SYNC
     struct AttachmentStorageAdmissionTests {
         @Test func storagePressureKeepsCheckpointRetryAndRemovalAvailable() {
             let status = AttachmentTransferStatusFfi(
