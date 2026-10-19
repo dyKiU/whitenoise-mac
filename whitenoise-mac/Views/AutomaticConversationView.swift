@@ -52,6 +52,8 @@ import SwiftUI
                     Spacer()
                 }
                 .padding(.horizontal, 14)
+                .padding(.top, 8)
+                .padding(.bottom, 7)
                 .frame(height: 76)
                 .background { MessagesHeaderBackground() }
                 GlassSeparator(axis: .horizontal)
@@ -74,7 +76,7 @@ import SwiftUI
                                 message: entry.message,
                                 markdown: model?.markdownByMessageId[entry.id],
                                 localAccountIdHex: localAccountIdHex,
-                                showsSenderName: model?.pairedHeader?.directPeerAccountIdHex == nil,
+                                showsSenderAvatar: model?.pairedHeader?.directPeerAccountIdHex == nil,
                                 senderName: senderName)
                         }
                         if let model {
@@ -82,7 +84,7 @@ import SwiftUI
                                 pending in
                                 VStack(alignment: .trailing, spacing: 6) {
                                     Text(verbatim: pending.text)
-                                        .wnFont(.medium14)
+                                        .wnFont(.medium16)
                                         .foregroundStyle(MessagesPalette.bubbleContent(isOutgoing: true))
                                         .padding(.horizontal, 12)
                                         .padding(.vertical, 8)
