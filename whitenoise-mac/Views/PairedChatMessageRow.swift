@@ -39,8 +39,13 @@ import SwiftUI
                                 if presentation.showsUnavailableAttachment {
                                     Text(L10n.string("Attachment unavailable")).wnFont(.medium10)
                                 }
-                                HStack {
+                                HStack(spacing: 4) {
                                     Spacer(minLength: 0)
+                                    if presentation.isEdited {
+                                        Text(L10n.string("Edited"))
+                                            .wnFont(.medium10)
+                                            .opacity(0.75)
+                                    }
                                     Text(
                                         Date(timeIntervalSince1970: TimeInterval(presentation.timestamp)), style: .time
                                     )

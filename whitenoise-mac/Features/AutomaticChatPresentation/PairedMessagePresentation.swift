@@ -6,6 +6,7 @@ import MarmotKit
         let isOutgoing: Bool
         let text: String
         let isDeleted: Bool
+        let isEdited: Bool
         let showsUnavailableAttachment: Bool
         let timestamp: UInt64
         let expiresAt: UInt64?
@@ -14,6 +15,7 @@ import MarmotKit
             isOutgoing =
                 localAccountIdHex.map { !$0.isEmpty && $0.lowercased() == message.authorHex.lowercased() } ?? false
             isDeleted = message.deleted
+            isEdited = !message.deleted && message.canonicalChat && message.edit != nil
             text = message.deleted || !message.canonicalChat ? "" : message.content
             showsUnavailableAttachment = !message.deleted && message.canonicalChat && !message.mediaAttachments.isEmpty
             timestamp = message.createdAt
