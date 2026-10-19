@@ -1946,14 +1946,18 @@ struct ProjectionMigrationTests {
 
 struct MarmotKitReleaseProvenanceTests {
     @Test func generatedReleaseProvenancePinsTheAuditedBuild() throws {
-        #if WN_EXPERIMENTAL_DEVICE_SYNC
-            // The experimental runner verifies the installed native archive and manifest
+        #if WN_CURRENT_SDK_API || WN_EXPERIMENTAL_DEVICE_SYNC
+            // The SDK profile guard verifies the installed native archive and manifest
             // before compiling. Local provenance intentionally has no published-release pin.
             #expect(MarmotKitVersion.mdkSHA.count == 40)
             #expect(MarmotKitVersion.mdkSHA.allSatisfy { $0.isHexDigit && !$0.isUppercase })
             #expect(MarmotKitVersion.mdkTag == "local-\(MarmotKitVersion.mdkSHA)")
             #expect(MarmotKitVersion.uniffiVersion == "0.29.4")
-            #expect(MarmotKitVersion.features == "otlp-export,product-analytics-export,experimental-device-sync")
+            #if WN_EXPERIMENTAL_DEVICE_SYNC
+                #expect(MarmotKitVersion.features == "otlp-export,product-analytics-export,experimental-device-sync")
+            #else
+                #expect(MarmotKitVersion.features == "otlp-export,product-analytics-export")
+            #endif
         #else
             #expect(MarmotKitVersion.mdkTag == "marmotkit-v0.13.0")
             #expect(MarmotKitVersion.mdkSHA == "891ab34980ee9dc2ef45bf690733a6e31d3e6778")
