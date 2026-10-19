@@ -156,6 +156,52 @@ extension ChatSelfMembership {
     }
 }
 
+/// Message display inputs shared by local and source-attested chat rows.
+/// This value carries no membership, delivery or action authority.
+nonisolated struct ChatPreviewInput {
+    let presentation: MessagePresentation
+    let plaintext: String
+    let deleted: Bool
+    let deletionSource: DeletionSourceFfi
+    let attachmentKind: ChatListAttachmentKindFfi?
+    let attachmentCount: UInt32
+    let sender: String
+    let senderDisplayName: String?
+
+    init(_ preview: ChatListMessagePreviewFfi) {
+        presentation = MessageItem.presentation(for: preview.kind)
+        plaintext = preview.plaintext
+        deleted = preview.deleted
+        deletionSource = preview.deletionSource
+        attachmentKind = preview.attachmentKind
+        attachmentCount = preview.attachmentCount
+        sender = preview.sender
+        senderDisplayName = preview.senderDisplayName
+    }
+
+    #if WN_EXPERIMENTAL_DEVICE_SYNC
+        init(_ message: PairedChatMessageFfi) {
+            presentation = message.canonicalChat ? .chat : .unsupported
+            plaintext = message.canonicalChat ? message.content : ""
+            deleted = message.deleted
+            deletionSource = .unknown
+            attachmentCount = UInt32(clamping: message.mediaAttachments.count)
+            let kinds = Set(
+                message.mediaAttachments.map { outcome -> ChatListAttachmentKindFfi in
+                    guard case .accepted(_, let reference) = outcome else { return .mixed }
+                    let mime = reference.mediaType.lowercased()
+                    if mime.hasPrefix("image/") { return .photo }
+                    if mime.hasPrefix("video/") { return .video }
+                    if mime.hasPrefix("audio/") { return .audio }
+                    return .file
+                })
+            attachmentKind = kinds.count == 1 ? kinds.first : nil
+            sender = message.authorHex
+            senderDisplayName = nil
+        }
+    #endif
+}
+
 extension ChatItem {
     init(
         row: ChatListRowFfi,
@@ -199,7 +245,7 @@ extension ChatItem {
         }
         let preview = row.lastMessage.map {
             ChatItem.previewProjection(
-                for: $0,
+                for: ChatPreviewInput($0),
                 activeAccountIdHex: activeAccountIdHex,
                 mentionNames: mentionNames,
                 senderNickname: lastSenderNickname
@@ -278,14 +324,14 @@ extension ChatItem {
     ///
     /// Both come out of one pass so a row can never pair a photo glyph with a plain-text
     /// preview, or drop the glyph from a preview that reads "Photo".
-    private struct PreviewProjection {
+    struct PreviewProjection {
         let text: String
         var attachmentKind: ChatPreviewAttachmentKind?
         var attribution: ChatPreviewAttribution?
     }
 
-    private static func previewProjection(
-        for preview: ChatListMessagePreviewFfi,
+    static func previewProjection(
+        for preview: ChatPreviewInput,
         activeAccountIdHex: String?,
         mentionNames: MarkdownMentionNames = [:],
         senderNickname: String? = nil
@@ -298,7 +344,7 @@ extension ChatItem {
             return PreviewProjection(text: text)
         }
 
-        let presentation = MessageItem.presentation(for: preview.kind)
+        let presentation = preview.presentation
         if presentation == .poll {
             return PreviewProjection(text: MessageItem.pollLabel(question: preview.plaintext))
         }

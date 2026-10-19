@@ -238,6 +238,9 @@ struct ChatListDrawerView: View {
                                         if case .chat(let id) = workspace.selection { return id }
                                         return nil
                                     }(),
+                                    activeAccountIdHex: workspace.activeAccount?.accountIdHex,
+                                    senderName: { AutomaticChatPeerDisplay.name($0, workspace: workspace) },
+                                    isBlocked: { model?.isBlocked(accountID: $0) == true },
                                     title: { AutomaticChatPeerDisplay.title($0, workspace: workspace) }
                                 )
                                 .task(

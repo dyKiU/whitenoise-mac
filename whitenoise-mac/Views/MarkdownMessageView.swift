@@ -21,10 +21,10 @@ struct MarkdownMessageView: View {
         self.trailingMetadata = trailingMetadata
     }
 
-    init(document: MarkdownDisplayDocument?, fallbackText: String) {
+    init(document: MarkdownDisplayDocument?, fallbackText: String, trailingMetadata: Text? = nil) {
         self.document = document
         self.bodyText = fallbackText
-        self.trailingMetadata = nil
+        self.trailingMetadata = trailingMetadata
     }
 
     var body: some View {
