@@ -692,8 +692,15 @@ extension WorkspaceState {
         // chat onto another account's UI state (see whitenoise-mac#229).
         let accountId = activeAccount.id
         do {
-            let existing = try await existingDirectChat(
-                with: recipient.accountIdHex, account: activeAccount, client: client)
+            // The chooser lists local rows, but the source-owned SDK lookup decides
+            // whether a local or paired conversation is reusable. Start New skips both.
+            let existing: DirectConversationDestination?
+            if reusingExisting {
+                existing = try await existingDirectChat(
+                    with: recipient.accountIdHex, account: activeAccount, client: client)
+            } else {
+                existing = nil
+            }
             guard activeAccountId == accountId, conversationMetadataEpoch == accountEpoch, !Task.isCancelled else {
                 return
             }
