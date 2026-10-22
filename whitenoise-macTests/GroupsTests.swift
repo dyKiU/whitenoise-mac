@@ -5063,6 +5063,12 @@ struct GroupsTests: WorkspaceTestSupport {
         var archived = directGroup()
         archived.archived = true
         runtime.installGroups([archived])
+        // The chooser rows do not grant reuse: the actual SDK lookup owns it.
+        runtime.existingDirectConversationsByPeer[bobAccountIdHex.lowercased()] = .localMls(
+            .init(
+                groupIdHex: archived.groupIdHex, reusable: true, lifecycleState: .stable,
+                selfMembership: .member, pendingConfirmation: false, leaveRequestPending: false,
+                disbanding: false, archived: true, activitySortAt: 1))
         let state = WorkspaceState(clientFactory: { runtime })
 
         await state.bootstrap()

@@ -27,6 +27,17 @@ FORMATTED = [PRODUCT, 'whitenoise-mac/Views/Onboarding/AccountSetupView.swift', 
              'whitenoise-macTests/PairingRelayConfigurationTests.swift',
              'whitenoise-macTests/GroupsTests.swift']
 SUITE = 'DirectConversationRoutingTests'
+UNARCHIVE_SUITE = 'GroupsTests'
+UNARCHIVE_FIXTURE = 'whitenoise-macTests/GroupsTests.swift'
+UNARCHIVE_CONTROLS = [
+    'messagingAContactDoesNotSelectTheUnarchivedChatAfterAnAccountSwitch()',
+    'theChooserDoesNotSelectTheUnarchivedChatAfterAnAccountSwitch()',
+]
+UNARCHIVE_EXPRESSIONS = [
+    'runtime.setGroupArchivedCallCount == 1',
+    'state.activeAccountId == "Backup Account"',
+    'state.selection == .chat("backup-chat")',
+]
 TARGET = 'startNewBypassesSourceOwnedLocalSdkCandidate()'
 CONTROLS = [TARGET, 'lookupFailureDoesNotFallThroughToCreatingAnotherInvitation()',
             'firstDirectConversationUsesNativeUnnamedGroupSentinel()',
@@ -154,20 +165,20 @@ def fingerprint(values):
     return sha(json.dumps(values, sort_keys=True, separators=(',', ':')).encode())
 
 
-def case_method(value):
+def case_method(value, suite=SUITE, names=None):
     if not isinstance(value, str) or len(value) > 512:
         return None
     for prefix in ('whitenoise-macTests/', 'whitenoise_macTests/', 'whitenoise-macTests.', 'whitenoise_macTests.'):
         if value.startswith(prefix):
             value = value[len(prefix):]
             break
-    for name in CONTROLS:
-        if value in (SUITE + '/' + name, SUITE + '.' + name):
+    for name in CONTROLS if names is None else names:
+        if value in (suite + '/' + name, suite + '.' + name):
             return name
     return None
 
 
-def native_rows(document, names):
+def native_rows(document, names, suite=SUITE):
     rows = []
     visited = 0
     def walk(value, depth=0):
@@ -179,7 +190,7 @@ def native_rows(document, names):
                 walk(child, depth + 1)
         elif isinstance(value, dict):
             if value.get('nodeType') == 'Test Case':
-                name = case_method(value.get('nodeIdentifier', value.get('testIdentifier')))
+                name = case_method(value.get('nodeIdentifier', value.get('testIdentifier')), suite, names)
                 status = value.get('result', value.get('status'))
                 require(name in names and status in ('Passed', 'Failed'), 'native_case_identity_status')
                 rows.append((name, status))
@@ -221,14 +232,31 @@ def source_expectation_lines():
     return lines
 
 
+def unarchive_source_lines():
+    text = Path(UNARCHIVE_FIXTURE).read_text()
+    anchor = 'private static func assertUnarchiveThenSwitchSelectsNothing('
+    require(text.count(anchor) == 1, 'unarchive_unique_helper')
+    start = text.index(anchor)
+    end = text.index('    /// The promotion is a second commit', start)
+    final = text.index('        try await reused', start, end)
+    result = set()
+    for expression in UNARCHIVE_EXPRESSIONS:
+        needle = '#expect(' + expression + ')'
+        require(text[final:end].count(needle) == 1, 'unarchive_source_owned_assertion')
+        result.add(text.count('\n', 0, text.index(needle, final, end)) + 1)
+    require(len(result) == 3, 'unarchive_three_exact_assertions')
+    return result
+
+
 def own_lines():
     # Preserve raw native coordinates; compare only exact known source sites.
     lines = source_expectation_lines()
     return lines | {line - 1 for line in lines}
 
 
-def native_issues(document):
+def native_issues(document, unarchive=False):
     rows = []
+    fixture = UNARCHIVE_FIXTURE if unarchive else FIXTURE
     unknown = 0
     seen = set()
     require(typed(document, 'ActionsInvocationRecord') and typed(document.get('issues'), 'ResultIssueSummaries'),
@@ -241,7 +269,9 @@ def native_issues(document):
                'own_expectation': False, 'rejection': None}
         try:
             require(typed(issue, 'TestFailureIssueSummary'), 'native_failure_type')
-            name = case_method(string(issue.get('testCaseName')))
+            name = case_method(string(issue.get('testCaseName')),
+                               UNARCHIVE_SUITE if unarchive else SUITE,
+                               UNARCHIVE_CONTROLS if unarchive else CONTROLS)
             row['method'] = name
             message = string(issue.get('message'))
             row['expectation_prefix'] = message.startswith('Expectation failed:')
@@ -253,11 +283,11 @@ def native_issues(document):
             require(typed(location, 'DocumentLocation'), 'native_location_type')
             parsed = urllib.parse.urlsplit(string(location.get('url')))
             path = urllib.parse.unquote(parsed.path)
-            row['known_file_suffix'] = path.endswith('/' + FIXTURE)
+            row['known_file_suffix'] = path.endswith('/' + fixture)
             row['file_scheme'] = parsed.scheme == 'file'
             require(parsed.scheme == 'file' and parsed.netloc in ('', 'localhost') and not parsed.query
-                    and path.endswith('/' + FIXTURE) and '..' not in Path(path).parts and '%' not in path, 'native_own_path')
-            row['file'] = FIXTURE
+                    and path.endswith('/' + fixture) and '..' not in Path(path).parts and '%' not in path, 'native_own_path')
+            row['file'] = fixture
             fields = urllib.parse.parse_qs(parsed.fragment, strict_parsing=True)
             allowed = {'StartingLineNumber', 'EndingLineNumber', 'StartingColumnNumber', 'EndingColumnNumber', 'CharacterRangeLoc', 'CharacterRangeLen'}
             row['known_fragment_keys'] = sorted(set(fields) & allowed)
@@ -266,12 +296,13 @@ def native_issues(document):
                     and all(len(v) == 1 and re.fullmatch('[0-9]{1,8}', v[0]) for v in fields.values()), 'native_own_coordinate')
             line, end = int(fields['StartingLineNumber'][0]), int(fields['EndingLineNumber'][0])
             row.update(line=line, ending_line=end)
-            require(name == TARGET and line == end and line in own_lines()
+            require((name in UNARCHIVE_CONTROLS if unarchive else name == TARGET)
+                    and line == end and line in (unarchive_source_lines() if unarchive else own_lines())
                     and kind in ('Assertion Failure', 'Swift Testing Failure', 'Uncategorized') and message.startswith('Expectation failed:'),
                     'native_own_assertion')
-            require((name, line) not in seen and len(failures) <= 4, 'native_duplicate_or_extra_issue')
+            require((name, line) not in seen and len(failures) <= (3 if unarchive else 4), 'native_duplicate_or_extra_issue')
             seen.add((name, line))
-            row.update(method=TARGET, file=FIXTURE, line=line, own_expectation=True)
+            row.update(method=name, file=fixture, line=line, own_expectation=True)
         except (Rejected, ValueError, TypeError, KeyError) as error:
             # Export only fixed validation labels and independently validated
             # source coordinates; native messages and URLs remain private.
@@ -286,12 +317,14 @@ def native_issues(document):
         and {row['line'] for row in rows} in (source_sites, {line - 1 for line in source_sites}))
     # The observed Swift Testing generic class earns credit only for the
     # complete four-site failure, never a lone generic issue or partial set.
-    if uncategorized and not complete_uncategorized:
+    if uncategorized and not complete_uncategorized and not unarchive:
         for row in uncategorized:
             if row['own_expectation']:
                 row.update(own_expectation=False, rejection='native_uncategorized_incomplete_sites')
                 unknown += 1
     return {'uncategorized_four_own_sites': complete_uncategorized,
+            'unarchive_known_control_sites_only': unarchive and bool(rows) and unknown == 0,
+            'unarchive_control_only_no_mutation_credit': unarchive,
             'root_error_count': len(errors), 'failure_issue_count': len(failures),
             'unknown_issue_count': unknown, 'issues': rows,
             'only_own_expectations': bool(rows) and not errors and unknown == 0,
@@ -364,6 +397,57 @@ def published():
         require(not os.environ.get(key), 'no_unchecked_compilation_override')
 
 
+def unarchive_metadata():
+    def scalar(value):
+        return {'_type': {'_name': 'String'}, '_value': value}
+    def document(method, path, line, issue_class='Uncategorized'):
+        issue = {'_type': {'_name': 'TestFailureIssueSummary'},
+                 'testCaseName': scalar('GroupsTests.' + method),
+                 'message': scalar('Expectation failed: source-owned controlled metadata'),
+                 'issueType': scalar(issue_class),
+                 'documentLocationInCreatingWorkspace': {'_type': {'_name': 'DocumentLocation'},
+                     'url': scalar('file:///fixture/' + path + '#StartingLineNumber=' + str(line)
+                                   + '&EndingLineNumber=' + str(line))}}
+        return {'_type': {'_name': 'ActionsInvocationRecord'},
+                'issues': {'_type': {'_name': 'ResultIssueSummaries'},
+                           'testFailureSummaries': {'_type': {'_name': 'Array'}, '_values': [issue]}}}
+    positive = negative = 0
+    sites = unarchive_source_lines()
+    for method in UNARCHIVE_CONTROLS:
+        for line in sorted(sites):
+            result = native_issues(document(method, UNARCHIVE_FIXTURE, line), unarchive=True)
+            require(result['only_own_expectations'] and result['unarchive_known_control_sites_only']
+                    and not result['uncategorized_four_own_sites'], 'unarchive_metadata_own_single')
+            positive += 1
+    name = UNARCHIVE_CONTROLS[0]
+    line = min(sites)
+    for bad in (document('PRIVATE()', UNARCHIVE_FIXTURE, line),
+                document(name, 'PRIVATE/file.swift', line),
+                document(name, UNARCHIVE_FIXTURE, max(sites) + 1),
+                document(name, UNARCHIVE_FIXTURE, line, 'PRIVATE')):
+        result = native_issues(bad, unarchive=True)
+        require(not result['only_own_expectations'] and 'PRIVATE' not in json.dumps(result),
+                'unarchive_metadata_foreign_rejected')
+        negative += 1
+    tests = {'nodeType': 'Test Plan', 'children': [
+        {'nodeType': 'Test Case', 'nodeIdentifier': UNARCHIVE_SUITE + '/' + method, 'result': 'Passed'}
+        for method in UNARCHIVE_CONTROLS]}
+    require(set(native_rows(tests, UNARCHIVE_CONTROLS, UNARCHIVE_SUITE)) == set(UNARCHIVE_CONTROLS),
+            'unarchive_metadata_exact_two')
+    positive += 1
+    for bad in ({'nodeType': 'Test Plan', 'children': []},
+                {'nodeType': 'Test Plan', 'children': tests['children'] + tests['children'][:1]},
+                {'nodeType': 'Test Plan', 'children': [dict(tests['children'][0], result='Skipped'), tests['children'][1]]}):
+        try:
+            native_rows(bad, UNARCHIVE_CONTROLS, UNARCHIVE_SUITE)
+        except Rejected:
+            negative += 1
+        else:
+            raise Rejected('unarchive_metadata_inventory_rejected')
+    return {'positive': positive, 'negative': negative, 'actual_test_bodies': 0,
+            'scope': 'closed control-reporting parser only; no behavior RED or mutation credit'}
+
+
 def inverse(data):
     text = data.decode()
     require(text.count(ANCHOR) == 1, 'unique_conditional_reuse')
@@ -372,11 +456,12 @@ def inverse(data):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--mode', choices=('preflight', 'format', 'red', 'controls', 'pfp'), required=True)
+    parser.add_argument('--mode', choices=('preflight', 'format', 'red', 'controls', 'pfp', 'unarchive-controls'), required=True)
     parser.add_argument('--source', required=True)
     parser.add_argument('--baseline', required=True)
     parser.add_argument('--output', required=True)
     args = parser.parse_args()
+    unarchive = args.mode == 'unarchive-controls'
     os.umask(0o077)
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -443,9 +528,10 @@ def main():
         bundle = private / (label + '.xcresult')
         env = dict(os.environ, WN_TEST_DERIVED_DATA=str(private / 'DerivedData'),
                    WN_TEST_RESULT_BUNDLE=str(bundle), WN_TEST_JOBS='3')
-        command = ['scripts/test-isolated.sh'] + ['-only-testing:whitenoise-macTests/' + SUITE + '/' + name for name in names]
+        suite = UNARCHIVE_SUITE if unarchive else SUITE
+        command = ['scripts/test-isolated.sh'] + ['-only-testing:whitenoise-macTests/' + suite + '/' + name for name in names]
         facts, stdout, stderr = capture(command, 2100, env)
-        row.update(command=['scripts/test-isolated.sh', *['-only-testing:whitenoise-macTests/' + SUITE + '/' + n for n in names]], **facts)
+        row.update(command=['scripts/test-isolated.sh', *['-only-testing:whitenoise-macTests/' + suite + '/' + n for n in names]], **facts)
         row['test_build_succeeded'] = b'** TEST BUILD SUCCEEDED **' in stdout + stderr
         row['compiler_source_sites'] = []
         if not row['test_build_succeeded']:
@@ -472,8 +558,8 @@ def main():
                 if all(type(row['counts'][key]) is int and row['counts'][key] >= 0 for key in COUNT_KEYS):
                     report['actual_bodies'] += row['counts']['passedTests'] + row['counts']['failedTests']
         counts = row['counts']
-        row['cases'] = native_rows(documents['tests'], names)
-        row['native_issues'] = native_issues(documents['legacy'])
+        row['cases'] = native_rows(documents['tests'], names, suite)
+        row['native_issues'] = native_issues(documents['legacy'], unarchive=unarchive)
         save()
         require(all(type(counts[k]) is int for k in COUNT_KEYS) and counts['totalTestCount'] == len(names)
                 and counts['skippedTests'] == 0 and counts['passedTests'] + counts['failedTests'] == len(names)
@@ -486,6 +572,7 @@ def main():
         row['source_closure'] = closure(expected)
         success = (facts['capture_complete'] and row['test_build_succeeded'] and row['source_closure'])
         if want_red:
+            require(not unarchive, 'unarchive_controls_no_red_oracle')
             success = (success and facts['exit_code'] == 65 and counts['failedTests'] == 1
                        and counts['passedTests'] == 0 and row['native_issues']['only_own_expectations'])
         else:
@@ -526,6 +613,7 @@ def main():
             'signed_source_review': 'external_root_review_required_no_new_approval_system'}
         published()
         report['parser_controls'] = metadata()
+        report['unarchive_parser_controls'] = unarchive_metadata()
         if args.mode == 'preflight':
             report['preflight_passed'] = True
         else:
@@ -546,7 +634,12 @@ def main():
             else:
                 private = Path(tempfile.mkdtemp(prefix='direct-routing-', dir=os.environ['RUNNER_TEMP']))
                 scope = original.decode().split('func startDirectChat(', 1)[1].split('/// The invite prompt', 1)[0]
-                if args.mode == 'red':
+                if unarchive:
+                    report['control_only'] = True
+                    report['mutation_necessity'] = False
+                    report['qualified'] = phase('unarchive-controls', UNARCHIVE_CONTROLS, frozen, False)
+                    require(report['actual_bodies'] == 2 and not report['mutation_attempted'], 'unarchive_two_actual_controls')
+                elif args.mode == 'red':
                     require(ANCHOR.strip() not in scope and 'let existing = try await existingDirectChat(' in scope, 'original_unconditional_reuse')
                     report['behavioral_red'] = phase('red', [TARGET], frozen, True)
                 else:
