@@ -648,20 +648,35 @@ extension WorkspaceState {
         return prefixMatches + containedMatches
     }
 
-    func existingDirectChat(peerAccountIdHex: String) -> ChatItem? {
+    /// The newest locally visible direct chat the chooser offers for this person.
+    /// Actual reuse in `startDirectChat` is checked by the source-owned SDK lookup,
+    /// including its membership and lifecycle policy and paired-source destinations.
+    func existingDirectChat(peerAccountIdHex: String) -> DirectChatChoice? {
         guard let activeAccountId else { return nil }
-        let match: (ChatItem) -> Bool = { $0.directPeerAccountIdHex == peerAccountIdHex }
-        if let chat = (chatsByAccount[activeAccountId] ?? []).first(where: match) {
-            return chat
-        }
-        return (archivedChatsByAccount[activeAccountId] ?? []).first(where: match)
+        return DirectChatChoices.existing(
+            withPeer: peerAccountIdHex,
+            active: chatsByAccount[activeAccountId] ?? [],
+            archived: archivedChatsByAccount[activeAccountId] ?? []
+        ).first
     }
 
     /// Open the existing direct chat with this person, or create one and select it. Direct
     /// chats are created with an empty group name; the chat list titles them from the peer
     /// profile.
-    func startDirectChat(with recipient: NewChatRecipient) async {
+    ///
+    /// `reusingExisting: false` always creates a new chat: the New chat chooser
+    /// (`DirectChatChooserViewModel`) has already offered the existing ones and the user asked
+    /// for another.
+    ///
+    /// `expectedAccountId`, when given, is the account the request was made under: if another
+    /// account is active by the time this runs, nothing is created.
+    func startDirectChat(
+        with recipient: NewChatRecipient,
+        reusingExisting: Bool = true,
+        expectedAccountId: String? = nil
+    ) async {
         guard let client, let activeAccount, !isCreatingChat else { return }
+        if let expectedAccountId, activeAccount.id != expectedAccountId { return }
         lastError = nil
         startChatInvitePrompt = nil
         let accountEpoch = conversationMetadataEpoch

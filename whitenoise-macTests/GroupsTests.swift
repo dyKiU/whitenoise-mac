@@ -2861,6 +2861,110 @@ struct GroupsTests: WorkspaceTestSupport {
     }
 
     @MainActor
+    @Test func invitingAContactWithNoNpubSendsTheirAccountIdHex() async throws {
+        // The sheet stages contacts and discovered people, who can carry `npub: ""`. Sending refs
+        // by npub alone dropped them from the commit while the sheet dismissed as if they'd joined.
+        let account = desktopAccount()
+        let runtime = FakeMarmotRuntime(accounts: [account])
+        runtime.installGroupDetails(groupDetailsFixture(selfAccountIdHex: account.accountIdHex))
+        let state = try await openInstalledGroupDetails(runtime: runtime)
+        let contact = ComposeContact(
+            accountIdHex: Self.daveAccountIdHex, npub: "", displayName: "Dave", pictureURL: nil,
+            lastActivity: nil)
+
+        let invited = await state.inviteMembers([Self.aliceDraftRecipient(), contact.recipient])
+
+        #expect(invited)
+        #expect(runtime.inviteMemberRefAttempts.last == ["npub1alyce", Self.daveAccountIdHex])
+        #expect(runtime.invitedMemberRefs == ["npub1alyce", Self.daveAccountIdHex])
+    }
+
+    @MainActor
+    @Test func aRefusalReportedAgainstAHexRefNamesTheNpubLessContact() async throws {
+        // The core names a refused member by account id hex, so a contact staged without an npub
+        // still maps back to its chip instead of falling through to an unnamed refusal.
+        let account = desktopAccount()
+        let runtime = FakeMarmotRuntime(accounts: [account])
+        runtime.installGroupDetails(groupDetailsFixture(selfAccountIdHex: account.accountIdHex))
+        runtime.missingKeyPackageAccountIdHexByMemberRef[Self.daveAccountIdHex] = Self.daveAccountIdHex
+        let state = try await openInstalledGroupDetails(runtime: runtime)
+        let dave = ComposeContact(
+            accountIdHex: Self.daveAccountIdHex, npub: "", displayName: "Dave", pictureURL: nil,
+            lastActivity: nil
+        ).recipient
+        let staged = [Self.aliceDraftRecipient(), dave]
+
+        let invited = await state.inviteMembers(staged)
+
+        #expect(!invited)
+        #expect(state.unreachableInviteRecipients(staged).map(\.accountIdHex) == [Self.daveAccountIdHex])
+        #expect(!state.hasUnnamedInviteRefusal)
+        #expect(state.lastError == nil)
+        #expect(runtime.inviteMemberRefAttempts == [["npub1alyce", Self.daveAccountIdHex]])
+    }
+
+    @MainActor
+    @Test func aTypedIdentifierIsStagedAndInvitedInOnePress() async throws {
+        // The sheet's Invite folds in an npub still in the field, as it did before the search
+        // landed: paste, press Return, and they're invited without clicking the resolved row.
+        let account = desktopAccount()
+        let runtime = FakeMarmotRuntime(accounts: [account])
+        runtime.installGroupDetails(groupDetailsFixture(selfAccountIdHex: account.accountIdHex))
+        runtime.installNormalizedMemberRef(
+            query: "npub1carol", accountIdHex: Self.carolAccountIdHex, npub: "npub1carol")
+        let state = try await openInstalledGroupDetails(runtime: runtime)
+        let locked = Set(state.groupDetailsSnapshot?.members.map { $0.id.lowercased() } ?? [])
+        state.newChatQuery = "npub1carol"
+        #expect(state.looksLikeMemberRef(state.newChatQuery))
+
+        let resolved = await state.resolveNewChatQuery()
+        let outcome = GroupInviteStaging.stage(
+            resolved, into: [Self.aliceDraftRecipient()], lockedMemberIds: locked)
+        guard case .staged(let roster) = outcome else {
+            Issue.record("expected the identifier to be staged, got \(outcome)")
+            return
+        }
+        #expect(roster.map(\.accountIdHex) == [Self.aliceAccountIdHex, Self.carolAccountIdHex])
+
+        let invited = await state.inviteMembers(roster)
+        #expect(invited)
+        #expect(runtime.invitedMemberRefs == ["npub1alyce", "npub1carol"])
+    }
+
+    @MainActor
+    @Test func aTypedIdentifierForAnExistingMemberIsRefusedBeforeInviting() async throws {
+        let account = desktopAccount()
+        let runtime = FakeMarmotRuntime(accounts: [account])
+        runtime.installGroupDetails(groupDetailsFixture(selfAccountIdHex: account.accountIdHex))
+        let state = try await openInstalledGroupDetails(runtime: runtime)
+        let locked = Set(state.groupDetailsSnapshot?.members.map { $0.id.lowercased() } ?? [])
+        // The fake resolves an unknown ref to the fixture's existing non-self member.
+        state.newChatQuery = "npub1alyce"
+
+        let resolved = await state.resolveNewChatQuery()
+        let outcome = GroupInviteStaging.stage(resolved, into: [], lockedMemberIds: locked)
+
+        #expect(outcome == .alreadyMember)
+        #expect(outcome.errorMessage == L10n.string("That person is already in this group."))
+        #expect(runtime.inviteMembersDetailedCallCount == 0)
+    }
+
+    @MainActor
+    @Test func stagingAnUnresolvedIdentifierIsInvalidAndARepeatIsNotDuplicated() {
+        let alice = Self.aliceDraftRecipient()
+
+        let unresolved = GroupInviteStaging.stage(nil, into: [alice], lockedMemberIds: [])
+        #expect(unresolved == .invalidIdentifier)
+        #expect(
+            unresolved.errorMessage
+                == L10n.string("Enter a valid NIP-05, npub, profile link, or hex public key."))
+
+        let repeated = GroupInviteStaging.stage(alice, into: [alice], lockedMemberIds: [])
+        #expect(repeated == .staged([alice]))
+        #expect(repeated.errorMessage == nil)
+    }
+
+    @MainActor
     @Test func inviteMemberDropsWhileProfileSaveIsInFlight() async throws {
         let account = desktopAccount()
         let runtime = FakeMarmotRuntime(accounts: [account])
@@ -4740,6 +4844,226 @@ struct GroupsTests: WorkspaceTestSupport {
         #expect(state.selection == .chat("created-group"))
     }
 
+    /// "Start new conversation" in the New chat chooser: an existing direct chat with the person
+    /// must not swallow the request, or there is no way to have a second one.
+    @MainActor
+    @Test func startingANewDirectChatBypassesTheExistingOne() async throws {
+        let account = desktopAccount()
+        let runtime = FakeMarmotRuntime(accounts: [account])
+        let state = WorkspaceState(clientFactory: { runtime })
+
+        await state.bootstrap()
+        let accountId = try #require(state.activeAccountId)
+        let existing = ChatItem(
+            id: "existing-dm",
+            title: "Bob",
+            subtitle: "",
+            preview: "",
+            updatedAt: .now,
+            avatarSeed: Self.bobAccountIdHex,
+            directPeerAccountIdHex: Self.bobAccountIdHex,
+            pictureURL: nil,
+            unreadCount: 0,
+            isDirect: true
+        )
+        state.chatsByAccount[accountId, default: []].append(existing)
+        #expect(state.existingDirectChat(peerAccountIdHex: Self.bobAccountIdHex)?.id == "existing-dm")
+
+        state.showNewChat()
+        await state.startDirectChat(with: Self.bobDraftRecipient(), reusingExisting: false)
+
+        #expect(runtime.createdGroupMemberRefs == ["npub1p0p"])
+        #expect(state.selection == .chat("created-group"))
+    }
+
+    /// "Message" on a contact reuses a direct chat by the chooser's rule: with several DMs per
+    /// person possible, one the viewer left is not one to land in when an active one exists.
+    @MainActor
+    @Test func messagingAContactOpensTheActiveDirectChatNotOneTheViewerLeft() async throws {
+        let account = desktopAccount()
+        let runtime = FakeMarmotRuntime(accounts: [account])
+        let state = WorkspaceState(clientFactory: { runtime })
+
+        await state.bootstrap()
+        let accountId = try #require(state.activeAccountId)
+        func dm(_ id: String, updatedAt: Date, selfMembership: ChatSelfMembership) -> ChatItem {
+            ChatItem(
+                id: id,
+                title: "Bob",
+                subtitle: "",
+                preview: "",
+                updatedAt: updatedAt,
+                avatarSeed: Self.bobAccountIdHex,
+                directPeerAccountIdHex: Self.bobAccountIdHex,
+                pictureURL: nil,
+                unreadCount: 0,
+                isDirect: true,
+                selfMembership: selfMembership
+            )
+        }
+        // The left chat comes first and is newer, so neither list order nor recency picks the
+        // active one by accident.
+        state.chatsByAccount[accountId, default: []].append(
+            contentsOf: [
+                dm("left-dm", updatedAt: .now, selfMembership: .left),
+                dm("active-dm", updatedAt: .now.addingTimeInterval(-3_600), selfMembership: .member),
+            ]
+        )
+
+        await state.messageContact(Self.bobDraftRecipient())
+
+        #expect(state.selection == .chat("active-dm"))
+        #expect(runtime.createdGroupMemberRefs.isEmpty)
+    }
+
+    /// The direct chat "Message" reuses is the newest one, and that can be an archived one. It must
+    /// come back into the chat list before it is selected, or the user lands in a chat the sidebar
+    /// is not showing.
+    @MainActor
+    @Test func messagingAContactUnarchivesTheNewestDirectChatBeforeOpeningIt() async throws {
+        let account = desktopAccount()
+        let runtime = FakeMarmotRuntime(accounts: [account])
+        var archived = directGroup()
+        archived.archived = true
+        runtime.installGroups([archived])
+        let state = WorkspaceState(clientFactory: { runtime })
+
+        await state.bootstrap()
+        let accountId = try #require(state.activeAccountId)
+        let peer = Self.bobAccountIdHex
+        // The archived row with its peer resolved, and an older active DM with the same person, so
+        // the archived one wins only on recency.
+        state.archivedChatsByAccount[accountId] = [Self.directChat("direct-group", peer: peer, updatedAt: .now)]
+        state.chatsByAccount[accountId, default: []].append(
+            Self.directChat("older-active-dm", peer: peer, updatedAt: .now.addingTimeInterval(-3_600))
+        )
+        let reused = try #require(state.existingDirectChat(peerAccountIdHex: peer))
+        #expect(reused.id == "direct-group")
+        #expect(reused.isArchived)
+
+        await state.messageContact(
+            NewChatRecipient(
+                sourceQuery: "",
+                memberRef: peer,
+                accountIdHex: peer,
+                npub: "",
+                displayName: "Peer",
+                pictureURL: nil
+            )
+        )
+
+        #expect(runtime.archivedGroup == ArchivedGroup(groupIdHex: "direct-group", archived: false))
+        #expect(state.archivedChats.isEmpty)
+        #expect(state.selection == .chat("direct-group"))
+        #expect(runtime.createdGroupMemberRefs.isEmpty)
+    }
+
+    /// A failed unarchive leaves the chat where it is rather than opening it out of view.
+    @MainActor
+    @Test func messagingAContactDoesNotOpenAnArchivedDirectChatItCouldNotUnarchive() async throws {
+        let account = desktopAccount()
+        let runtime = FakeMarmotRuntime(accounts: [account])
+        var archived = directGroup()
+        archived.archived = true
+        runtime.installGroups([archived])
+        runtime.setGroupArchivedError = FakeMarmotRuntimeError.unused
+        let state = WorkspaceState(clientFactory: { runtime })
+
+        await state.bootstrap()
+        let accountId = try #require(state.activeAccountId)
+        let peer = Self.bobAccountIdHex
+        state.archivedChatsByAccount[accountId] = [Self.directChat("direct-group", peer: peer, updatedAt: .now)]
+
+        await state.messageContact(
+            NewChatRecipient(
+                sourceQuery: "",
+                memberRef: peer,
+                accountIdHex: peer,
+                npub: "",
+                displayName: "Peer",
+                pictureURL: nil
+            )
+        )
+
+        #expect(state.selection != .chat("direct-group"))
+        #expect(state.archivedChats.contains { $0.id == "direct-group" })
+        #expect(runtime.createdGroupMemberRefs.isEmpty)
+    }
+
+    /// An account switch while the reused DM is being unarchived must not select that account's
+    /// chat id under the account switched to.
+    @MainActor
+    @Test func messagingAContactDoesNotSelectTheUnarchivedChatAfterAnAccountSwitch() async throws {
+        try await Self.assertUnarchiveThenSwitchSelectsNothing { state, peer in
+            await state.messageContact(
+                NewChatRecipient(
+                    sourceQuery: "",
+                    memberRef: peer,
+                    accountIdHex: peer,
+                    npub: "",
+                    displayName: "Peer",
+                    pictureURL: nil
+                )
+            )
+        }
+    }
+
+    /// The chooser's open path makes the same unarchive-then-select hop.
+    @MainActor
+    @Test func theChooserDoesNotSelectTheUnarchivedChatAfterAnAccountSwitch() async throws {
+        try await Self.assertUnarchiveThenSwitchSelectsNothing { state, _ in
+            let chat = try #require(state.archivedChats.first { $0.id == "direct-group" })
+            await DirectChatChooserSource.workspace(state).open(DirectChatChoice(chat: chat, isArchived: true))
+        }
+    }
+
+    /// Holds the unarchive in flight, switches account, then lets it finish.
+    @MainActor
+    private static func assertUnarchiveThenSwitchSelectsNothing(
+        _ reuse: @escaping @MainActor (WorkspaceState, String) async throws -> Void
+    ) async throws {
+        let primary = desktopAccount()
+        let backup = AccountSummaryFfi(
+            label: "Backup Account",
+            accountIdHex: "1111111111111111111111111111111111111111111111111111111111111111",
+            localSigning: true,
+            externalSigning: false,
+            signedOut: false,
+            running: true
+        )
+        let runtime = FakeMarmotRuntime(accounts: [primary, backup])
+        var archived = directGroup()
+        archived.archived = true
+        runtime.installGroups([archived])
+        let state = WorkspaceState(clientFactory: { runtime })
+
+        await state.bootstrap()
+        let primaryAccount = try #require(state.accounts.first { $0.id == "Desktop Account" })
+        let backupAccount = try #require(state.accounts.first { $0.id == "Backup Account" })
+        state.prepareForActiveAccountSwitch(to: primaryAccount, preservingMessageCacheFor: nil)
+        await state.reloadChats(forceFreshSnapshot: true)
+        let peer = bobAccountIdHex
+        state.archivedChatsByAccount["Desktop Account"] = [directChat("direct-group", peer: peer, updatedAt: .now)]
+
+        runtime.groupMutationGateEnabled = true
+        async let reused: Void = reuse(state, peer)
+        while !runtime.didReachGroupMutationGate {
+            await Task.yield()
+        }
+        state.prepareForActiveAccountSwitch(to: backupAccount, preservingMessageCacheFor: nil)
+        #expect(state.activeAccountId == "Backup Account")
+        // The fake serves every account the same groups, so the backup account's own initial pick
+        // could land on "direct-group" too. A chat already open under it rules that out: only the
+        // stale reuse could replace it.
+        state.selection = .chat("backup-chat")
+        runtime.releaseGroupMutationGate()
+        try await reused
+
+        #expect(runtime.setGroupArchivedCallCount == 1)
+        #expect(state.activeAccountId == "Backup Account")
+        #expect(state.selection == .chat("backup-chat"))
+    }
+
     /// The promotion is a second commit after the chat already exists, so its refusal must not
     /// read as a failure to start the chat: the creator can still promote from chat info.
     @MainActor
@@ -4900,6 +5224,23 @@ struct GroupsTests: WorkspaceTestSupport {
             npub: "npub1alyce",
             displayName: "Alice",
             pictureURL: nil
+        )
+    }
+
+    /// A direct chat row whose peer is already resolved, the way the chat list leaves it after
+    /// enrichment.
+    private static func directChat(_ id: String, peer: String, updatedAt: Date) -> ChatItem {
+        ChatItem(
+            id: id,
+            title: "Peer",
+            subtitle: "",
+            preview: "",
+            updatedAt: updatedAt,
+            avatarSeed: peer,
+            directPeerAccountIdHex: peer,
+            pictureURL: nil,
+            unreadCount: 0,
+            isDirect: true
         )
     }
 

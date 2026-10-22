@@ -108,4 +108,38 @@ import Testing
         #expect(runtime.existingDirectConversationQueries.count == 1)
     }
 
+    @Test func startNewBypassesSourceOwnedLocalSdkCandidate() async throws {
+        let runtime = FakeMarmotRuntime(accounts: [desktopAccount()])
+        runtime.existingDirectConversationsByPeer[peer] = .localMls(
+            .init(
+                groupIdHex: "existing-sdk-direct", reusable: true, lifecycleState: .stable,
+                selfMembership: .member, pendingConfirmation: false, leaveRequestPending: false,
+                disbanding: false, archived: false, activitySortAt: 1))
+        let state = WorkspaceState(clientFactory: { runtime })
+        await state.bootstrap()
+        let accountId = try #require(state.activeAccountId)
+        state.showNewChat()
+        await state.startDirectChat(with: recipient, reusingExisting: false, expectedAccountId: accountId)
+        #expect(runtime.existingDirectConversationQueries.isEmpty)
+        #expect(runtime.createGroupAttempts == [[peer]])
+        #expect(runtime.createdGroupMemberRefs == [peer])
+        #expect(state.selection == .chat("created-group"))
+    }
+
+    #if WN_EXPERIMENTAL_DEVICE_SYNC
+        @Test func startNewBypassesSourceOwnedPairedSdkCandidate() async throws {
+            let runtime = FakeMarmotRuntime(accounts: [desktopAccount()])
+            runtime.existingDirectConversationsByPeer[peer] = .pairedSource(paired)
+            let state = WorkspaceState(clientFactory: { runtime })
+            await state.bootstrap()
+            let accountId = try #require(state.activeAccountId)
+            state.showNewChat()
+            await state.startDirectChat(with: recipient, reusingExisting: false, expectedAccountId: accountId)
+            #expect(runtime.existingDirectConversationQueries.isEmpty)
+            #expect(runtime.createGroupAttempts == [[peer]])
+            #expect(runtime.createdGroupMemberRefs == [peer])
+            #expect(state.selection == .chat("created-group"))
+        }
+    #endif
+
 }
