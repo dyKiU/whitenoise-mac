@@ -228,32 +228,45 @@ def native_issues(document):
     errors = array(issues['errorSummaries']) if 'errorSummaries' in issues else []
     failures = array(issues['testFailureSummaries']) if 'testFailureSummaries' in issues else []
     for issue in failures:
-        row = {'method': None, 'file': None, 'line': None, 'own_expectation': False}
+        row = {'method': None, 'file': None, 'line': None, 'ending_line': None,
+               'own_expectation': False, 'rejection': None}
         try:
             require(typed(issue, 'TestFailureIssueSummary'), 'native_failure_type')
             name = case_method(string(issue.get('testCaseName')))
+            row['method'] = name
             message = string(issue.get('message'))
+            row['expectation_prefix'] = message.startswith('Expectation failed:')
             kind = string(issue.get('issueType'))
+            row['issue_class'] = kind if kind in ('Assertion Failure', 'Swift Testing Failure', 'Uncategorized') else 'other'
             target = issue.get('producingTarget')
             require(target is None or string(target) in ('whitenoise-macTests', 'whitenoise_macTests'), 'native_failure_target')
             location = issue.get('documentLocationInCreatingWorkspace')
             require(typed(location, 'DocumentLocation'), 'native_location_type')
             parsed = urllib.parse.urlsplit(string(location.get('url')))
             path = urllib.parse.unquote(parsed.path)
+            row['known_file_suffix'] = path.endswith('/' + FIXTURE)
+            row['file_scheme'] = parsed.scheme == 'file'
             require(parsed.scheme == 'file' and parsed.netloc in ('', 'localhost') and not parsed.query
                     and path.endswith('/' + FIXTURE) and '..' not in Path(path).parts and '%' not in path, 'native_own_path')
+            row['file'] = FIXTURE
             fields = urllib.parse.parse_qs(parsed.fragment, strict_parsing=True)
             allowed = {'StartingLineNumber', 'EndingLineNumber', 'StartingColumnNumber', 'EndingColumnNumber', 'CharacterRangeLoc', 'CharacterRangeLen'}
+            row['known_fragment_keys'] = sorted(set(fields) & allowed)
+            row['other_fragment_key_count'] = len(set(fields) - allowed)
             require(set(fields) <= allowed and {'StartingLineNumber', 'EndingLineNumber'} <= set(fields)
                     and all(len(v) == 1 and re.fullmatch('[0-9]{1,8}', v[0]) for v in fields.values()), 'native_own_coordinate')
             line, end = int(fields['StartingLineNumber'][0]), int(fields['EndingLineNumber'][0])
+            row.update(line=line, ending_line=end)
             require(name == TARGET and line == end and line in own_lines()
                     and kind in ('Assertion Failure', 'Swift Testing Failure') and message.startswith('Expectation failed:'),
                     'native_own_assertion')
             require((name, line) not in seen and len(failures) <= 4, 'native_duplicate_or_extra_issue')
             seen.add((name, line))
             row.update(method=TARGET, file=FIXTURE, line=line, own_expectation=True)
-        except (Rejected, ValueError, TypeError, KeyError):
+        except (Rejected, ValueError, TypeError, KeyError) as error:
+            # Export only fixed validation labels and independently validated
+            # source coordinates; native messages and URLs remain private.
+            row['rejection'] = error.args[0] if type(error) is Rejected else 'native_payload_shape'
             unknown += 1
         rows.append(row)
     return {'root_error_count': len(errors), 'failure_issue_count': len(failures),
