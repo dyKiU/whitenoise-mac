@@ -1,0 +1,82 @@
+name: Direct routing source and behavioral qualification
+on:
+  push:
+    branches: ['ci/upstream-direct-routing-*']
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Exact Root-reviewed signed checkout and workflow SHA
+        required: true
+        type: string
+      baseline_sha:
+        description: Exact reviewed product/test SHA; tooling may differ only in this workflow and its helper
+        required: true
+        type: string
+      mode:
+        description: Published-only focused route; experimental requires a future verified SDK installer lane
+        required: true
+        type: choice
+        options: [format, red, controls, pfp]
+        default: format
+permissions:
+  contents: read
+concurrency:
+  group: direct-routing-${{ github.ref }}-${{ inputs.mode || 'preflight' }}
+  cancel-in-progress: false
+env:
+  PYTHONDONTWRITEBYTECODE: '1'
+  SOURCE_SHA: ${{ inputs.source_sha || github.sha }}
+  BASELINE_SHA: ${{ inputs.baseline_sha || github.sha }}
+  WN_EXPERIMENTAL_DEVICE_SYNC: '0'
+  WN_CURRENT_SDK_API: '0'
+jobs:
+  source-preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Exact Git/workflow source and closed metadata controls only
+        run: >-
+          python3 scripts/ci/direct-routing-qualification.py --mode preflight
+          --source "$SOURCE_SHA" --baseline "$BASELINE_SHA"
+          --output "$RUNNER_TEMP/direct-routing-evidence/preflight.json"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: direct-routing-preflight-${{ github.sha }}
+          path: ${{ runner.temp }}/direct-routing-evidence/preflight.json
+          if-no-files-found: error
+  focused-published:
+    needs: source-preflight
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: macos-26
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Cache exact published MarmotKit binary artifact
+        if: inputs.mode != 'format'
+        uses: ./.github/actions/marmotkit-cache
+      - name: Remote source-only formatting or exact named behavioral phases
+        env:
+          DIRECT_ROUTING_MODE: ${{ inputs.mode }}
+        run: >-
+          python3 scripts/ci/direct-routing-qualification.py --mode "$DIRECT_ROUTING_MODE"
+          --source "$SOURCE_SHA" --baseline "$BASELINE_SHA"
+          --output "$RUNNER_TEMP/direct-routing-evidence/result.json"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: direct-routing-${{ inputs.mode }}-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/direct-routing-evidence/result.json
+            ${{ runner.temp }}/direct-routing-evidence/formatting.patch
+          if-no-files-found: error
+          retention-days: 7
