@@ -203,7 +203,7 @@ def array(value):
     return value.get('_values', [])
 
 
-def own_lines():
+def source_expectation_lines():
     text = Path(FIXTURE).read_text()
     start = text.index('func ' + TARGET)
     end = text.index('\n    }', start)
@@ -212,10 +212,15 @@ def own_lines():
         needle = '#expect(' + expression + ')'
         require(text[start:end].count(needle) == 1, 'source_owned_expectation')
         line = text.count('\n', 0, text.index(needle, start, end)) + 1
-        # Native DocumentLocation fragments are recorded as delivered. Accept
-        # only this exact source line under its documented zero/one-base forms.
-        lines.update((line - 1, line))
+        lines.add(line)
+    require(len(lines) == 4, 'four_distinct_source_expectations')
     return lines
+
+
+def own_lines():
+    # Preserve raw native coordinates; compare only exact known source sites.
+    lines = source_expectation_lines()
+    return lines | {line - 1 for line in lines}
 
 
 def native_issues(document):
@@ -258,7 +263,7 @@ def native_issues(document):
             line, end = int(fields['StartingLineNumber'][0]), int(fields['EndingLineNumber'][0])
             row.update(line=line, ending_line=end)
             require(name == TARGET and line == end and line in own_lines()
-                    and kind in ('Assertion Failure', 'Swift Testing Failure') and message.startswith('Expectation failed:'),
+                    and kind in ('Assertion Failure', 'Swift Testing Failure', 'Uncategorized') and message.startswith('Expectation failed:'),
                     'native_own_assertion')
             require((name, line) not in seen and len(failures) <= 4, 'native_duplicate_or_extra_issue')
             seen.add((name, line))
@@ -269,7 +274,21 @@ def native_issues(document):
             row['rejection'] = error.args[0] if type(error) is Rejected else 'native_payload_shape'
             unknown += 1
         rows.append(row)
-    return {'root_error_count': len(errors), 'failure_issue_count': len(failures),
+    uncategorized = [row for row in rows if row.get('issue_class') == 'Uncategorized']
+    source_sites = source_expectation_lines()
+    complete_uncategorized = bool(uncategorized) and (
+        len(uncategorized) == len(rows) == 4
+        and all(row['own_expectation'] for row in rows)
+        and {row['line'] for row in rows} in (source_sites, {line - 1 for line in source_sites}))
+    # The observed Swift Testing generic class earns credit only for the
+    # complete four-site failure, never a lone generic issue or partial set.
+    if uncategorized and not complete_uncategorized:
+        for row in uncategorized:
+            if row['own_expectation']:
+                row.update(own_expectation=False, rejection='native_uncategorized_incomplete_sites')
+                unknown += 1
+    return {'uncategorized_four_own_sites': complete_uncategorized,
+            'root_error_count': len(errors), 'failure_issue_count': len(failures),
             'unknown_issue_count': unknown, 'issues': rows,
             'only_own_expectations': bool(rows) and not errors and unknown == 0,
             'no_native_issues': not errors and not failures}
@@ -304,6 +323,18 @@ def metadata():
             '_type': {'_name': 'ResultIssueSummaries'}, 'testFailureSummaries': wrapped(values)}}
     require(native_issues(document([issue]))['only_own_expectations'], 'metadata_own_issue_positive')
     require(native_issues(document([]))['no_native_issues'], 'metadata_no_issue_positive')
+    generic = []
+    for site in sorted(source_expectation_lines()):
+        generic.append(dict(issue, issueType=scalar('Uncategorized'),
+                            documentLocationInCreatingWorkspace={'_type': {'_name': 'DocumentLocation'},
+                                'url': scalar('file:///fixture/' + FIXTURE + '#StartingLineNumber=' + str(site - 1) + '&EndingLineNumber=' + str(site - 1))}))
+    observed_shape = native_issues(document(generic))
+    require(observed_shape['only_own_expectations'] and observed_shape['uncategorized_four_own_sites'],
+            'metadata_complete_generic_native_sites')
+    for values in (generic[:1], generic[:3], generic + generic[:1], [generic[0]] * 4):
+        require(not native_issues(document(values))['only_own_expectations'],
+                'metadata_generic_partial_duplicate_or_extra_rejected')
+        count += 1
     # All values here are clearly synthetic parser inputs, never SDK/app proof.
     for change in ({'testCaseName': scalar('PRIVATE.unknown()')},
                    {'message': scalar('PRIVATE')}, {'issueType': scalar('PRIVATE')},
@@ -316,7 +347,7 @@ def metadata():
         count += 1
     require(not native_issues(document([issue, issue]))['only_own_expectations'], 'metadata_duplicate_issue_negative')
     count += 1
-    return {'positive': 3, 'negative': count, 'actual_app_bodies': 0}
+    return {'positive': 4, 'negative': count, 'actual_app_bodies': 0}
 
 
 def published():
