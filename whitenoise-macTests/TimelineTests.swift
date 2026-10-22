@@ -134,6 +134,17 @@ struct TimelineTests: WorkspaceTestSupport {
         for actionSource in [popoverSource, pickerSource, menuSource, bubbleSource] {
             #expect(!actionSource.contains("ChatReactionDefaults.quick"))
         }
+
+        // Every reaction menu hands its pick to the bubble's `pickReaction`, which takes a selected
+        // emoji back (confirming when that retracts more); reacting straight through the workspace
+        // would re-send it as a no-op.
+        let inlineSource = try SourceContract.declaration("MessageInlineActions")
+        for pickerHost in [menuSource, inlineSource] {
+            #expect(pickerHost.contains("onReactionPick"))
+            #expect(!pickerHost.contains("workspace.react(to: message"))
+        }
+        #expect(bubbleSource.contains("onReactionPick: pickReaction"))
+        #expect(!bubbleSource.contains("workspace.react(to: message"))
     }
 
     @Test func reactionChipRidesOnlyASurfaceWithAnEdge() {
@@ -9290,6 +9301,23 @@ struct TimelineTests: WorkspaceTestSupport {
         let truncated = message([own, peer], omitted: 1)
         #expect(
             MessageReactionPick.resolve(emoji: "👍", reactions: truncated.reactions).needsConfirmation(on: truncated))
+    }
+
+    /// The dialog holds the pick from the moment of the click; by the time it is confirmed the
+    /// reaction may be gone, or have changed shape, so "Remove all" re-resolves it.
+    @Test func confirmedReactionRemovalReResolvesAgainstCurrentReactions() {
+        let held = MessageReaction(emoji: "👍", count: 2, isOwn: true)
+        let pick = MessageReactionPick.remove(held)
+
+        let grown = MessageReaction(emoji: "👍", count: 3, isOwn: true)
+        #expect(pick.confirmedRemoval(in: [grown]) == .remove(grown))
+
+        // Taken back elsewhere: only someone else's 👍 is left, and the dialog must not add one.
+        #expect(pick.confirmedRemoval(in: [MessageReaction(emoji: "👍", count: 1, isOwn: false)]) == nil)
+        #expect(pick.confirmedRemoval(in: []) == nil)
+
+        // An add is never a removal to confirm.
+        #expect(MessageReactionPick.add("👍").confirmedRemoval(in: [held]) == nil)
     }
 
     @Test func reactionMenusMarkOnlyTheViewersOwnEmojiSelected() {
