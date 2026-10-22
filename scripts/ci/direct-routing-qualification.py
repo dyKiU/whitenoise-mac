@@ -21,7 +21,11 @@ SELF = 'scripts/ci/direct-routing-qualification.py'
 WORKFLOW = '.github/workflows/upstream-direct-routing.yml'
 PRODUCT = 'whitenoise-mac/Core/WorkspaceState+NewChat.swift'
 FIXTURE = 'whitenoise-macTests/DirectConversationRoutingTests.swift'
-FORMATTED = [PRODUCT, 'whitenoise-mac/Views/Onboarding/AccountSetupView.swift', FIXTURE]
+FORMATTED = [PRODUCT, 'whitenoise-mac/Views/Onboarding/AccountSetupView.swift', FIXTURE,
+             'whitenoise-mac/Core/MarmotClient.swift',
+             'whitenoise-macTests/MarmotKitMigrationTests.swift',
+             'whitenoise-macTests/PairingRelayConfigurationTests.swift',
+             'whitenoise-macTests/GroupsTests.swift']
 SUITE = 'DirectConversationRoutingTests'
 TARGET = 'startNewBypassesSourceOwnedLocalSdkCandidate()'
 CONTROLS = [TARGET, 'lookupFailureDoesNotFallThroughToCreatingAnotherInvitation()',
