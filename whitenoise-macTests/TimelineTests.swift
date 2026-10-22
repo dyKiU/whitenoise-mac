@@ -134,6 +134,17 @@ struct TimelineTests: WorkspaceTestSupport {
         for actionSource in [popoverSource, pickerSource, menuSource, bubbleSource] {
             #expect(!actionSource.contains("ChatReactionDefaults.quick"))
         }
+
+        // Every reaction menu hands its pick to the bubble's `pickReaction`, which takes a selected
+        // emoji back (confirming when that retracts more); reacting straight through the workspace
+        // would re-send it as a no-op.
+        let inlineSource = try SourceContract.declaration("MessageInlineActions")
+        for pickerHost in [menuSource, inlineSource] {
+            #expect(pickerHost.contains("onReactionPick"))
+            #expect(!pickerHost.contains("workspace.react(to: message"))
+        }
+        #expect(bubbleSource.contains("onReactionPick: pickReaction"))
+        #expect(!bubbleSource.contains("workspace.react(to: message"))
     }
 
     @Test func reactionChipRidesOnlyASurfaceWithAnEdge() {
@@ -1690,6 +1701,76 @@ struct TimelineTests: WorkspaceTestSupport {
                 "\(isolated("Bob")) was removed",
                 "\(isolated("Bob")) is no longer an admin",
             ])
+    }
+
+    @MainActor
+    @Test func timelineMappingGivesEveryYouAdminEventItsOwnSentence() async throws {
+        let alice = String(repeating: "a", count: 64)
+        let bob = String(repeating: "b", count: 64)
+        let profiles = [
+            alice: ChatPeerProfile(accountIdHex: alice, displayName: "Alice", pictureURL: nil),
+            bob: ChatPeerProfile(accountIdHex: bob, displayName: "Bob", pictureURL: nil),
+        ]
+
+        func adminEvent(_ id: String, _ systemType: String, actor: String?, subject: String?, at: UInt64)
+            -> TimelineMessageRecordFfi
+        {
+            timelineMessage(
+                id: id,
+                groupIdHex: "group",
+                sender: "",
+                plaintext: "",
+                kind: 1210,
+                recordedAt: at,
+                groupSystem: groupSystemEvent(
+                    systemType: systemType,
+                    text: "Admin changed",
+                    actorAccountIdHex: actor,
+                    subjectAccountIdHex: subject
+                )
+            )
+        }
+
+        let page = TimelinePageFfi(
+            messages: [
+                adminEvent("promoted-other", "admin_added", actor: alice, subject: bob, at: 1),
+                adminEvent("promoted-self", "admin_added", actor: alice, subject: alice, at: 2),
+                adminEvent("promoted-unknown", "admin_added", actor: alice, subject: nil, at: 3),
+                adminEvent("demoted-other", "admin_removed", actor: alice, subject: bob, at: 4),
+                adminEvent("stepped-down", "admin_removed", actor: alice, subject: alice, at: 5),
+                adminEvent("demoted-unknown", "admin_removed", actor: alice, subject: nil, at: 6),
+                adminEvent("promoted-by-bob", "admin_added", actor: bob, subject: alice, at: 7),
+                adminEvent("demoted-by-bob", "admin_removed", actor: bob, subject: alice, at: 8),
+            ],
+            hasMoreBefore: false,
+            hasMoreAfter: false
+        )
+
+        // "You" must never be spliced into a third-person template: in Spanish
+        // "%@ made %@ an admin" with "You" reads "Tú nombró administrador a Bob". Asserting
+        // through the keys pins which sentence was chosen in whatever language the host runs.
+        let messages = MessageItem.timeline(from: page, activeAccountIdHex: alice, senderProfiles: profiles)
+        #expect(
+            messages.map(\.body) == [
+                String(format: L10n.string("You made %@ an admin"), isolated("Bob")),
+                L10n.string("You became an admin"),
+                L10n.string("You added an admin"),
+                String(format: L10n.string("You removed %@ as admin"), isolated("Bob")),
+                L10n.string("You stepped down as admin"),
+                L10n.string("You removed an admin"),
+                String(format: L10n.string("%@ made you an admin"), isolated("Bob")),
+                String(format: L10n.string("You were removed as admin by %@"), isolated("Bob")),
+            ])
+    }
+
+    @Test func spanishAdminSentencesConjugateForYou() {
+        let spanish = Locale(identifier: "es")
+        #expect(L10n.string("You made %@ an admin", locale: spanish) == "Nombraste administrador a %@")
+        #expect(L10n.string("%@ made you an admin", locale: spanish) == "%@ te nombró administrador")
+        #expect(L10n.string("You became an admin", locale: spanish) == "Ahora eres administrador")
+        #expect(L10n.string("You added an admin", locale: spanish) == "Añadiste un administrador")
+        #expect(L10n.string("You removed %@ as admin", locale: spanish) == "Quitaste a %@ como administrador")
+        #expect(L10n.string("You removed an admin", locale: spanish) == "Eliminaste a un administrador")
     }
 
     @MainActor
@@ -9290,6 +9371,23 @@ struct TimelineTests: WorkspaceTestSupport {
         let truncated = message([own, peer], omitted: 1)
         #expect(
             MessageReactionPick.resolve(emoji: "👍", reactions: truncated.reactions).needsConfirmation(on: truncated))
+    }
+
+    /// The dialog holds the pick from the moment of the click; by the time it is confirmed the
+    /// reaction may be gone, or have changed shape, so "Remove all" re-resolves it.
+    @Test func confirmedReactionRemovalReResolvesAgainstCurrentReactions() {
+        let held = MessageReaction(emoji: "👍", count: 2, isOwn: true)
+        let pick = MessageReactionPick.remove(held)
+
+        let grown = MessageReaction(emoji: "👍", count: 3, isOwn: true)
+        #expect(pick.confirmedRemoval(in: [grown]) == .remove(grown))
+
+        // Taken back elsewhere: only someone else's 👍 is left, and the dialog must not add one.
+        #expect(pick.confirmedRemoval(in: [MessageReaction(emoji: "👍", count: 1, isOwn: false)]) == nil)
+        #expect(pick.confirmedRemoval(in: []) == nil)
+
+        // An add is never a removal to confirm.
+        #expect(MessageReactionPick.add("👍").confirmedRemoval(in: [held]) == nil)
     }
 
     @Test func reactionMenusMarkOnlyTheViewersOwnEmojiSelected() {

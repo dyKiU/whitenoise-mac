@@ -248,6 +248,14 @@ private struct MessageReactionDetailsPopoverContent: View {
     }
 }
 
+/// A reaction removal held for confirmation, with the details model whose complete list it was
+/// resolved against (nil for a hover-strip or context-menu pick), so confirming re-validates it
+/// against the same reactions.
+private struct PendingReactionRemoval {
+    let pick: MessageReactionPick
+    let completeRead: MessageReactionsViewModel?
+}
+
 struct MessageBubble: View {
     @Environment(WorkspaceState.self) private var workspace
     @Environment(\.conversationHoverSelectionCoordinator) private var hoverSelectionCoordinator
@@ -269,7 +277,7 @@ struct MessageBubble: View {
     /// A picked removal that would also retract the account's other reactions, held for
     /// confirmation. Owned here because the context menu that picks it is gone by the time the
     /// dialog shows.
-    @State private var reactionPendingRemoval: MessageReactionPick?
+    @State private var reactionPendingRemoval: PendingReactionRemoval?
     let message: MessageItem
     let safetyModel: GroupSafetyViewModel
     let customEmojiImages: CustomEmojiImageStore
@@ -450,9 +458,11 @@ struct MessageBubble: View {
             ),
             titleVisibility: .visible,
             presenting: reactionPendingRemoval
-        ) { pick in
+        ) { pending in
             Button(L10n.string("Remove all"), role: .destructive) {
-                Task { await pick.perform(on: message, in: workspace) }
+                // The reactions may have changed while the dialog was open.
+                guard let removal = confirmedRemoval(of: pending) else { return }
+                Task { await removal.perform(on: message, in: workspace) }
             }
             Button(L10n.string("Cancel"), role: .cancel) {}
         } message: { _ in
@@ -487,15 +497,45 @@ struct MessageBubble: View {
         message.supportsChatActions && (isHovering || isInlineActionPresentationActive)
     }
 
-    /// Sends a reaction-menu pick, or holds it for confirmation when retracting the picked emoji
-    /// would retract the account's other reactions with it.
+    /// Sends a hover-strip or context-menu pick. Those menus only have the window preview, so the
+    /// pick is resolved against it.
     private func pickReaction(_ emoji: String) {
-        let pick = MessageReactionPick.resolve(emoji: emoji, reactions: message.reactions)
-        if pick.needsConfirmation(on: message) {
-            reactionPendingRemoval = pick
-        } else {
+        handleReactionPick(MessageReactionPick.resolve(emoji: emoji, reactions: message.reactions), completeRead: nil)
+    }
+
+    /// Sends a pick, or holds it for confirmation when retracting the picked emoji would retract
+    /// the account's other reactions with it. `completeRead` is the details popover's model when
+    /// the pick was resolved against its complete list.
+    private func handleReactionPick(_ pick: MessageReactionPick, completeRead: MessageReactionsViewModel?) {
+        guard pick.needsConfirmation(on: message) else {
             Task { await pick.perform(on: message, in: workspace) }
+            return
         }
+        let pending = PendingReactionRemoval(pick: pick, completeRead: completeRead)
+        guard completeRead != nil else {
+            reactionPendingRemoval = pending
+            return
+        }
+        // A pick from the details popover: a dialog presented while that transient popover is up
+        // may not show, or show behind it. Close the popover, then present on the next turn. The
+        // pending removal keeps the model, so its last complete read still re-validates the pick.
+        isReactionViewerPresented = false
+        Task { @MainActor in reactionPendingRemoval = pending }
+    }
+
+    /// The removal "Remove all" still sends, re-resolved against the same source the pick came
+    /// from: a pick from the complete read may name an emoji the preview left out, and checking it
+    /// against the preview would quietly send nothing.
+    private func confirmedRemoval(of pending: PendingReactionRemoval) -> MessageReactionPick? {
+        let current =
+            pending.completeRead?.content(projected: MessageReactionDetails(projectedFrom: message))
+            .listedReactions ?? message.reactions
+        return pending.pick.confirmedRemoval(in: current)
+    }
+
+    /// This message's details model, while its popover owns one.
+    private var reactionDetailsModel: MessageReactionsViewModel? {
+        conversationModel.reactionDetails.flatMap { $0.messageIdHex == message.id ? $0 : nil }
     }
 
     private var usesBubbleSurface: Bool {
@@ -566,14 +606,15 @@ struct MessageBubble: View {
             emojiImage: { [customEmojiImages] in customEmojiImages.reactionImage(for: $0) },
             loadEmojiImages: { [customEmojiImages] in customEmojiImages.loadReactions($0) },
             requestProfiles: { [workspace] in workspace.requestPeerProfileRefresh($0) },
-            removeOwnReaction: { [workspace, message] reaction in
-                Task { await workspace.removeReaction(reaction, from: message) }
+            // The same pick as the React control, so one popover has one removal rule: taking
+            // back a reaction that retracts the others too is confirmed either way.
+            removeOwnReaction: { reaction in
+                handleReactionPick(.remove(reaction), completeRead: reactionDetailsModel)
             },
             quickReactions: workspace.quickReactions,
-            react: message.canReact
-                ? { [workspace, message] emoji in
-                    Task { await workspace.react(to: message, emoji: emoji) }
-                } : nil
+            // The popover resolves the pick against its complete list; the bubble only confirms
+            // and sends it, so a selected emoji is taken back rather than re-sent as a no-op.
+            react: message.canReact ? { pick in handleReactionPick(pick, completeRead: reactionDetailsModel) } : nil
         )
     }
 
@@ -2642,8 +2683,9 @@ struct MessageEmojiPickerPopover: View {
 struct QuickReactionPicker: View {
     @State private var isFullPickerPresented = false
     let emojis: [String]
-    /// The emoji the viewing account already reacted with, drawn selected.
-    var selectedEmojis: Set<String> = []
+    /// The emoji the viewing account already reacted with, drawn selected. Required, so no caller
+    /// can offer the picker without the mark that tells a second click takes the reaction back.
+    let selectedEmojis: Set<String>
     let onPick: (String) -> Void
 
     var body: some View {
