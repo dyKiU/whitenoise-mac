@@ -435,17 +435,21 @@ nonisolated final class MarmotClient: MarmotRuntime, @unchecked Sendable {
         self.rootPath = rootPath
         self.storageProfile = storageProfile
         self.suppliedSecretStore = secretStore
+        #if WN_CURRENT_SDK_API
+            var runtimeOptions = MarmotOptions(deployment: marmotDeploymentWhiteNoise())
+        #else
+            var runtimeOptions = MarmotOptions()
+        #endif
+        runtimeOptions.relayPolicy = relayPolicy
+        runtimeOptions.cursorPersistence = cursorPersistence
+        runtimeOptions.clientName = "whitenoise"
+        runtimeOptions.secretStore = secretStore ?? storageProfile.makeSecretStore()
+        runtimeOptions.attachmentAcquisitionMode = .hostManaged
         self.marmot = try Marmot.newWithConfiguration(
             rootPath: rootPath,
             relayUrls: relayUrls,
             options: Self.pairingOptions(
-                MarmotOptions(
-                    relayPolicy: relayPolicy,
-                    cursorPersistence: cursorPersistence,
-                    clientName: "whitenoise",
-                    secretStore: secretStore ?? storageProfile.makeSecretStore(),
-                    attachmentAcquisitionMode: .hostManaged
-                ), runtimeRelays: relayUrls
+                runtimeOptions, runtimeRelays: relayUrls
             )
         )
     }
