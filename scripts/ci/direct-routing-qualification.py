@@ -248,13 +248,25 @@ def unarchive_source_lines():
     return result
 
 
+def unarchive_selection_native_line():
+    text = Path(UNARCHIVE_FIXTURE).read_text()
+    start = text.index('private static func assertUnarchiveThenSwitchSelectsNothing(')
+    end = text.index('    /// The promotion is a second commit', start)
+    final = text.index('        try await reused', start, end)
+    needle = '#expect(state.selection == .chat("backup-chat"))'
+    require(text[final:end].count(needle) == 1, 'unarchive_unique_selection_expectation')
+    # Legacy XCResult DocumentLocation uses zero-based source lines; admit only
+    # that exact coordinate for this separate single-site guard inverse.
+    return text.count('\n', 0, text.index(needle, final, end))
+
+
 def own_lines():
     # Preserve raw native coordinates; compare only exact known source sites.
     lines = source_expectation_lines()
     return lines | {line - 1 for line in lines}
 
 
-def native_issues(document, unarchive=False):
+def native_issues(document, unarchive=False, unarchive_pfp=False):
     rows = []
     fixture = UNARCHIVE_FIXTURE if unarchive else FIXTURE
     unknown = 0
@@ -296,11 +308,18 @@ def native_issues(document, unarchive=False):
                     and all(len(v) == 1 and re.fullmatch('[0-9]{1,8}', v[0]) for v in fields.values()), 'native_own_coordinate')
             line, end = int(fields['StartingLineNumber'][0]), int(fields['EndingLineNumber'][0])
             row.update(line=line, ending_line=end)
-            require((name in UNARCHIVE_CONTROLS if unarchive else name == TARGET)
-                    and line == end and line in (unarchive_source_lines() if unarchive else own_lines())
+            expected_name = (name == UNARCHIVE_CONTROLS[0] if unarchive_pfp
+                             else name in UNARCHIVE_CONTROLS if unarchive else name == TARGET)
+            expected_lines = ({unarchive_selection_native_line()} if unarchive_pfp
+                              else unarchive_source_lines() if unarchive else own_lines())
+            require(expected_name and line == end and line in expected_lines
                     and kind in ('Assertion Failure', 'Swift Testing Failure', 'Uncategorized') and message.startswith('Expectation failed:'),
                     'native_own_assertion')
-            require((name, line) not in seen and len(failures) <= (3 if unarchive else 4), 'native_duplicate_or_extra_issue')
+            require((name, line) not in seen and len(failures) <= (1 if unarchive_pfp else 3 if unarchive else 4),
+                    'native_duplicate_or_extra_issue')
+            if unarchive_pfp:
+                require(unarchive and 'state.selection' in message and 'backup-chat' in message,
+                        'unarchive_selection_expression_only')
             seen.add((name, line))
             row.update(method=name, file=fixture, line=line, own_expectation=True)
         except (Rejected, ValueError, TypeError, KeyError) as error:
@@ -324,7 +343,12 @@ def native_issues(document, unarchive=False):
                 unknown += 1
     return {'uncategorized_four_own_sites': complete_uncategorized,
             'unarchive_known_control_sites_only': unarchive and bool(rows) and unknown == 0,
-            'unarchive_control_only_no_mutation_credit': unarchive,
+            'unarchive_control_only_no_mutation_credit': unarchive and not unarchive_pfp,
+            'unarchive_only_selection_guard_expectation': unarchive_pfp and len(rows) == 1
+                and not errors and unknown == 0,
+            'unarchive_other_original_expectations_failed': unarchive_pfp and any(
+                row.get('line') in {line - 1 for line in unarchive_source_lines()}
+                - {unarchive_selection_native_line()} for row in rows),
             'root_error_count': len(errors), 'failure_issue_count': len(failures),
             'unknown_issue_count': unknown, 'issues': rows,
             'only_own_expectations': bool(rows) and not errors and unknown == 0,
@@ -448,6 +472,76 @@ def unarchive_metadata():
             'scope': 'closed control-reporting parser only; no behavior RED or mutation credit'}
 
 
+def unarchive_inverse(data):
+    text = data.decode()
+    start_anchor = '    func startDirectChat('
+    end_anchor = '    /// The invite prompt'
+    require(text.count(start_anchor) == 1, 'unarchive_one_direct_entry')
+    start = text.index(start_anchor)
+    end = text.index(end_anchor, start)
+    scope = text[start:end]
+    guard = """                guard activeAccountId == accountId, conversationMetadataEpoch == accountEpoch, !Task.isCancelled else {
+                    return
+                }
+"""
+    suffix = '                selection = .chat(existing.groupIdHex)'
+    before = '                if !existing.isPaired { await reloadChats(forceFreshSnapshot: true) }\n'
+    anchor = before + guard + suffix
+    require(scope.count(anchor) == 1 and scope.count('if let existing, existing.reusable {') == 1,
+            'unarchive_one_existing_selection_guard')
+    changed_scope = scope.replace(anchor, before + suffix, 1)
+    changed = (text[:start] + changed_scope + text[end:]).encode()
+    require(changed != data and changed_scope.replace(before + suffix, anchor, 1) == scope,
+            'unarchive_exact_guard_omission')
+    return changed
+
+
+def unarchive_pfp_metadata():
+    def scalar(value):
+        return {'_type': {'_name': 'String'}, '_value': value}
+    def issue(method, line, message='Expectation failed: (state.selection) == .chat("backup-chat")'):
+        return {'_type': {'_name': 'TestFailureIssueSummary'},
+                'testCaseName': scalar('GroupsTests.' + method),
+                'message': scalar(message), 'issueType': scalar('Uncategorized'),
+                'documentLocationInCreatingWorkspace': {'_type': {'_name': 'DocumentLocation'},
+                    'url': scalar('file:///fixture/' + UNARCHIVE_FIXTURE + '#StartingLineNumber=' + str(line)
+                                  + '&EndingLineNumber=' + str(line))}}
+    def document(values):
+        return {'_type': {'_name': 'ActionsInvocationRecord'},
+                'issues': {'_type': {'_name': 'ResultIssueSummaries'},
+                    'testFailureSummaries': {'_type': {'_name': 'Array'}, '_values': values}}}
+    own = issue(UNARCHIVE_CONTROLS[0], unarchive_selection_native_line())
+    result = native_issues(document([own]), unarchive=True, unarchive_pfp=True)
+    require(result['only_own_expectations'] and result['unarchive_only_selection_guard_expectation']
+            and not result['uncategorized_four_own_sites']
+            and not result['unarchive_other_original_expectations_failed'], 'unarchive_pfp_own_single')
+    positive, negative = 1, 0
+    for bad in ([issue(UNARCHIVE_CONTROLS[1], unarchive_selection_native_line())],
+                [issue(UNARCHIVE_CONTROLS[0], unarchive_selection_native_line() + 1)],
+                [issue(UNARCHIVE_CONTROLS[0], unarchive_selection_native_line(), 'Expectation failed: PRIVATE')],
+                [own, own]):
+        result = native_issues(document(bad), unarchive=True, unarchive_pfp=True)
+        require(not result['only_own_expectations'] and 'PRIVATE' not in json.dumps(result),
+                'unarchive_pfp_foreign_extra_rejected')
+        negative += 1
+    for line in {line - 1 for line in unarchive_source_lines()} - {unarchive_selection_native_line()}:
+        for bad in ([issue(UNARCHIVE_CONTROLS[0], line)], [own, issue(UNARCHIVE_CONTROLS[0], line)]):
+            require(not native_issues(document(bad), unarchive=True, unarchive_pfp=True)['only_own_expectations'],
+                    'unarchive_pfp_other_original_expectation_rejected')
+            negative += 1
+    original = Path(PRODUCT).read_bytes()
+    require(unarchive_inverse(original) != original, 'unarchive_pfp_one_guard_source')
+    positive += 1
+    try:
+        unarchive_inverse(unarchive_inverse(original))
+    except Rejected:
+        negative += 1
+    else:
+        raise Rejected('unarchive_pfp_duplicate_mutation_rejected')
+    return {'positive': positive, 'negative': negative, 'actual_test_bodies': 0,
+            'scope': 'synthetic source/one-site parser only; no runtime RED credit'}
+
+
 def inverse(data):
     text = data.decode()
     require(text.count(ANCHOR) == 1, 'unique_conditional_reuse')
@@ -456,12 +550,12 @@ def inverse(data):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--mode', choices=('preflight', 'format', 'red', 'controls', 'pfp', 'unarchive-controls'), required=True)
+    parser.add_argument('--mode', choices=('preflight', 'format', 'red', 'controls', 'pfp', 'unarchive-controls', 'unarchive-pfp'), required=True)
     parser.add_argument('--source', required=True)
     parser.add_argument('--baseline', required=True)
     parser.add_argument('--output', required=True)
     args = parser.parse_args()
-    unarchive = args.mode == 'unarchive-controls'
+    unarchive = args.mode in ('unarchive-controls', 'unarchive-pfp')
     os.umask(0o077)
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -559,7 +653,8 @@ def main():
                     report['actual_bodies'] += row['counts']['passedTests'] + row['counts']['failedTests']
         counts = row['counts']
         row['cases'] = native_rows(documents['tests'], names, suite)
-        row['native_issues'] = native_issues(documents['legacy'], unarchive=unarchive)
+        row['native_issues'] = native_issues(documents['legacy'], unarchive=unarchive,
+                                                   unarchive_pfp=unarchive and want_red)
         save()
         require(all(type(counts[k]) is int for k in COUNT_KEYS) and counts['totalTestCount'] == len(names)
                 and counts['skippedTests'] == 0 and counts['passedTests'] + counts['failedTests'] == len(names)
@@ -572,7 +667,12 @@ def main():
         row['source_closure'] = closure(expected)
         success = (facts['capture_complete'] and row['test_build_succeeded'] and row['source_closure'])
         if want_red:
-            require(not unarchive, 'unarchive_controls_no_red_oracle')
+            if unarchive:
+                require(args.mode == 'unarchive-pfp' and names == [UNARCHIVE_CONTROLS[0]],
+                        'unarchive_exact_guard_inverse_only')
+                require(row['native_issues']['unarchive_only_selection_guard_expectation']
+                        and not row['native_issues']['unarchive_other_original_expectations_failed'],
+                        'unarchive_only_backup_selection_failure')
             success = (success and facts['exit_code'] == 65 and counts['failedTests'] == 1
                        and counts['passedTests'] == 0 and row['native_issues']['only_own_expectations'])
         else:
@@ -614,6 +714,7 @@ def main():
         published()
         report['parser_controls'] = metadata()
         report['unarchive_parser_controls'] = unarchive_metadata()
+        report['unarchive_pfp_parser_controls'] = unarchive_pfp_metadata()
         if args.mode == 'preflight':
             report['preflight_passed'] = True
         else:
@@ -634,7 +735,7 @@ def main():
             else:
                 private = Path(tempfile.mkdtemp(prefix='direct-routing-', dir=os.environ['RUNNER_TEMP']))
                 scope = original.decode().split('func startDirectChat(', 1)[1].split('/// The invite prompt', 1)[0]
-                if unarchive:
+                if args.mode == 'unarchive-controls':
                     report['control_only'] = True
                     report['mutation_necessity'] = False
                     report['qualified'] = phase('unarchive-controls', UNARCHIVE_CONTROLS, frozen, False)
@@ -643,8 +744,14 @@ def main():
                     require(ANCHOR.strip() not in scope and 'let existing = try await existingDirectChat(' in scope, 'original_unconditional_reuse')
                     report['behavioral_red'] = phase('red', [TARGET], frozen, True)
                 else:
-                    inverse(original)
-                    require(phase('baseline', CONTROLS, frozen, False), 'baseline_controls_failed')
+                    mutate = unarchive_inverse if unarchive else inverse
+                    names = UNARCHIVE_CONTROLS if unarchive else CONTROLS
+                    target = UNARCHIVE_CONTROLS[0] if unarchive else TARGET
+                    mutate(original)
+                    require(phase('baseline', names, frozen, False), 'baseline_controls_failed')
+                    if unarchive:
+                        report['control_only'] = False
+                        report['mutation_necessity'] = True
                     if args.mode == 'controls':
                         report['qualified'] = True
                     else:
@@ -655,11 +762,22 @@ def main():
                         parent_info, leaf_info = (parent.st_dev, parent.st_ino), (leaf.st_dev, leaf.st_ino)
                         descriptor = os.open(path, os.O_RDWR | os.O_NOFOLLOW)
                         report['mutation_attempted'] = True
-                        write_product(inverse(original))
+                        write_product(mutate(original))
                         expected = physical(current)
                         require({n for n in frozen if frozen[n] != expected[n]} == {PRODUCT}
                                 and expected[PRODUCT][0] == frozen[PRODUCT][0], 'only_conditional_inverse')
-                        report['inverse_qualified'] = phase('inverse', [TARGET], expected, True)
+                        report['inverse_qualified'] = phase('inverse', [target], expected, True)
+                        if unarchive:
+                            observed = report['phases'][-1]
+                            report['counterfactual_outcome'] = (
+                                'intended_selection_failure' if report['inverse_qualified'] else
+                                'survived' if observed.get('exit_code') == 0
+                                    and observed.get('source_closure') is True
+                                    and observed.get('test_build_succeeded') is True
+                                    and observed.get('capture_complete') is True
+                                    and observed.get('counts', {}).get('passedTests') == 1
+                                    and observed.get('native_issues', {}).get('no_native_issues') is True
+                                else 'unqualified')
     except Exception as error:
         report['failure_category'] = error.args[0] if type(error) is Rejected else 'unknown'
         report['exception_type'] = type(error).__name__
@@ -671,9 +789,9 @@ def main():
                 report['restored_exact'] = closure(frozen)
                 save()
                 if report['restored_exact']:
-                    report['restored_qualified'] = phase('restored', CONTROLS, frozen, False)
+                    report['restored_qualified'] = phase('restored', UNARCHIVE_CONTROLS if unarchive else CONTROLS, frozen, False)
                     report['qualified'] = bool(report.get('inverse_qualified')
-                                               and report['restored_qualified'] and report['actual_bodies'] == 11)
+                                               and report['restored_qualified'] and report['actual_bodies'] == (5 if unarchive else 11))
             if frozen is not None:
                 report['final_closure'] = closure(frozen)
                 report['final_tracked_manifest_sha256'] = fingerprint(physical(current))

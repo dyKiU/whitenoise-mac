@@ -16,7 +16,7 @@ on:
         description: Published-only focused route; experimental requires a future verified SDK installer lane
         required: true
         type: choice
-        options: [format, red, controls, pfp, unarchive-controls]
+        options: [format, red, controls, pfp, unarchive-controls, unarchive-pfp]
         default: format
 permissions:
   contents: read
