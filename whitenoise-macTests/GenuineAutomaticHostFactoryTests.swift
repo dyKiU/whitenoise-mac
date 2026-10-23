@@ -523,7 +523,8 @@
                     String(data: code, encoding: .utf8)?.hasPrefix("WNPAIR2:") == true,
                     "factory-semantic-existing-roster-begin-bootstrap")
                 guard String(data: code, encoding: .utf8)?.hasPrefix("WNPAIR2:") == true else {
-                    return  // The unchanged failing assertion above terminates the scenario; fixture cleanup still runs.
+                    // The unchanged failing assertion above terminates the scenario; fixture cleanup still runs.
+                    return
                 }
                 let scanner: FactoryOwner
                 do {
