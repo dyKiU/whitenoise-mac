@@ -187,7 +187,7 @@
             guard encoded.utf8.count <= 65_536, !encoded.isEmpty,
                 let bytes = Data(base64Encoded: encoded), bytes.base64EncodedString() == encoded
             else { throw VerificationInputError.invalidPacket }
-            guard bytes.count <= 1024, String(data: bytes, encoding: .utf8)?.hasPrefix("WNPAIR1:") == true
+            guard PairingQRCode.isAutomaticBootstrap(bytes)
             else { throw VerificationInputError.invalidPacket }
             return bytes
         }

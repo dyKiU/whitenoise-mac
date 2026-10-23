@@ -29,8 +29,16 @@
                 release = nil
             }
         }
-        @Test func compactBootstrapNeedsExactlyOneQRPage() throws {
-            let bytes = Data(("WNPAIR1:" + String(repeating: "a", count: 1016)).utf8)
+        @Test func automaticBootstrapSupportsBothTransportRolesAndRejectsUnrelatedOrOversizedData() {
+            #expect(PairingQRCode.isAutomaticBootstrap(Data("WNPAIR1:synthetic-request".utf8)))
+            #expect(PairingQRCode.isAutomaticBootstrap(Data("WNPAIR2:synthetic-rendezvous".utf8)))
+            #expect(!PairingQRCode.isAutomaticBootstrap(Data("npub1unrelated".utf8)))
+            #expect(!PairingQRCode.isAutomaticBootstrap(Data(("WNPAIR2:" + String(repeating: "a", count: 1017)).utf8)))
+        }
+
+        @Test(arguments: ["WNPAIR1:", "WNPAIR2:"])
+        func compactBootstrapNeedsExactlyOneQRPage(_ bootstrapPrefix: String) throws {
+            let bytes = Data((bootstrapPrefix + String(repeating: "a", count: 1016)).utf8)
             let pages = try PairingQRCode.encodePages(bytes)
             #expect(pages.count == 1)
             #expect(try PairingQRCode.decode(pages[0]) == bytes.base64EncodedString())
