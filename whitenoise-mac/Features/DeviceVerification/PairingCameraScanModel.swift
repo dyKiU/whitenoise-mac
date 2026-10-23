@@ -16,8 +16,7 @@
         }
         nonisolated static func bootstrap(from payload: String) -> String? {
             guard let packet = try? PairingQRCode.decode(payload),
-                let bytes = Data(base64Encoded: packet), bytes.count <= 1024,
-                String(data: bytes, encoding: .utf8)?.hasPrefix("WNPAIR1:") == true
+                let bytes = Data(base64Encoded: packet), PairingQRCode.isAutomaticBootstrap(bytes)
             else { return nil }
             return packet
         }

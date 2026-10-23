@@ -5,13 +5,14 @@ import Testing
 
 #if WN_EXPERIMENTAL_DEVICE_SYNC
     @MainActor @Suite struct PairingCameraScanModelTests {
-        @Test func onlyOneBoundedBootstrapIsStagedAndNeverAProfileOrVerifierPacket() throws {
+        @Test(arguments: ["WNPAIR1:", "WNPAIR2:"])
+        func onlyOneBoundedBootstrapIsStagedAndNeverAProfileOrVerifierPacket(_ bootstrapPrefix: String) throws {
             var packets: [String] = []
             let model = PairingCameraScanModel(isCurrent: { true }, onScan: { packets.append($0) })
             model.receive("nostr:npub1profile")
             model.receive(try PairingQRCode.encode(Data([1, 2, 3])))
             #expect(packets.isEmpty && model.canScan)
-            let bootstrap = Data("WNPAIR1:synthetic-bootstrap".utf8)
+            let bootstrap = Data((bootstrapPrefix + "synthetic-bootstrap").utf8)
             let payload = try PairingQRCode.encode(bootstrap)
             model.receive(payload)
             model.receive(payload)
