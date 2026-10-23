@@ -509,19 +509,21 @@
                 } catch MarmotKitError.DeviceLinkingNotReady {
                     observeFactory("begin", "not-ready", "none")
                     XCTFail("factory-semantic-existing-roster-begin-not-ready")
-                    return // The outer real fixture still closes every original host before returning its failure.
+                    return  // The outer real fixture still closes every original host before returning its failure.
                 }
                 let code = try display.setupPacket()
                 // The prefix comes from the actual SDK-owned existing-roster factory, never a rewritten code.
                 let semanticBootstrap = String(data: code, encoding: .utf8)
-                let semanticKind = semanticBootstrap?.hasPrefix("WNPAIR2:") == true ? "wnpair2"
+                let semanticKind =
+                    semanticBootstrap?.hasPrefix("WNPAIR2:") == true
+                    ? "wnpair2"
                     : (semanticBootstrap?.hasPrefix("WNPAIR1:") == true ? "wnpair1" : "other")
                 observeFactory("begin", semanticKind == "wnpair2" ? "ok" : "wrong-bootstrap", semanticKind)
                 XCTAssertTrue(
                     String(data: code, encoding: .utf8)?.hasPrefix("WNPAIR2:") == true,
                     "factory-semantic-existing-roster-begin-bootstrap")
                 guard String(data: code, encoding: .utf8)?.hasPrefix("WNPAIR2:") == true else {
-                    return // The unchanged failing assertion above terminates the scenario; fixture cleanup still runs.
+                    return  // The unchanged failing assertion above terminates the scenario; fixture cleanup still runs.
                 }
                 let scanner: FactoryOwner
                 do {
@@ -529,7 +531,7 @@
                 } catch MarmotKitError.DeviceLinkingInvalidPacket {
                     observeFactory("scan", "invalid-packet", semanticKind)
                     XCTFail("factory-semantic-existing-roster-scan-invalid-packet")
-                    return // Preserve failure while allowing the same outer fixture to retire all three hosts.
+                    return  // Preserve failure while allowing the same outer fixture to retire all three hosts.
                 }
                 observeFactory("scan", "ok", semanticKind)
                 try await self.wait {
