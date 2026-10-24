@@ -74,7 +74,7 @@
                 secretStore: store, relayPolicy: .allowLoopback)
             do {
                 #expect(try reopened.listAccounts().map(\.accountIdHex) == [account])
-                let secret = try await reopened.marmot.revealNsec(accountRef: account)
+                let secret = try reopened.marmot.revealNsec(accountRef: account)
                 #expect(!secret.isEmpty)
                 #expect(store.writeCount == 1)
                 try await reopened.removeAccount(accountRef: account)
@@ -164,7 +164,7 @@
                     #expect(FileManager.default.fileExists(atPath: marker.path))
                     #expect(try store.hasSecretForAccountId(accountIdHex: identity.accountIdHex))
                     #expect(try client.listAccounts().map(\.accountIdHex) == [identity.accountIdHex])
-                    let secret = try await client.marmot.revealNsec(accountRef: identity.accountIdHex)
+                    let secret = try client.marmot.revealNsec(accountRef: identity.accountIdHex)
                     #expect(!secret.isEmpty)
                 }
                 try await client.marmot.shutdownAndClose()
