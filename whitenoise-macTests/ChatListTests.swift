@@ -3687,11 +3687,11 @@ struct ChatListTests: WorkspaceTestSupport {
         // Prime the memo against a cold roster, so the next read is a memo hit.
         #expect(state.cachedMentionNames(groupIdHex: "group-1").isEmpty)
 
-        var changed = false
+        let changed = LockedTestFlag(false)
         withObservationTracking {
             _ = state.cachedMentionNames(groupIdHex: "group-1")
         } onChange: {
-            changed = true
+            changed.value = true
         }
         state.storeGroupMembers(
             [
@@ -3709,7 +3709,7 @@ struct ChatListTests: WorkspaceTestSupport {
             for: "group-1"
         )
 
-        #expect(changed)
+        #expect(changed.value)
         #expect(state.cachedMentionNames(groupIdHex: "group-1") == ["npub1alyce": "Alice"])
     }
 
