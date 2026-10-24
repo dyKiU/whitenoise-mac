@@ -26,7 +26,7 @@ struct ProfileKeysSettingsView: View {
     @Environment(WorkspaceState.self) private var workspace
     #if WN_EXPERIMENTAL_DEVICE_SYNC
         var deviceVerificationModel: DeviceVerificationViewModel? = nil
-        var acquireAccountSharing: (@MainActor () throws -> AccountChatSharingViewModel)? = nil
+        var acquireAccountSharing: (@MainActor @Sendable () throws -> AccountChatSharingViewModel)? = nil
     #endif
 
     var body: some View {

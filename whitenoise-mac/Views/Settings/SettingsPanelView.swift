@@ -14,7 +14,7 @@ struct SettingsPanelView: View {
     let model: SettingsViewModel
     #if WN_EXPERIMENTAL_DEVICE_SYNC
         var deviceVerificationModel: DeviceVerificationViewModel? = nil
-        var acquireAccountSharing: (@MainActor () throws -> AccountChatSharingViewModel)? = nil
+        var acquireAccountSharing: (@MainActor @Sendable () throws -> AccountChatSharingViewModel)? = nil
     #endif
 
     private var page: SettingsPage {

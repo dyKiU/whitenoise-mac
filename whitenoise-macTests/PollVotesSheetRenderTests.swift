@@ -49,7 +49,7 @@ import Testing
 
     @Test(arguments: [NSAppearance.Name.aqua, NSAppearance.Name.darkAqua])
     func loadedVotesDrawUnderTheirOptionsWithTheBlockedVoterMarked(appearance: NSAppearance.Name) async throws {
-        let model = PollVotesViewModel(pollEventId: "poll", poll: Self.poll) { _, _ in Self.page }
+        let model = PollVotesViewModel(pollEventId: "poll", poll: Self.poll) { [page = Self.page] _, _ in page }
         await model.reload().value
         let empty = PollVotesViewModel(pollEventId: "poll", poll: Self.poll) { _, _ in
             PollVotePageFfi(votes: [], hasMoreAfter: false)
@@ -70,7 +70,7 @@ import Testing
 
     @Test func aSheetStillReadingAndOneThatFailedBothDraw() async throws {
         // `reload` marks the read in flight before it yields, so this draws the loading state.
-        let loading = PollVotesViewModel(pollEventId: "poll", poll: Self.poll) { _, _ in Self.page }
+        let loading = PollVotesViewModel(pollEventId: "poll", poll: Self.poll) { [page = Self.page] _, _ in page }
         let read = loading.reload()
         #expect(loading.isLoading)
         let loadingRep = try Self.rasterize(Self.list(loading), in: .aqua)
