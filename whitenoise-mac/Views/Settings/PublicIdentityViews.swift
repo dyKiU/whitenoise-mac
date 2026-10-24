@@ -232,7 +232,7 @@ struct QRCodeInk: Equatable, Sendable {
         blue = resolved.blueComponent
     }
 
-    var ciColor: CIColor { CIColor(red: red, green: green, blue: blue) }
+    nonisolated var ciColor: CIColor { CIColor(red: red, green: green, blue: blue) }
 
     /// The resolved color as AppKit sees it — a static color, since the whole point of this type is
     /// that the appearance has already been chosen.

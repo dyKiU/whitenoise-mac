@@ -645,7 +645,7 @@ nonisolated struct ChatPeerProfile: Hashable, Sendable {
     }
 }
 
-struct GroupMemberItem: Identifiable, Hashable {
+nonisolated struct GroupMemberItem: Identifiable, Hashable {
     let id: String
     /// The viewer's private nickname for this member when one is set, else the published name.
     /// `private(set)` so the only in-place writer is `applyingNickname`.
@@ -3742,7 +3742,7 @@ struct RelaySettingsSnapshot: Equatable {
     }
 }
 
-struct NewChatRecipient: Equatable {
+nonisolated struct NewChatRecipient: Equatable {
     let sourceQuery: String
     let memberRef: String
     let accountIdHex: String
