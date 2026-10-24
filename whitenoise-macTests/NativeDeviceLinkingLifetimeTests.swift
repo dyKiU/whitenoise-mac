@@ -236,7 +236,9 @@ import Testing
             let original = LifetimeSession(noPointer: .init())
             let owner = try await session.adoptDeviceLinkingFactory { _, _ in original }
             original.setCancellationFailure(true)
-            let teardown: @MainActor () async throws -> Void = { try await session.prepareForAccountExit(accountID: account.id) }
+            let teardown: @MainActor () async throws -> Void = {
+                try await session.prepareForAccountExit(accountID: account.id)
+            }
             if remove {
                 await workspace.removeAccount(account, beforeAccountExit: teardown)
             } else {
@@ -268,7 +270,9 @@ import Testing
             let original = LifetimeSession(noPointer: .init())
             let owner = try await session.adoptDeviceLinkingFactory { _, _ in original }
             original.setCancellationFailure(true)
-            let teardown: @MainActor () async throws -> Void = { try await session.prepareForAccountExit(accountID: account.id) }
+            let teardown: @MainActor () async throws -> Void = {
+                try await session.prepareForAccountExit(accountID: account.id)
+            }
             await workspace.signOutAccount(account, beforeAccountExit: teardown)
             #expect(runtime.signedOutAccountRefs.isEmpty)
             #expect(session.accountScope == nil)
