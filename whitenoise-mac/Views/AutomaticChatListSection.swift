@@ -26,9 +26,9 @@ import SwiftUI
                 preview: blocked ? L10n.string("New message") : preview?.text ?? "",
                 previewAttachmentKind: preview?.attachmentKind, previewAttribution: preview?.attribution,
                 updatedAt: latest.map { Date(timeIntervalSince1970: TimeInterval($0.createdAt)) },
-                avatarSeed: row.directPeerAccountIdHex ?? row.groupIdHex, pictureURL: nil,
+                avatarSeed: row.directPeerAccountIdHex ?? row.groupIdHex,
+                directPeerAccountIdHex: row.directPeerAccountIdHex, pictureURL: nil,
                 unreadCount: 0, isDirect: row.directPeerAccountIdHex != nil,
-                directPeerAccountIdHex: row.directPeerAccountIdHex,
                 isBlockedDirectPeer: row.directPeerAccountIdHex.map(isBlocked) ?? false,
                 hasAuthoritativeConversationKind: true
             )
