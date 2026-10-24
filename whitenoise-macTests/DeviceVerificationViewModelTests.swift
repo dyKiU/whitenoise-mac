@@ -216,9 +216,9 @@ import Testing
         }
 
         @Test func failedOrInflightReadNeverFallsBackToFirstDeviceSetup() async throws {
-            var failRead = false
+            let failRead = MainActorTestFlag(false)
             var delayed: CheckedContinuation<[DeviceLinkingTargetFfi], Never>?
-            var blockRead = false
+            let blockRead = MainActorTestFlag(false)
             var calls = 0
             let model = DeviceVerificationViewModel(
                 begin: { VerificationSessionDouble() }, cancel: {},
@@ -227,17 +227,17 @@ import Testing
                     throw MarmotKitError.DeviceLinkingRuntimeUnavailable
                 },
                 targets: {
-                    if failRead { throw MarmotKitError.DeviceLinkingRuntimeUnavailable }
-                    if blockRead { return await withCheckedContinuation { delayed = $0 } }
+                    if failRead.value { throw MarmotKitError.DeviceLinkingRuntimeUnavailable }
+                    if blockRead.value { return await withCheckedContinuation { delayed = $0 } }
                     return []
                 }, verificationSupported: true)
             try await model.loadTargets()
-            failRead = true
+            failRead.value = true
             await #expect(throws: MarmotKitError.DeviceLinkingRuntimeUnavailable) { try await model.loadTargets() }
             #expect(!model.offersFirstDeviceSetupAttempt)
             await #expect(throws: (any Error).self) { try await model.approveFirstDeviceSetup(request: Data([1])) }
-            failRead = false
-            blockRead = true
+            failRead.value = false
+            blockRead.value = true
             let read = Task { try await model.loadTargets() }
             for _ in 0..<200 {
                 if delayed != nil { break }

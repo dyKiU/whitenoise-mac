@@ -23,14 +23,14 @@ import Testing
             )
         }
         @Test func dismissalAndRetiredAccountRejectLateCameraCallbacks() throws {
-            var current = true
+            let current = MainActorTestFlag(true)
             var packets: [String] = []
             let payload = try PairingQRCode.encode(Data("WNPAIR1:synthetic-bootstrap".utf8))
-            let model = PairingCameraScanModel(isCurrent: { current }, onScan: { packets.append($0) })
-            current = false
+            let model = PairingCameraScanModel(isCurrent: { current.value }, onScan: { packets.append($0) })
+            current.value = false
             model.receive(payload)
             #expect(packets.isEmpty)
-            current = true
+            current.value = true
             model.close()
             model.receive(payload)
             model.fail()

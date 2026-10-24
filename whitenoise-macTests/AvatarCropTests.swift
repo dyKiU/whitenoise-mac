@@ -276,12 +276,12 @@ struct AvatarCropTests: WorkspaceTestSupport {
     /// A destination that is busy refuses the crop without losing it: the framing survives, and
     /// the same Done saves once the other change has finished.
     @Test func aBusyDestinationKeepsTheFramingForARetry() async throws {
-        var isBusy = true
+        let isBusy = MainActorTestFlag(true)
         var commits = 0
         let model = AvatarCropViewModel(
             loadData: { try Self.testPNGData(width: 300, height: 200) },
             commit: { _ in
-                if isBusy { throw AvatarImageCropper.CommitError.busy }
+                if isBusy.value { throw AvatarImageCropper.CommitError.busy }
                 commits += 1
             }
         )
@@ -296,7 +296,7 @@ struct AvatarCropTests: WorkspaceTestSupport {
         #expect(model.zoom == framing.zoom)
         #expect(model.offset == framing.offset)
 
-        isBusy = false
+        isBusy.value = false
         #expect(await model.save())
         #expect(commits == 1)
         #expect(model.saveError == nil)
