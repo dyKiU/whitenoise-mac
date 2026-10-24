@@ -352,6 +352,11 @@ extension AttachmentTransferStateFfi {
                 // rearming or resetting that work.
                 false
         #endif
+        #if WN_CURRENT_SDK_API
+            case .cleanedBySetting:
+                // Reacquisition after retention cleanup is explicit, just as after Remove.
+                true
+        #endif
         case .failed, .cancelled, .removed, .retryExhausted, .policyBlocked, .previouslyAcquiredUnavailable,
             .completedUnretained:
             true

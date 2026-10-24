@@ -16,5 +16,18 @@ import Testing
             #expect(status.received == 16)
             #expect(!status.state.needsRearmToDownload)
         }
+
+        #if WN_CURRENT_SDK_API
+            @Test func retentionCleanupRequiresDeliberateDownloadAgain() {
+                let status = AttachmentTransferStatusFfi(
+                    reference: nil, state: .cleanedBySetting,
+                    attempt: 0, received: 0, total: nil, retryAt: nil)
+
+                #expect(!status.isWorking)
+                #expect(!status.canRetry)
+                #expect(!status.canRemove)
+                #expect(status.state.needsRearmToDownload)
+            }
+        #endif
     }
 #endif

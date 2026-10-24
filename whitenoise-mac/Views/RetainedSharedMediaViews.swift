@@ -497,6 +497,11 @@ extension AttachmentTransferStatusFfi {
             case .storageBlocked:
                 false
         #endif
+        #if WN_CURRENT_SDK_API
+            case .cleanedBySetting:
+                // The body was removed by retention; only a deliberate download can reacquire it.
+                false
+        #endif
         case .unavailable, .notRequested, .ready, .retryScheduled, .failed, .cancelled, .paused,
             .removed, .policyBlocked, .previouslyAcquiredUnavailable, .completedUnretained,
             .retryExhausted:
@@ -509,6 +514,11 @@ extension AttachmentTransferStatusFfi {
         #if WN_CURRENT_SDK_API || WN_EXPERIMENTAL_DEVICE_SYNC
             case .storageBlocked:
                 true
+        #endif
+        #if WN_CURRENT_SDK_API
+            case .cleanedBySetting:
+                // The body was removed by retention; only a deliberate download can reacquire it.
+                false
         #endif
         case .failed, .cancelled, .paused, .policyBlocked, .previouslyAcquiredUnavailable,
             .completedUnretained, .retryExhausted:
@@ -524,6 +534,11 @@ extension AttachmentTransferStatusFfi {
         #if WN_CURRENT_SDK_API || WN_EXPERIMENTAL_DEVICE_SYNC
             case .storageBlocked:
                 true
+        #endif
+        #if WN_CURRENT_SDK_API
+            case .cleanedBySetting:
+                // The body was removed by retention; only a deliberate download can reacquire it.
+                false
         #endif
         case .unavailable, .notRequested, .removed:
             false

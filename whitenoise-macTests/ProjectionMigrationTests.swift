@@ -95,6 +95,14 @@ struct ProjectionMigrationTests {
         #expect(runtime.explicitAttachmentRequestTargets.isEmpty)
     }
 
+    #if WN_CURRENT_SDK_API
+        @Test func anExplicitTapRearmsMediaCleanedByRetention() async throws {
+            try await explicitAttachmentTapRearmsOnlyWorkTheRequestWillNotRestart(
+                state: .cleanedBySetting, rearms: true
+            )
+        }
+    #endif
+
     private static func transferSnapshot(_ state: AttachmentTransferStateFfi) -> AttachmentTransferSnapshotFfi {
         AttachmentTransferSnapshotFfi(items: [
             AttachmentTransferStatusFfi(
@@ -156,6 +164,8 @@ struct ProjectionMigrationTests {
         let target = try #require(model.items.first?.target)
         let didReceiveTransfer = await waitFor { model.transfersByTarget[target]?.state == state }
         try #require(didReceiveTransfer)
+        #expect(runtime.explicitAttachmentDownloadTargets.isEmpty)
+        #expect(runtime.explicitAttachmentRequestTargets.isEmpty)
 
         _ = try await model.downloadExplicitly(target)
 
