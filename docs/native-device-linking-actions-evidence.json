@@ -1,0 +1,33 @@
+{
+  "base": "b16e2333774fe4fc16997f9c76eed4d5f00e2123",
+  "cohort": "e6/experimental feature; generated overrides uncommitted",
+  "red": {
+    "tests": 3,
+    "passed": 0,
+    "source_stash": "c9a03ca038c283be69a9451f5365d8303b589721",
+    "log_sha256": "e9d719e803994c4b41a7c2c962e732c755a962d619ce79ebaced8d6c5aba236b"
+  },
+  "green": {
+    "source_base": "b16e2333774fe4fc16997f9c76eed4d5f00e2123",
+    "source_inputs": 418,
+    "input_manifest_sha256": "a65421619e52229cafa7cfabb71b6de94136349ccd167302348d04fe8f2ae0e8",
+    "profile": "local-e6/experimentalflag1",
+    "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+    "exit_code": 0,
+    "seconds": 9.45,
+    "log_sha256": "22c2de52ad6a8fdb6a6c36f88fddc348570b2a29a03f35cabc473270ca724326",
+    "tests": {
+      "result": "Passed",
+      "totalTestCount": 18,
+      "passedTests": 18,
+      "failedTests": 0,
+      "skippedTests": 0
+    },
+    "test_failures": []
+  },
+  "owned_source_sha256": {
+    "whitenoise-mac/Session/DeviceLinkingScope.swift": "b47750d598e2a1a5e9af182304c16111b41f2be0ca7705a1d3871ebbea9ebd6c",
+    "whitenoise-macTests/NativeDeviceLinkingActionTests.swift": "3e38c826b905c05a74c1943cdb7da6f762c95db5a0b8698dba0fafa2c6c8a238"
+  },
+  "scope": "4 generated-protocol action controls +9 lifetime +5 actual runtime capability/missing-account tests. No actual native pairing, enrollment, UI, or final full PR qualification."
+}

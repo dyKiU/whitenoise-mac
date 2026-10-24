@@ -1,0 +1,54 @@
+{
+  "scope": "Account-owned reader dispatches actual captured MarmotRuntime dependency off main thread; published-core focused qualification, experimental native bridge not typechecked/executed yet",
+  "base": "19b132e3f516ae0908a5fe1cbe00849147f7b662",
+  "red_stash": "70f4663814822223b85e0b6adbeb6acc5a30e6a7",
+  "green_stash": "e8bcbe75f2f8868129806460f6ef325885aa8f79",
+  "unchanged_regression_sha256": "e794ca406a9eef23ba503fe1e0e674366daaf3e3f8bea678436ff9ceeaff5334",
+  "cohorts": [
+    {
+      "prefix": "mac-history-runtime-red-v1",
+      "input_count": 460,
+      "manifest_sha256": "d2b7956dd78f87221b416714ae1c96a6746787b4d00069d302d0c7598cfef077",
+      "result": {
+        "exit": 65,
+        "seconds": 48.43923807144165,
+        "log": "/Users/pj/project/build/mac-history-runtime-red-v1.log",
+        "log_sha256": "05ba700ab5c476af0deb82444ff7b57a13dba611b676771e6197b7a4cdd7d736"
+      },
+      "tests": {
+        "passedTests": 0,
+        "failedTests": 1,
+        "skippedTests": 0,
+        "totalTestCount": 1,
+        "result": "Failed"
+      }
+    },
+    {
+      "prefix": "mac-history-runtime-green-v1",
+      "input_count": 460,
+      "manifest_sha256": "3b763b24d282ba75844ca387447a0188f10f0614572f49b70dcb65dbf7738c7b",
+      "result": {
+        "exit": 0,
+        "seconds": 35.33944821357727,
+        "log": "/Users/pj/project/build/mac-history-runtime-green-v1.log",
+        "log_sha256": "ba5892bd31c19c1e454ade2024dbcd3e1845d592a321a4f9d81ae75d57d61ea0"
+      },
+      "tests": {
+        "passedTests": 16,
+        "failedTests": 0,
+        "skippedTests": 0,
+        "totalTestCount": 16,
+        "result": "Passed"
+      }
+    }
+  ],
+  "runtime": "MarmotRuntime protocol, concrete MarmotClient and thread-safe shared fake updated together; own read-only values carry no transfer/download permission",
+  "experimental": "WN_EXPERIMENTAL_DEVICE_SYNC forwards synchronous native query and preserves all logical/provenance fields; requires matching history-capable SDK. Native SDK83 no longer qualifies this branch with flag enabled. SDK84113 candidate building.",
+  "default": "Published build refuses unavailable native history without account/query effects; fake injection only in isolated tests",
+  "remaining": [
+    "Full published PR before integration",
+    "Matching SDK artifact gates and actual native bridge/full experimental suite",
+    "Installed history and original consent UI/media/retention acceptance"
+  ],
+  "post_freeze": "Proof and guidance only; production/test bytes unchanged"
+}

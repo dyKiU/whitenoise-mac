@@ -24,6 +24,10 @@ import SwiftUI
 
 struct ProfileKeysSettingsView: View {
     @Environment(WorkspaceState.self) private var workspace
+    #if WN_EXPERIMENTAL_DEVICE_SYNC
+        var deviceVerificationModel: DeviceVerificationViewModel? = nil
+        var acquireAccountSharing: (@MainActor () throws -> AccountChatSharingViewModel)? = nil
+    #endif
 
     var body: some View {
         SettingsScaffold(title: L10n.string("Profile Keys")) {
@@ -33,6 +37,12 @@ struct ProfileKeysSettingsView: View {
                 if account.localSigning {
                     ProfileKeysExportSection()
                 }
+                #if WN_EXPERIMENTAL_DEVICE_SYNC
+                    if let deviceVerificationModel {
+                        DeviceVerificationView(model: deviceVerificationModel)
+                            .id(ObjectIdentifier(deviceVerificationModel))
+                    }
+                #endif
             } else {
                 SettingsSection {
                     ContentUnavailableView("No active account", systemImage: "person.crop.circle.badge.exclamationmark")

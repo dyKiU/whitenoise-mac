@@ -1,0 +1,239 @@
+{
+  "scope": "Separate A/C opaque transport pane on original held account-owned enrollment model; SDK capability captured from actual runtime remainsfalse on e6, so pane is unavailable. No B review/approval, native grant or new artifact.",
+  "base": "2b0eae897c0d7007d433df96d2c09416868a1bca",
+  "stashes": {
+    "sdk_local": "77bad5f1ad94be71ea51d728b49fb7d104b17dfc",
+    "red_compile": "91be207a4f93d29e65f1c511b96cf57d12deefaa",
+    "red_behavior": "cc3298a168311d4e2d02071a8e3e03b90c5d8a17",
+    "initial_green_m5": "353d77388214a698daffb8b26311cca3d60a3b2a",
+    "green3": "8aa2291404a1a9b3fa81a1950ad73d23cb563054",
+    "affected3": "0a12a32ad89ad089c72e88398938ce09bea03a71",
+    "final": "15ffbc71121770e3f35ad31c966fcab1403423aa"
+  },
+  "runs": {
+    "red-v1": {
+      "source_base": "2b0eae897c0d7007d433df96d2c09416868a1bca",
+      "source_inputs": 435,
+      "input_manifest_sha256": "c7a960fbff2dcb32d08c77922774c71316dea489fd21207eac90a038195a1a10",
+      "profile": "local-e6/experimentalflag1",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 65,
+      "seconds": 10.9,
+      "log_sha256": "24aa7e65ab5a220d595e66c93f8eebdb1092d5050c94d7fbfdff7fb8b237ec99"
+    },
+    "red-v2": {
+      "source_base": "2b0eae897c0d7007d433df96d2c09416868a1bca",
+      "source_inputs": 435,
+      "input_manifest_sha256": "96421fd9f165c20f95d4ab99fe1fed5bf0ad1cc4dba98919f8d5fff9a58e9899",
+      "profile": "local-e6/experimentalflag1",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 65,
+      "seconds": 15.5,
+      "log_sha256": "3d6d3992085d8aaed73a3ecfaaca4fed67ced2c4bcf7504638be80451654cea2",
+      "tests": {
+        "result": "Failed",
+        "totalTestCount": 9,
+        "passedTests": 8,
+        "failedTests": 1,
+        "skippedTests": 0
+      },
+      "test_failures": [
+        {
+          "failureText": "Caught error: .DeviceLinkingNotReady",
+          "targetName": "whitenoise-macTests",
+          "testIdentifier": 1,
+          "testIdentifierString": "DeviceEnrollmentViewModelTests/transportActionsUseOriginalRevisionAndBoundedOpaqueBytes()",
+          "testIdentifierURL": "test://com.apple.xcode/whitenoise-mac/whitenoise-macTests/DeviceEnrollmentViewModelTests/transportActionsUseOriginalRevisionAndBoundedOpaqueBytes()",
+          "testName": "transportActionsUseOriginalRevisionAndBoundedOpaqueBytes()"
+        }
+      ]
+    },
+    "green-v2": {
+      "source_base": "2b0eae897c0d7007d433df96d2c09416868a1bca",
+      "source_inputs": 435,
+      "input_manifest_sha256": "7e4065837af9468cc7e99cf5544c79dbac68d2df34625944a2058e2b1788f271",
+      "profile": "local-e6/experimentalflag1",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 0,
+      "seconds": 16.06,
+      "log_sha256": "e2a62048e187c6f53e79ff529e7c211e54e14aa3c92363d1966603b08b7e53b8",
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 9,
+        "passedTests": 9,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "test_failures": []
+    },
+    "green-v3": {
+      "source_base": "2b0eae897c0d7007d433df96d2c09416868a1bca",
+      "source_inputs": 436,
+      "input_manifest_sha256": "88a39dfcc589735dc5c38f6e72982052bffb19aee815ef39015a93f78555ab86",
+      "profile": "local-e6/experimentalflag1",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 0,
+      "seconds": 41.29,
+      "log_sha256": "dec238f2e880584a30ed84829913f4f4232db26298f85eb9173c8c481ae57da1",
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 11,
+        "passedTests": 11,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "test_failures": []
+    },
+    "affected-v3": {
+      "source_base": "2b0eae897c0d7007d433df96d2c09416868a1bca",
+      "source_inputs": 436,
+      "input_manifest_sha256": "ef0e7d06dbe83ba011e1ea0fac1598f10aa5b0c91b3f26707529d46818217ec8",
+      "profile": "local-e6/experimentalflag1",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 0,
+      "seconds": 20.23,
+      "log_sha256": "0ca8f5fc99a7704e2cd7146850fffd5c03314c5d1e85a722aa5c11e6268647c5",
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 53,
+        "passedTests": 53,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "test_failures": []
+    },
+    "affected-v4": {
+      "source_base": "2b0eae897c0d7007d433df96d2c09416868a1bca",
+      "source_inputs": 436,
+      "input_manifest_sha256": "ef0e7d06dbe83ba011e1ea0fac1598f10aa5b0c91b3f26707529d46818217ec8",
+      "profile": "local-e6/experimentalflag1",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 0,
+      "seconds": 9.76,
+      "log_sha256": "693dfe5bddef4d0333d402e21e3b2856e51fd440b75bb19124289ae5d534de04",
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 53,
+        "passedTests": 53,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "test_failures": []
+    },
+    "affected-v5": {
+      "source_base": "2b0eae897c0d7007d433df96d2c09416868a1bca",
+      "source_inputs": 436,
+      "input_manifest_sha256": "2755beb6ac0e722d464033f0443964d858a129bcccbdde930415b7947d49ce57",
+      "profile": "local-e6/experimentalflag1",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 0,
+      "seconds": 16.28,
+      "log_sha256": "1dd4f013add7113a19e14e24f6273781211a661eb9feb9c27ef68b4d4a52a7ca",
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 53,
+        "passedTests": 53,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "test_failures": []
+    }
+  },
+  "catalog": {
+    "command": [
+      "xcrun",
+      "xcstringstool",
+      "sync",
+      "/Users/pj/project/build/mac-enrollment-transport-localizations/Localizable.xcstrings",
+      "--stringsdata",
+      "/Users/pj/project/build/MacTestIsolationM5/Build/Intermediates.noindex/whitenoise-mac.build/Debug/whitenoise-mac.build/Objects-normal/arm64/DeviceVerificationView.stringsdata",
+      "/Users/pj/project/build/MacTestIsolationM5/Build/Intermediates.noindex/whitenoise-mac.build/Debug/whitenoise-mac.build/Objects-normal/arm64/DeviceEnrollmentTransportView.stringsdata",
+      "--skip-marking-strings-stale"
+    ],
+    "compiled_stringsdata_sha256": "95a9412da60af2d5980193f98c987111c1314d7aa1a9845216d16557890a3fe7",
+    "Apple_export_template": "/Users/pj/project/build/mac-verification-localizations/de.xcloc/Localized Contents/de.xliff",
+    "template_sha256": "3a53cf6f35b05849b8c11c14d338f2b8ecb700b34ca7a08e3039a1676d35add1",
+    "original_catalog_sha256": "0b717e56821fbb44c69f9970fa67c5c44d146e4619effd52a573f57f44983266",
+    "original_entries": 1239,
+    "added": [
+      "Device enrollment",
+      "Finalize enrollment",
+      "Enrollment action failed. Retry or cancel."
+    ],
+    "imports": [
+      {
+        "language": "de",
+        "exit_code": 0,
+        "xliff_sha256": "ca0ba4cb02f6b5a640bf1298fa2f52a110f4c59e339e9f882fc28560bdf921ef",
+        "log_sha256": "3fd46890cbaa21b9a537ea0ce7dc2dbad48fd2c37cd9bf96d803ae909fcc3012"
+      },
+      {
+        "language": "es",
+        "exit_code": 0,
+        "xliff_sha256": "54e2193bc5c3edddcf041fbe99c84ab9df02998298b28e906c9521ad085cb63d",
+        "log_sha256": "6e0853df585c6347c68cb7d28edb43003097dc0e4f2010d4dea31d7e39d341d9"
+      },
+      {
+        "language": "fr",
+        "exit_code": 0,
+        "xliff_sha256": "ca13967bfeb2e36d6f43a7ed4bda80ce8dd60f0350d589d7dcc929e09a36b4f0",
+        "log_sha256": "ffebc7e4d7053eb3f0979c643e56f3efdaf3922ac06ff6da19f7b377b1f989c8"
+      },
+      {
+        "language": "it",
+        "exit_code": 0,
+        "xliff_sha256": "232663cc26d16a837c681fcd063e52336d1c18f4d502fd444d904ca7eee1650a",
+        "log_sha256": "f0b4025870d012b1bb0d6730103c13f5bce05db68fb7c9ff97041b87a8870245"
+      },
+      {
+        "language": "pt",
+        "exit_code": 0,
+        "xliff_sha256": "818ea7bf2b1ee11f249ee8f356f96fa396536f5df38bf0226fbee8013a84f7a5",
+        "log_sha256": "f90e503b21ed5f7574732211e8eca18468eac4cc54223d73895f0843c69ef9a0"
+      },
+      {
+        "language": "ru",
+        "exit_code": 0,
+        "xliff_sha256": "1ac79f9c1d6db646e0a4c8cd3e4506217bef0130c158ca903209907b5c1c7122",
+        "log_sha256": "155604b4071db3379db7ee27d09ab15696327622e1c0383c9ceff225b19280b4"
+      },
+      {
+        "language": "tr",
+        "exit_code": 0,
+        "xliff_sha256": "ef5ef85278e3f6ba4a2a55cd50f852b1bcfa8b7078ec0345c13bb7d0c4d26240",
+        "log_sha256": "b4d6ca10c5e1c5f35d0ca7739c3890f8862f480245cc2ff7994fbdcdf095e5e1"
+      },
+      {
+        "language": "zh-Hans",
+        "exit_code": 0,
+        "xliff_sha256": "33bef64731703837616b2c563b5ff691a028be15ccd0febd4e03be43448c21a3",
+        "log_sha256": "27f8dc07b96867716e35f71215e41b2359359a36cf9fe92384a15e6bc022fd5d"
+      },
+      {
+        "language": "zh-Hant",
+        "exit_code": 0,
+        "xliff_sha256": "cd464d443999d7ed2ee0b6eed93dc69e6a24ce47168d0cb0820e3fe2f003fd07",
+        "log_sha256": "6d207343522565ba50827ca3e07d25e39bc50af12747f93a58ba4796c006fe55"
+      }
+    ],
+    "all_existing_entries_and_order_unchanged": true,
+    "preservation": "Only whole Apple sync/import-generated new entry retained; original raw top-level entry blocks preserved, no nested plural edits",
+    "catalog_sha256": "3cd15f6e0fe5697b78ec59afd6520c8282948ba774a6c255837175d5941cc944"
+  },
+  "checks": [
+    "strict scoped repository swift-format",
+    "git diff --check",
+    "localization coverage1233/1233 nine languages"
+  ],
+  "qualification_notes": [
+    "REDv1zero tests fixture nonexistent scope property; REDv2actual9=8pass1fail defaultdeny",
+    "GREENv2unchanged9/9; final focused11/11; affected53/53",
+    "NoBlockComments own formatter failure fixed as line comment; v4 was byte-identical repeated pass because initial replacement did not match; v5 final source53/53",
+    "Generated testcontrols true capability is presentation-only injection, not SDK permission; production captures actual SDK false"
+  ],
+  "limits": [
+    "No full PR suite/visual acceptance/native enrollment acceptance, installation or publishing",
+    "B review UI needs authoritative matched new SDK",
+    "Opaque packets bounded16KiB; exact rendered revision forwarded unchanged; SDK is final phase/permission authority"
+  ]
+}

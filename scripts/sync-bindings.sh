@@ -181,6 +181,8 @@ else
 fi
 
 echo "==> Pinning remote binary target"
+sed -i '' -E 's|^let marmotKitLocalPath: String\? = .*|let marmotKitLocalPath: String? = nil|' \
+    "$PACKAGE_DIR/Package.swift"
 sed -i '' -E \
     "s|^let marmotKitReleaseID = \".*\"|let marmotKitReleaseID = \"$RELEASE_ID\"|" \
     "$PACKAGE_DIR/Package.swift"

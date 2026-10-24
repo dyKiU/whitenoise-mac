@@ -1,0 +1,103 @@
+{
+  "candidate_stash": "791b7e9abfb4fcc6ef061d9b86d0c29c12cb3835",
+  "focused": {
+    "exit": 0,
+    "seconds": 34.429298877716064,
+    "log": "/Users/pj/project/build/mac-history-conversation-focused-v1.log",
+    "log_sha256": "0b3671c4fa652475a56d7ad32422942c04a8c1823d5e4598386d6d7be0dd1a42"
+  },
+  "focused_summary": {
+    "passed": 12,
+    "failed": 0,
+    "skipped": 0
+  },
+  "frozen_inputs": 462,
+  "root_source_verified": 458,
+  "generated84113_overlays_verified": 4,
+  "localization": {
+    "command": [
+      "xcrun",
+      "xcstringstool",
+      "sync",
+      "/Users/pj/project/build/mac-history-conversation-localizations/Localizable.xcstrings",
+      "--stringsdata",
+      "/Users/pj/project/build/MacTestIsolationM5/Build/Intermediates.noindex/whitenoise-mac.build/Debug/whitenoise-mac.build/Objects-normal/arm64/SynchronizedHistoryView.stringsdata",
+      "--skip-marking-strings-stale"
+    ],
+    "compiled_stringsdata_sha256": "3bfa90a460c39af5dacf21ef8bf4a393aa1bd4378e502485e01f962f0de29791",
+    "Apple_export_template": "/Users/pj/project/build/mac-verification-localizations/de.xcloc/Localized Contents/de.xliff",
+    "template_sha256": "3a53cf6f35b05849b8c11c14d338f2b8ecb700b34ca7a08e3039a1676d35add1",
+    "original_catalog_sha256": "caef84c13439dbf8958c084b346545d3d842a999c3c7ba759768b2e3f38e666e",
+    "original_entries": 1259,
+    "added": [
+      "Synchronized history",
+      "These records are attested by the source device and are separate from live authenticated messages.",
+      "Could not load synchronized history.",
+      "Message expired",
+      "Source provenance",
+      "History transfer",
+      "Manifest digest",
+      "Attachment availability has not been verified on this device."
+    ],
+    "imports": [
+      {
+        "language": "de",
+        "exit_code": 0,
+        "xliff_sha256": "e6851ccaeaf77b8af02a741d96e838dd6fb9d1facfe9061cd072f2bf34f8e8e9",
+        "log_sha256": "a9d4ef4c2ed6e4b5189606f82a276c9f857e0bb6bbc04daaaaa7fd5f956e6f59"
+      },
+      {
+        "language": "es",
+        "exit_code": 0,
+        "xliff_sha256": "84a59e583ec8e3d60e2ef5fe4a5231c4f3a0ce67e3e2e6c71a908f52566babeb",
+        "log_sha256": "f9767e4368e99aac2406a796e61cb2db83d8570e93b1752ccfe6b13f30a40a1c"
+      },
+      {
+        "language": "fr",
+        "exit_code": 0,
+        "xliff_sha256": "23c7f877204904c6f1acafb05a0b20173e7a4c34239d69a21346fe9b5d25ea67",
+        "log_sha256": "e6aa216f5cb78ae7dbe48fd535f402bb445c50572b678142dc07419f0e2f78c1"
+      },
+      {
+        "language": "it",
+        "exit_code": 0,
+        "xliff_sha256": "2cfa525812f58a98fbb3a3ce62d313b53af47b748b2a2126ba884017d33e89cd",
+        "log_sha256": "564a966b31591dab809ae62180ff08c9ffbb2b7a2eae16284524ce359b53f020"
+      },
+      {
+        "language": "pt",
+        "exit_code": 0,
+        "xliff_sha256": "dc74ed0ca0621db43f7809c42c527e80f082542bf7aa4949c963d767c7bba227",
+        "log_sha256": "cebae32d733512e4d294dcaa4690ee675e9e34bb21c984154172773cbf77bc01"
+      },
+      {
+        "language": "ru",
+        "exit_code": 0,
+        "xliff_sha256": "3fc7c55d56e0e9cb9c15975cc7c58b5f2452cc85aa36208094bd72187c48f012",
+        "log_sha256": "c5b20baf9f6213c4b91880a08eacfeae0b36320ca3b4666fda65923d4a4e9aca"
+      },
+      {
+        "language": "tr",
+        "exit_code": 0,
+        "xliff_sha256": "5e2ee7d47d7fbbc9c70cbeb136bcd758fe57bc5083135ebee83edca5a38a79bc",
+        "log_sha256": "75cc67aff272199ce4fc23d22048fc4c4cb1cf1a53791cd094a5bbe1123bb9d2"
+      },
+      {
+        "language": "zh-Hans",
+        "exit_code": 0,
+        "xliff_sha256": "ae2b679b03c528d70471107d586301c6f8a86c79a0aa44d4deb299b59d0c3ee8",
+        "log_sha256": "8f8818cb0beb5bbc2d4ebc11523ee6c748fba02540c443b5a24c4fa0ff4c41cf"
+      },
+      {
+        "language": "zh-Hant",
+        "exit_code": 0,
+        "xliff_sha256": "efdd058c6d37b217535db9ffa2b9f43900b79caa1bb538fb6c66b81aabb961ca",
+        "log_sha256": "68d53b93bfb562cf60e0f6f734af5424b456cc06267eeecf7d4f227dd86879f5"
+      }
+    ],
+    "all_existing_entries_and_order_unchanged": true,
+    "preservation": "Only whole Apple sync/import-generated new entry retained; original raw top-level entry blocks preserved, no nested plural edits",
+    "catalog_sha256": "8c2eef36c9eb183d6077e37bb9112aea1ef9f245eb77f88c2d831c6752fe2ee1"
+  },
+  "scope": "New read-only source-attested pane with account-owned captured reader, bounded paging and explicit refresh; preserves separation from authenticated live messages. View renders deletion/expiry tombstones and ordered media metadata without acquisitions or automatic downloads. Existing12 behavioral reader/runtime/lifetime tests passed with fresh pane compilation; they do not prove visible populated app acceptance. No invented behavioral RED for new view. Full published/experimental PR and installed UI acceptance pending."
+}

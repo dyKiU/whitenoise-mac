@@ -221,6 +221,9 @@ struct ContactFollowControl: View {
                 .disabled(workspace.isTogglingFollow)
                 .accessibilityLabel(isFollowing ? L10n.string("Unfollow") : L10n.string("Follow"))
                 .accessibilityIdentifier("contact.details.follow")
+                .task(id: [workspace.activeAccountId ?? "", accountIdHex.lowercased()]) {
+                    await observeFollowStatus()
+                }
 
             case .unavailable:
                 Button {
@@ -233,6 +236,20 @@ struct ContactFollowControl: View {
                 .help(L10n.string("Couldn't check whether you follow this person."))
                 .accessibilityIdentifier("contact.details.follow.retry")
             }
+        }
+    }
+
+    private func observeFollowStatus() async {
+        let owner = workspace.activeAccountId
+        while !Task.isCancelled {
+            do {
+                try await Task.sleep(for: .seconds(5))
+            } catch { return }
+            guard workspace.activeAccountId == owner, workspace.canOfferFollow(accountIdHex: accountIdHex) else {
+                return
+            }
+            guard !workspace.isTogglingFollow else { continue }
+            await workspace.refreshFollowStatus(forContactIdHex: accountIdHex)
         }
     }
 }

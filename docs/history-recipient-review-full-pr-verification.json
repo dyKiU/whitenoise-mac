@@ -1,0 +1,93 @@
+{
+  "qualified_commit": "ed16012c5333f044b1c6886fa8241d4d4cff197e",
+  "scope": "Full unfiltered Mac PR suites for recipient review pane; experimental SDK84113 and published release. Installed genuine approval remains unqualified.",
+  "experimental": {
+    "source_inputs": 477,
+    "input_manifest_sha256": "5a5665808ed3059a66baabe50e79956e60ec45160e381825ec13dc1cef91f106",
+    "log_sha256": "352c563703c615c19c336ddf5e00f3ff2ba49ad634f262a2e30e9a0e091ca71d",
+    "exit_code": 0,
+    "seconds": 57.46768770786002,
+    "sdk_source": "84113c20771a0092cb0e52ca094836375f9dd406",
+    "scope": "Unfiltered Mac PR suite, experimental SDK84113, signed recipient pane ed16012; installed genuine UI approval remains separate",
+    "tests": {
+      "result": "Passed",
+      "totalTestCount": 1787,
+      "passedTests": 1787,
+      "failedTests": 0,
+      "skippedTests": 0
+    },
+    "test_failures": []
+  },
+  "published_attempts": [
+    {
+      "source_commit": "ed16012c5333f044b1c6886fa8241d4d4cff197e",
+      "experimental_sdk_git_stash": "d8130067488478fc1eb9f5fe2fb9176b61ac901a",
+      "scope": "Unfiltered published SDK Mac PR suite; no installed genuine approval claim",
+      "source_inputs": 477,
+      "input_manifest_sha256": "fec534024b7a78c2582da6faa8081ec18ef2eb36d22c68a060d6f803f8b16025",
+      "log_sha256": "7d058727548f8d3763c01ac45745c25b6d6b6571b1c2ebc21b9a394638718ad3",
+      "exit_code": 65,
+      "seconds": 3.1106385830789804,
+      "experimental_sdk_restored_byte_exact": true
+    },
+    {
+      "source_commit": "ed16012c5333f044b1c6886fa8241d4d4cff197e",
+      "experimental_sdk_git_stash": "142db153f9fbe88b2822d55c5916dd2edb74944b",
+      "scope": "Unfiltered published SDK Mac PR suite; no installed genuine approval claim",
+      "source_inputs": 477,
+      "input_manifest_sha256": "fec534024b7a78c2582da6faa8081ec18ef2eb36d22c68a060d6f803f8b16025",
+      "log_sha256": "8c00c86a02548687930ab3c26fc989ee432ca4e420593e3a2eb02efd2e4d6630",
+      "exit_code": 65,
+      "seconds": 7.814803791930899,
+      "experimental_sdk_restored_byte_exact": true
+    },
+    {
+      "source_commit": "ed16012c5333f044b1c6886fa8241d4d4cff197e",
+      "experimental_sdk_git_stash": "f4431a8217df3a9b853b2e1a509ea21600dbc2b6",
+      "scope": "Unfiltered published SDK Mac PR suite; no installed genuine approval claim",
+      "source_inputs": 477,
+      "input_manifest_sha256": "fec534024b7a78c2582da6faa8081ec18ef2eb36d22c68a060d6f803f8b16025",
+      "log_sha256": "c4c15a03e7a1e193cff584d4954ca72bbfda69cdcd6395ef81f1b7049e2264d4",
+      "exit_code": 0,
+      "seconds": 88.82569575007074,
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 1661,
+        "passedTests": 1661,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "test_failures": [],
+      "experimental_sdk_restored_byte_exact": true
+    }
+  ],
+  "root_independent_verification": "All 1908 immutable inputs across four full-suite attempts matched exact Git objects, four complete raw logs hashed, both passing actual M5 XCResults independently queried. Published v1/v2 are zero-test exact PCM compile failures; final v3 passes1661. Experimental passes1787.",
+  "source_refs": {
+    "published": "ed16012c5333f044b1c6886fa8241d4d4cff197e",
+    "experimental_sdk": "835ce4d67875d9d52efe74760821bafe1dd6a132"
+  },
+  "cache_recovery": [
+    {
+      "retired_exact_pcm": "/Users/pj/project/build/MacTestIsolationM5/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules/marmot_uniffiFFI-ANJFQSPITBY9ONMYZP4O7TT7H.pcm",
+      "bytes": 555448,
+      "sha256": "230f5b33fe5508ddd2b24d389bd1b7ed00960c685758b5c1bbc627766e815ff0",
+      "cache_idle": true,
+      "lsof_empty": true,
+      "failed_gate": "mac-history-recipient-pane-full-published-v1",
+      "tests_executed": 0
+    },
+    {
+      "retired_exact_pcm": "/Users/pj/project/build/MacTestIsolationM5/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules/marmot_uniffiFFI-1KNRUIXGJEZQJRMJL82Z0FTCM.pcm",
+      "bytes": 555400,
+      "sha256": "0c4556a1a5a2f7fcd7b01e7eaed56056208c799326df1767f0622913946513a6",
+      "cache_idle": true,
+      "lsof_empty": true,
+      "failed_gate": "mac-history-recipient-pane-full-published-v2",
+      "tests_executed": 0
+    }
+  ],
+  "limits": [
+    "No installed genuine pending-original approval, imported-history UI acceptance or source picker qualification.",
+    "Combined recipient-query/revocation SDK is separately qualifying and not adopted by this cohort."
+  ]
+}

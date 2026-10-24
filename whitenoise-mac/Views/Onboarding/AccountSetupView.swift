@@ -41,6 +41,7 @@ struct AccountSetupView: View {
 
 /// The setup's checklist pane: the header, every step's row, and the pane's one button.
 private struct AccountSetupChecklistPane: View {
+    @Environment(\.locale) private var locale
     let model: OnboardingCoordinator
     let guide: AccountSetupGuide
     @Binding var acknowledgesRecoveryRisk: Bool
@@ -67,6 +68,18 @@ private struct AccountSetupChecklistPane: View {
                             isEnabled: !model.isBusy,
                             review: { model.review($0) }
                         )
+                    }
+
+                    if let snapshot = model.snapshot, snapshot.ready,
+                        snapshot.steps.contains(where: { $0.step == .keyPackage && $0.status == .skipped })
+                    {
+                        Text(
+                            L10n.string(
+                                "Existing invitation keys stay unchanged. Pair devices to share chats.", locale: locale)
+                        )
+                        .wnFont(.medium12)
+                        .foregroundStyle(WNColor.backgroundContentSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
                     }
 
                     if let message = model.error {
@@ -315,7 +328,9 @@ private struct AccountSetupPaneActions: View {
             OnboardingStepStateFfi(
                 step: .relays,
                 status: .retryableFailure,
-                findings: [.init(issue: .unreachable, endpoint: "wss://relay.example.com")],
+                findings: [
+                    OnboardingCoordinator.previewFinding(issue: .unreachable, endpoint: "wss://relay.example.com")
+                ],
                 actions: [.retry, .useRecommendedRelays, .editDiscoveryRelays],
                 checkedAt: nil
             ),

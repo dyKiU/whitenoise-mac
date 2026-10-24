@@ -345,6 +345,18 @@ extension AttachmentTransferStateFfi {
     /// source whose bytes are gone or were blocked by policy gets no reacquisition without one.
     var needsRearmToDownload: Bool {
         switch self {
+        #if WN_CURRENT_SDK_API || WN_EXPERIMENTAL_DEVICE_SYNC
+            case .storageBlocked:
+                // Storage pressure retains the active attempt and ciphertext
+                // checkpoint. An explicit request resumes admission without
+                // rearming or resetting that work.
+                false
+        #endif
+        #if WN_CURRENT_SDK_API
+            case .cleanedBySetting:
+                // Reacquisition after retention cleanup is explicit, just as after Remove.
+                true
+        #endif
         case .failed, .cancelled, .removed, .retryExhausted, .policyBlocked, .previouslyAcquiredUnavailable,
             .completedUnretained:
             true

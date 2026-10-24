@@ -2722,7 +2722,7 @@ struct AccountTests: WorkspaceTestSupport {
             .path
 
         do {
-            _ = try MarmotStorageRoot.resolve(baseURL: sandbox, fileManager: fileManager)
+            _ = try MarmotStorageRoot.resolve(baseURL: sandbox, fileManager: fileManager, profile: .production)
             Issue.record("Expected storage root creation to fail")
         } catch let error as MarmotStorageRootError {
             let message = error.localizedDescription
@@ -2749,7 +2749,7 @@ struct AccountTests: WorkspaceTestSupport {
         try Data().write(to: marmotRoot)
 
         do {
-            _ = try MarmotStorageRoot.resolve(baseURL: sandbox, fileManager: fileManager)
+            _ = try MarmotStorageRoot.resolve(baseURL: sandbox, fileManager: fileManager, profile: .production)
             Issue.record("Expected storage root resolution to reject a file at the Marmot root")
         } catch let error as MarmotStorageRootError {
             guard case .rootIsNotDirectory(let path) = error else {

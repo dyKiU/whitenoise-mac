@@ -13,6 +13,10 @@ private let auditDeliveryLogger = Logger(subsystem: "com.whitenoise.telemetry", 
 @MainActor
 @Observable
 final class WorkspaceState {
+    // Avoid nesting synthesized isolated destructors on older macOS concurrency runtimes.
+    // Runtime and account shutdown remain explicit; teardown adds no actor-bound work.
+    nonisolated deinit {}
+
     enum Phase: Equatable {
         case bootstrapping
         case onboarding

@@ -11,6 +11,10 @@ import SwiftUI
 
 /// Builders for MarmotKit's onboarding records, shared by the account-setup suites.
 enum OnboardingFixtures {
+    static func finding(issue: OnboardingIssueFfi, endpoint: String?) -> OnboardingFindingFfi {
+        OnboardingCoordinator.previewFinding(issue: issue, endpoint: endpoint)
+    }
+
     static func step(
         _ step: OnboardingStepFfi,
         _ status: OnboardingStatusFfi,

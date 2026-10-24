@@ -25,6 +25,9 @@ Config/AppSecrets.xcconfig
 # that is what lets a fresh clone build with no mdk checkout. This rule only
 # guards against an XCFramework left behind by an older local build.
 Vendored/MarmotKit/MarmotKit.xcframework/
+Vendored/MarmotKit/Artifacts/
+Vendored/MarmotKit/LOCAL_BUILD.json
+__pycache__/
 
 # Written by `just coverage --output/--warnings-file` and by the CI job of the
 # same name; the numbers live in the run's artifact, never in the repo.
@@ -37,3 +40,6 @@ coverage/
 reviews/
 
 trees/
+
+# Verified ephemeral SDK original-source receipt; never commit.
+/Vendored/MarmotKit/LOCAL_BUILD_INPUTS/

@@ -1,0 +1,96 @@
+{
+  "base": "b09193b6d35aad315562c4abb225d7fae70bd5c9",
+  "sdk": "e6b0e9c159b632b8c07eb68f12f46c3bc930699c",
+  "sdk_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+  "preserved_source_stashes": {
+    "red": "7a3fcad02f86916109284a3c617b49c9954c0c9d",
+    "initial_green": "fd98f750822d7d937e51e50711655ab6bb16aa0c"
+  },
+  "sdk_four_stashes": {
+    "local": "99a9142ce0a6cb329f19aef3eef2797a9721f72b",
+    "m5": "718b94b354f2207854cb34ee2402c1dcfa8ed240"
+  },
+  "source_proof": "Exact three RED and initial GREEN paths checked from stash trees (new files in third parent), final three against frozen429 inputs. Final focused/affected manifests identical.",
+  "owned_source_sha256": {
+    "whitenoise-mac/Session/SessionState.swift": "7e868841f0187d448ee5c40b0035dd3fa774a948d2593a00fd59ebdb8a19ae41",
+    "whitenoise-mac/Session/NativeDeviceLinkingApprovalScope.swift": "284ef80760ab55b5fbf7c00b7aef5e858989a2236b91b8dcb0ba444883e50246",
+    "whitenoise-macTests/NativeDeviceLinkingApprovalScopeTests.swift": "ca0fa4f590f50c12754c52418417b7af85aa4ab2dcaeabce41c76d7e7caa4936"
+  },
+  "runs": {
+    "default_deny_red": {
+      "source_base": "b09193b6d35aad315562c4abb225d7fae70bd5c9",
+      "source_inputs": 429,
+      "input_manifest_sha256": "c94562e9352d47b68b5d3d21c89573bd0b70d2d888e156b58e2c9251ce00bf9f",
+      "profile": "local-e6/experimentalflag1",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 65,
+      "seconds": 41.75,
+      "log_sha256": "6bd8f2e53d727212d7a182db8e38a930e461368926a35987b5f75295e91a4ede",
+      "tests": {
+        "result": "Failed",
+        "totalTestCount": 8,
+        "passedTests": 0,
+        "failedTests": 8,
+        "skippedTests": 0
+      }
+    },
+    "initial_green": {
+      "source_base": "b09193b6d35aad315562c4abb225d7fae70bd5c9",
+      "source_inputs": 429,
+      "input_manifest_sha256": "39f86d3ddd2d0d34ff139a16b937ed523ff32dedc2f28f299bb0e6f63e541594",
+      "profile": "local-e6/experimentalflag1",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 0,
+      "seconds": 15.13,
+      "log_sha256": "72e731b278d877b6cbcbd8df7ccf4177bab21af94753ec404326c3bfaa8d1f30",
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 8,
+        "passedTests": 8,
+        "failedTests": 0,
+        "skippedTests": 0
+      }
+    },
+    "final_green": {
+      "source_base": "b09193b6d35aad315562c4abb225d7fae70bd5c9",
+      "source_inputs": 429,
+      "input_manifest_sha256": "1c8e957ce4a1f6387cc83441fbb803ae68d298482e49ac797db57ccb20177cd6",
+      "profile": "local-e6/experimentalflag1",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 0,
+      "seconds": 14.41,
+      "log_sha256": "2c5bf44bb1e0209677303116f2f8d4176072e2ef5600ba45fb8c45f65a205e11",
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 8,
+        "passedTests": 8,
+        "failedTests": 0,
+        "skippedTests": 0
+      }
+    },
+    "affected": {
+      "source_base": "b09193b6d35aad315562c4abb225d7fae70bd5c9",
+      "source_inputs": 429,
+      "input_manifest_sha256": "1c8e957ce4a1f6387cc83441fbb803ae68d298482e49ac797db57ccb20177cd6",
+      "profile": "local-e6/experimentalflag1",
+      "installed_manifest_sha256": "a733cc923916956197d68c4fe4c93d9064d19b0d6e6f2ae1a94c7dcea49b8172",
+      "exit_code": 0,
+      "seconds": 3.41,
+      "log_sha256": "0acfad50910b4000e432cf8a3e5e9c7c5b9e306109e0e2d0d26888ff5398b9d8",
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 31,
+        "passedTests": 31,
+        "failedTests": 0,
+        "skippedTests": 0
+      }
+    }
+  },
+  "final_delta": "After initial8/8: avoid registering an account-cancellation callback for an empty SDK batch; remove iOS-only SwiftLint rule comments from Mac test. Tests otherwise unchanged.",
+  "checks": {
+    "repository_strict_swift_format": "6.2.3 exit0 with .swift-format",
+    "git_diff_check": "exit0"
+  },
+  "sdk_alias_contract": "Matching e6 registry is Weak/bounded128. ApprovalState Drop closes/cancels original custody, so native multiple-pending refusal retains originals.",
+  "qualification_limits": "Generated original-handle doubles exercise actual SessionState account replacement, deactivation and prepareForAccountExit. No actual SDK approval/enrollment, UI/capability enabling, full PR, merge/push/install, production app or live data action."
+}

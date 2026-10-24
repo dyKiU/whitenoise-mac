@@ -32,9 +32,17 @@ nonisolated enum ChatCreationFailure: Equatable {
             return
         }
         switch marmotError {
-        case .MissingKeyPackage(let account):
-            let trimmed = account.trimmingCharacters(in: .whitespacesAndNewlines)
-            self = .notOnWhiteNoise(account: trimmed.isEmpty ? nil : trimmed)
+        #if WN_CURRENT_SDK_API || WN_EXPERIMENTAL_DEVICE_SYNC
+            case .MissingKeyPackage(let account, .notFound):
+                let trimmed = account.trimmingCharacters(in: .whitespacesAndNewlines)
+                self = .notOnWhiteNoise(account: trimmed.isEmpty ? nil : trimmed)
+            case .MissingKeyPackage:
+                self = .other(message: L10n.string("Couldn't create chat"))
+        #else
+            case .MissingKeyPackage(let account):
+                let trimmed = account.trimmingCharacters(in: .whitespacesAndNewlines)
+                self = .notOnWhiteNoise(account: trimmed.isEmpty ? nil : trimmed)
+        #endif
         // A KeyPackage event that exists but cannot be used, and an identity rejected *after*
         // the recipient already resolved through the new-chat lookup, mean the same thing on
         // this path: not reachable on White Noise yet. Neither names an account.

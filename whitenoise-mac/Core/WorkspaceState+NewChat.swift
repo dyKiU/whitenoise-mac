@@ -166,8 +166,9 @@ extension WorkspaceState {
         // guard while suspended and each reach `createGroup`, creating duplicate chats.
         lastError = nil
         startChatInvitePrompt = nil
+        let accountEpoch = conversationMetadataEpoch
         isCreatingChat = true
-        defer { isCreatingChat = false }
+        defer { if conversationMetadataEpoch == accountEpoch { isCreatingChat = false } }
 
         // Capture the creating account on entry so a mid-await A→B account switch (e.g. via
         // a notification tap while `createGroup`/`reloadChats` are suspended) cannot graft
@@ -195,24 +196,39 @@ extension WorkspaceState {
             }
         }
         guard let primary = recipients.first else { return }
-        let isDirect = recipients.count == 1
+        let isDirect = recipients.count == 1 && newChatName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
 
         do {
+            guard activeAccountId == accountId, conversationMetadataEpoch == accountEpoch, !Task.isCancelled else {
+                return
+            }
             if isDirect,
-                let existing = await existingDirectChat(
+                let existing = try await existingDirectChat(
                     with: primary.accountIdHex,
                     account: activeAccount,
                     client: client
-                )
+                ), existing.reusable
             {
-                if existing.isArchived {
-                    guard await setChatArchived(existing.chat, archived: false) else { return }
+                guard activeAccountId == accountId, conversationMetadataEpoch == accountEpoch, !Task.isCancelled else {
+                    return
                 }
-                guard activeAccountId == accountId else { return }
-                selection = .chat(existing.chat.id)
+                if existing.archived {
+                    _ = try await client.setGroupArchived(
+                        accountRef: activeAccount.accountRef, groupIdHex: existing.groupIdHex, archived: false)
+                }
+                if !existing.isPaired { await reloadChats(forceFreshSnapshot: true) }
+                guard activeAccountId == accountId, conversationMetadataEpoch == accountEpoch, !Task.isCancelled else {
+                    return
+                }
+                selection = .chat(existing.groupIdHex)
                 closeNewChatComposer()
-                beginTimelineInitialLoadIfNeeded(groupIdHex: existing.chat.id)
-                await loadMessages(groupIdHex: existing.chat.id)
+                if !existing.isPaired {
+                    beginTimelineInitialLoadIfNeeded(groupIdHex: existing.groupIdHex)
+                    await loadMessages(groupIdHex: existing.groupIdHex)
+                }
+                return
+            }
+            guard activeAccountId == accountId, conversationMetadataEpoch == accountEpoch, !Task.isCancelled else {
                 return
             }
 
@@ -222,7 +238,7 @@ extension WorkspaceState {
                 isDirect
                 ? primary.title
                 : recipients.map(\.title).joined(separator: ", ")
-            let groupName = trimmedName.isEmpty ? fallbackTitle : trimmedName
+            let groupName = isDirect ? "" : (trimmedName.isEmpty ? fallbackTitle : trimmedName)
             let groupIdHex = try await client.createGroup(
                 accountRef: activeAccount.accountRef,
                 name: groupName,
@@ -230,10 +246,12 @@ extension WorkspaceState {
                 description: trimmedDescription.isEmpty ? nil : trimmedDescription
             )
             await reloadChats(forceFreshSnapshot: true)
-            guard activeAccountId == accountId else { return }
+            guard activeAccountId == accountId, conversationMetadataEpoch == accountEpoch, !Task.isCancelled else {
+                return
+            }
             insertCreatedChatIfNeeded(
                 groupIdHex: groupIdHex,
-                title: groupName,
+                title: isDirect ? primary.title : groupName,
                 avatarSeed: primary.accountIdHex,
                 pictureURL: isDirect ? primary.pictureURL : nil,
                 isDirect: isDirect
@@ -243,7 +261,9 @@ extension WorkspaceState {
             beginTimelineInitialLoadIfNeeded(groupIdHex: groupIdHex)
             await loadMessages(groupIdHex: groupIdHex)
         } catch {
-            guard activeAccountId == accountId else { return }
+            guard activeAccountId == accountId, conversationMetadataEpoch == accountEpoch, !Task.isCancelled else {
+                return
+            }
             applyChatCreationFailure(error, recipients: recipients, surface: isDirect ? .directChat : .groupDraft)
         }
     }
@@ -252,26 +272,9 @@ extension WorkspaceState {
         with targetAccountIdHex: String,
         account: AccountItem,
         client: any MarmotRuntime
-    ) async -> (chat: ChatItem, isArchived: Bool)? {
-        let target = targetAccountIdHex.lowercased()
-        let expectedMembers = Set([account.accountIdHex.lowercased(), target])
-        let candidates = activeChats.map { ($0, false) } + archivedChats.map { ($0, true) }
-
-        for (chat, isArchived) in candidates where chat.isDirect {
-            guard !Task.isCancelled else { return nil }
-            guard
-                let members = await cachedGroupMembers(
-                    groupIdHex: chat.id,
-                    account: account,
-                    client: client
-                )
-            else { continue }
-            let memberIds = Set(members.map { $0.memberIdHex.lowercased() })
-            if memberIds == expectedMembers {
-                return (chat, isArchived)
-            }
-        }
-        return nil
+    ) async throws -> DirectConversationDestination? {
+        try await client.existingDirectConversation(
+            accountRef: account.accountRef, peerAccountId: targetAccountIdHex.lowercased())
     }
 
     var hasInProgressNewChatComposition: Bool {
@@ -645,9 +648,9 @@ extension WorkspaceState {
         return prefixMatches + containedMatches
     }
 
-    /// The direct chat "Message" reuses: the newest one with this person the viewer is still in.
-    /// Same rule as the New chat chooser (`DirectChatChoices.existing`), so the two never disagree
-    /// about which chats count. It can be archived when that is the newest one, so the choice says so.
+    /// The newest locally visible direct chat the chooser offers for this person.
+    /// Actual reuse in `startDirectChat` is checked by the source-owned SDK lookup,
+    /// including its membership and lifecycle policy and paired-source destinations.
     func existingDirectChat(peerAccountIdHex: String) -> DirectChatChoice? {
         guard let activeAccountId else { return nil }
         return DirectChatChoices.existing(
@@ -672,34 +675,52 @@ extension WorkspaceState {
         reusingExisting: Bool = true,
         expectedAccountId: String? = nil
     ) async {
-        if reusingExisting, let existing = existingDirectChat(peerAccountIdHex: recipient.accountIdHex) {
-            // An archived chat comes back into the chat list first, as the chooser's open path
-            // does, or the user lands in a chat the sidebar is not showing.
-            if existing.isArchived {
-                // Re-checked after the await so a mid-unarchive account switch cannot select this
-                // account's chat id under the next one.
-                let accountId = activeAccountId
-                guard await setChatArchived(existing.chat, archived: false), activeAccountId == accountId else {
-                    return
-                }
-            }
-            selectChat(existing.chat)
-            return
-        }
         guard let client, let activeAccount, !isCreatingChat else { return }
         if let expectedAccountId, activeAccount.id != expectedAccountId { return }
         lastError = nil
         startChatInvitePrompt = nil
+        let accountEpoch = conversationMetadataEpoch
         isCreatingChat = true
         creatingDirectChatIdHex = recipient.accountIdHex
         defer {
-            isCreatingChat = false
-            creatingDirectChatIdHex = nil
+            if conversationMetadataEpoch == accountEpoch {
+                isCreatingChat = false
+                creatingDirectChatIdHex = nil
+            }
         }
         // Capture the creating account so a mid-await account switch cannot graft the new
         // chat onto another account's UI state (see whitenoise-mac#229).
         let accountId = activeAccount.id
         do {
+            // The chooser lists local rows, but the source-owned SDK lookup decides
+            // whether a local or paired conversation is reusable. Start New skips both.
+            let existing: DirectConversationDestination?
+            if reusingExisting {
+                existing = try await existingDirectChat(
+                    with: recipient.accountIdHex, account: activeAccount, client: client)
+            } else {
+                existing = nil
+            }
+            guard activeAccountId == accountId, conversationMetadataEpoch == accountEpoch, !Task.isCancelled else {
+                return
+            }
+            if let existing, existing.reusable {
+                if existing.archived {
+                    _ = try await client.setGroupArchived(
+                        accountRef: activeAccount.accountRef, groupIdHex: existing.groupIdHex, archived: false)
+                }
+                if !existing.isPaired { await reloadChats(forceFreshSnapshot: true) }
+                guard activeAccountId == accountId, conversationMetadataEpoch == accountEpoch, !Task.isCancelled else {
+                    return
+                }
+                selection = .chat(existing.groupIdHex)
+                closeNewChatComposer()
+                if !existing.isPaired {
+                    beginTimelineInitialLoadIfNeeded(groupIdHex: existing.groupIdHex)
+                    await loadMessages(groupIdHex: existing.groupIdHex)
+                }
+                return
+            }
             let memberRef = recipient.memberRef.isEmpty ? recipient.accountIdHex : recipient.memberRef
             let groupIdHex = try await client.createGroup(
                 accountRef: activeAccount.accountRef,
@@ -707,6 +728,9 @@ extension WorkspaceState {
                 memberRefs: [memberRef],
                 description: nil
             )
+            guard activeAccountId == accountId, conversationMetadataEpoch == accountEpoch, !Task.isCancelled else {
+                return
+            }
             // Both people in a direct chat are its admins, so either can add someone or manage
             // roles. MDK founds a group with its creator as the only admin and takes no admin list
             // at creation, so the peer is promoted straight after. Best effort: the chat works
@@ -718,7 +742,9 @@ extension WorkspaceState {
                 memberRef: memberRef
             )
             await reloadChats(forceFreshSnapshot: true)
-            guard activeAccountId == accountId else { return }
+            guard activeAccountId == accountId, conversationMetadataEpoch == accountEpoch, !Task.isCancelled else {
+                return
+            }
             insertCreatedChatIfNeeded(
                 groupIdHex: groupIdHex,
                 title: recipient.title,
@@ -731,7 +757,9 @@ extension WorkspaceState {
             beginTimelineInitialLoadIfNeeded(groupIdHex: groupIdHex)
             await loadMessages(groupIdHex: groupIdHex)
         } catch {
-            guard activeAccountId == accountId else { return }
+            guard activeAccountId == accountId, conversationMetadataEpoch == accountEpoch, !Task.isCancelled else {
+                return
+            }
             applyChatCreationFailure(error, recipients: [recipient], surface: .directChat)
         }
     }

@@ -69,7 +69,7 @@ struct ChatInviteRuleTests {
 
     @Test func addMemberMessageNamesTheRefusedRecipientWhenKnown() {
         let named = ChatCreationFailure.message(
-            for: MarmotKitError.MissingKeyPackage(account: " abcdef0123 "),
+            for: missingKeyPackageNotFound(account: " abcdef0123 "),
             candidates: [Self.recipient]
         )
         #expect(named.contains("Robin"))
@@ -78,7 +78,7 @@ struct ChatInviteRuleTests {
         let unnamed = L10n.string("Someone you picked isn't on White Noise yet, so they can't be added.")
         #expect(
             ChatCreationFailure.message(
-                for: MarmotKitError.MissingKeyPackage(account: "unknown"), candidates: [Self.recipient]
+                for: missingKeyPackageNotFound(account: "unknown"), candidates: [Self.recipient]
             ) == unnamed
         )
         #expect(
@@ -87,6 +87,20 @@ struct ChatInviteRuleTests {
             ) == unnamed
         )
     }
+
+    #if WN_CURRENT_SDK_API || WN_EXPERIMENTAL_DEVICE_SYNC
+        @Test func obsoletePublicationUsesGenericErrorWithoutAnInviteOrAccountDisclosure() {
+            let account = String(repeating: "ab", count: 32)
+            let error = MarmotKitError.MissingKeyPackage(account: account, reason: .obsoleteOnly)
+            let expected = L10n.string("Couldn't create chat")
+            #expect(ChatCreationFailure(error) == .other(message: expected))
+            let message = ChatCreationFailure.message(for: error, candidates: [Self.recipient])
+            #expect(message == expected)
+            #expect(!message.contains(account))
+            #expect(!message.contains("MissingKeyPackage"))
+            #expect(!message.contains("obsolete_only"))
+        }
+    #endif
 
     @Test func addMemberMessagePassesOtherErrorsThrough() {
         let error = NSError(domain: "test", code: 7, userInfo: [NSLocalizedDescriptionKey: "Relay unreachable"])

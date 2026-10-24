@@ -1,0 +1,69 @@
+{
+  "qualified_source": "8e4357dbf434504d4423529606d3cbdfe8b323c0",
+  "root_verification": "All1449 published input bytes across3 attempts independently checked against exact signed Git tree; all3 complete raw logs rehashed. Actual M5 published XCResult independently queried:1661 passed,zero failures/skips. Experimental483-source audit and actual1793 pass independently verified previously.",
+  "experimental": {
+    "source_inputs": 483,
+    "input_manifest_sha256": "6361c0a5745a9205ef01065bd4deeed94b5ea916dfbf5828e064696459f723db",
+    "log_sha256": "6c300a7ca6c8fc3c07fd2183f1816729981f74f5691e915a9e21581f9c52eb14",
+    "exit_code": 0,
+    "seconds": 58.73393916711211,
+    "sdk_source": "84113c20771a0092cb0e52ca094836375f9dd406",
+    "scope": "Unfiltered Mac PR suite, experimental SDK84113, signed genuine Mac imported reader8e4357d; installed genuine UI approval remains separate",
+    "tests": {
+      "result": "Passed",
+      "totalTestCount": 1793,
+      "passedTests": 1793,
+      "failedTests": 0,
+      "skippedTests": 0
+    },
+    "test_failures": []
+  },
+  "published_attempts": [
+    {
+      "source_commit": "8e4357dbf434504d4423529606d3cbdfe8b323c0",
+      "experimental_sdk_git_stash": "f9df3419974838dd2170570ca70ca9d0f3f59400",
+      "scope": "Unfiltered published SDK Mac PR suite; no installed genuine approval claim",
+      "source_inputs": 483,
+      "input_manifest_sha256": "4508a11fe2233f05174a0b34cf3eb4f9f2993659fca7237af6e19117275d1e24",
+      "log_sha256": "13d77e90751a81e3950f5d6b01c8190d6d34aa88bcf2d65da371a8583c6784f0",
+      "exit_code": 65,
+      "seconds": 3.2960700828116387,
+      "experimental_sdk_restored_byte_exact": true
+    },
+    {
+      "source_commit": "8e4357dbf434504d4423529606d3cbdfe8b323c0",
+      "experimental_sdk_git_stash": "40614a27580524b59ac3134d95ccb936c13e7c03",
+      "scope": "Unfiltered published SDK Mac PR suite; no installed genuine approval claim",
+      "source_inputs": 483,
+      "input_manifest_sha256": "4508a11fe2233f05174a0b34cf3eb4f9f2993659fca7237af6e19117275d1e24",
+      "log_sha256": "43288319046ada3ccd6602bba54b34d5326a0fa3d935ccafcf359aa42cebc797",
+      "exit_code": 65,
+      "seconds": 4.242964999983087,
+      "experimental_sdk_restored_byte_exact": true
+    },
+    {
+      "source_commit": "8e4357dbf434504d4423529606d3cbdfe8b323c0",
+      "experimental_sdk_git_stash": "b34d722e3f6050b1c8711f22d71dcfc0beb7d127",
+      "scope": "Unfiltered published SDK Mac PR suite; no installed genuine approval claim",
+      "source_inputs": 483,
+      "input_manifest_sha256": "4508a11fe2233f05174a0b34cf3eb4f9f2993659fca7237af6e19117275d1e24",
+      "log_sha256": "e0fe260d23882e69c68c9c8304af56f051ebe27253c368a70d6d8c40dfe755c0",
+      "exit_code": 0,
+      "seconds": 84.33603887516074,
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 1661,
+        "passedTests": 1661,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "test_failures": [],
+      "experimental_sdk_restored_byte_exact": true
+    }
+  ],
+  "limits": [
+    "Hosted genuine imported reader on M5; original approval was native harness, not installed Mac navigation.",
+    "No M1 hosted-reader acceptance or media/expiry/deletion coverage.",
+    "SDK84113 local overlay; combined SDK987 adoption pending."
+  ]
+}

@@ -41,16 +41,20 @@ struct MarmotKitMigrationTests {
     }
 
     private static func open(root: URL) throws -> Marmot {
-        try Marmot.newWithConfiguration(
+        #if WN_CURRENT_SDK_API
+            var runtimeOptions = MarmotOptions(deployment: marmotDeploymentWhiteNoise())
+        #else
+            var runtimeOptions = MarmotOptions()
+        #endif
+        runtimeOptions.relayPolicy = .publicOnly
+        runtimeOptions.cursorPersistence = .advance
+        runtimeOptions.clientName = "whitenoise"
+        runtimeOptions.secretStore = nil
+        runtimeOptions.attachmentAcquisitionMode = .hostManaged
+        return try Marmot.newWithConfiguration(
             rootPath: root.path,
             relayUrls: ["wss://relay.invalid.test"],
-            options: MarmotOptions(
-                relayPolicy: .publicOnly,
-                cursorPersistence: .advance,
-                clientName: "whitenoise",
-                secretStore: nil,
-                attachmentAcquisitionMode: .hostManaged
-            )
+            options: runtimeOptions
         )
     }
 

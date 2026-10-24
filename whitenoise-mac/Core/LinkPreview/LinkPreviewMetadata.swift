@@ -125,7 +125,7 @@ nonisolated struct LinkPreviewMetadata: Equatable, Sendable {
 
     /// One line, whitespace collapsed, peer-text sanitized, and bounded — the page is as
     /// untrusted as the message that linked it.
-    private static func compactTitle(_ raw: String) -> String? {
+    static func compactTitle(_ raw: String) -> String? {
         let collapsed = raw.split(whereSeparator: \.isWhitespace).joined(separator: " ")
         guard let sanitized = PeerDisplayText.sanitize(collapsed) else { return nil }
         return String(sanitized.trimmingCharacters(in: .whitespaces).prefix(maximumTitleLength)).nilIfBlank

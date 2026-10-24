@@ -72,14 +72,7 @@ sanity:
 # CI step: Unit tests (PR test plan, with code coverage)
 test:
     rm -rf TestResults.xcresult
-    xcodebuild test \
-        -project "{{PROJECT}}" \
-        -scheme "{{SCHEME}}" \
-        -testPlan PR \
-        -destination "{{DESTINATION}}" \
-        -resultBundlePath TestResults.xcresult \
-        -enableCodeCoverage YES \
-        CODE_SIGNING_ALLOWED=NO
+    WN_TEST_RESULT_BUNDLE="$(pwd)/TestResults.xcresult" scripts/test-isolated.sh -enableCodeCoverage YES
 
 # CI step: Release build smoke (arm64)
 build-release:

@@ -1,0 +1,66 @@
+{
+  "base": "bb8dac012d9c3c115f60ddc15e85b77b06953a8d",
+  "sdk_source": "84113c20771a0092cb0e52ca094836375f9dd406",
+  "classification": "New unavailable factory semantic RED0/1 then unchanged regression GREEN15/15; initial stale FFI compilation65 is not behavioral RED.",
+  "cohorts": [
+    {
+      "gate": "mac-history-account-owner-red-v1",
+      "exact_root_stash": "b5a789be9f3cd2c4490ef14169c98250fc026657",
+      "verified_source_inputs": 467,
+      "input_manifest_sha256": "07f05ab5d5d9c16972024df74f4cdca43ec8a3b4bf1be7fdf1f6299b837bca7f",
+      "result": {
+        "exit": 65,
+        "seconds": 2.4678897857666016,
+        "log": "/Users/pj/project/build/mac-history-account-owner-red-v1.log",
+        "log_sha256": "8dca02d19ae537d4abcdc9c554403462388cab3cc905d50f28234442ba06340b"
+      },
+      "tests": null
+    },
+    {
+      "gate": "mac-history-account-owner-red-v2",
+      "exact_root_stash": "b5a789be9f3cd2c4490ef14169c98250fc026657",
+      "verified_source_inputs": 467,
+      "input_manifest_sha256": "07f05ab5d5d9c16972024df74f4cdca43ec8a3b4bf1be7fdf1f6299b837bca7f",
+      "result": {
+        "exit": 65,
+        "seconds": 52.77490830421448,
+        "log": "/Users/pj/project/build/mac-history-account-owner-red-v2.log",
+        "log_sha256": "5fcf3fe87afc756fffed5e1683894bb5444b8ed881031c1f5656663b7fcc2395"
+      },
+      "tests": {
+        "result": "Failed",
+        "passedTests": 0,
+        "failedTests": 1,
+        "skippedTests": 0,
+        "totalTestCount": 1
+      }
+    },
+    {
+      "gate": "mac-history-account-owner-green-v1",
+      "exact_root_stash": "eed6fedf9b23dd632822889f2107268ab8989f46",
+      "verified_source_inputs": 468,
+      "input_manifest_sha256": "ae143d8a39c1dd15a53373b77f3520adc8ccc3e4a1a6cd4d985cc9c7d5992bcf",
+      "result": {
+        "exit": 0,
+        "seconds": 61.34519910812378,
+        "log": "/Users/pj/project/build/mac-history-account-owner-green-v1.log",
+        "log_sha256": "a16ec7e84e74e885320027ec492cfc878b000ffa05237648c767f35c8cc05bb9"
+      },
+      "tests": {
+        "result": "Passed",
+        "passedTests": 15,
+        "failedTests": 0,
+        "skippedTests": 0,
+        "totalTestCount": 15
+      }
+    }
+  ],
+  "unchanged_regression_sha256": "f4b9230c8e850921b18bc275bf5a02b3d404380e29f0632b085f7e1c1ff6d86a",
+  "scope": "AccountScope owns exact runtime/original factory custody; A\u2192B\u2192A, runtime replacement, caller loss, pending factory fences Core teardown, cached pending originals never reconstruct or approve, exact release cannot cancel replacement, SDK128 bound refusal cancels all returned originals. Synchronous SDK cancel is nonthrowing; unfinished factories remain retained until their late originals are cancelled.",
+  "pending": [
+    "Full experimental/published PR before merge",
+    "Original history consent/source UI",
+    "Installed native original acceptance",
+    "Journal and remaining multi-device scope"
+  ]
+}

@@ -10,6 +10,29 @@ nonisolated protocol MarmotRuntime: Sendable {
 
     func start() async throws
     func listAccounts() throws -> [AccountSummaryFfi]
+    func synchronizedHistoryPage(
+        accountRef: String, groupIdHex: String, afterMessageIdHex: String?, limit: UInt32
+    ) throws -> SynchronizedHistoryPage
+
+    #if WN_EXPERIMENTAL_DEVICE_SYNC
+        func deviceLinkingCapabilities() -> DeviceLinkingCapabilitiesFfi
+        func deviceLinkingTargets(accountRef: String) async throws -> [DeviceLinkingTargetFfi]
+        func pendingDeviceLinkingApprovals(accountRef: String) async throws -> [DeviceLinkingApproval]
+        func beginDeviceLinkingSession(accountRef: String) async throws -> DeviceLinkingSession
+        func historyTransferRecipients(accountRef: String, groupIdHex: String) async throws
+            -> [HistoryTransferRecipientFfi]
+        func beginHistoryTransfer(accountRef: String, groupIdHex: String, recipientDevice: Data) async throws
+            -> HistoryTransfer
+        func accountChatSharingTargets(accountRef: String) async throws -> AccountSharingTargetsFfi
+        func beginAccountChatSharing(accountRef: String, recipientDevice: Data) async throws -> AccountSharingApproval
+        func pendingAccountChatSharing(accountRef: String) async throws -> [AccountSharingApproval]
+        func pendingHistoryRequests(accountRef: String) async throws -> [HistoryConsent]
+        func beginSelectedChatCopy(accountRef: String, groupIdHex: String, linkedRosterSelector: Data) async throws
+            -> SelectedChatCopy
+        func receiveSelectedChatCopyRequest(accountRef: String, packet: Data) async throws -> SelectedChatConsent
+        func approveDeviceLinkingSession(accountRef: String, request: Data, target: Data?) async throws
+            -> DeviceLinkingSession
+    #endif
     func npub(accountIdHex: String) -> String?
     func displayName(accountIdHex: String) -> String?
     func userProfile(accountIdHex: String) throws -> UserProfileMetadataFfi?
@@ -173,6 +196,8 @@ nonisolated protocol MarmotRuntime: Sendable {
         -> AccountRelayListsFfi
     func setAccountNip65Relays(accountRef: String, relays: [String], bootstrapRelays: [String]) async throws
         -> AccountRelayListsFfi
+    func existingDirectConversation(accountRef: String, peerAccountId: String) async throws
+        -> DirectConversationDestination?
     func createGroup(accountRef: String, name: String, memberRefs: [String], description: String?) async throws
         -> String
     func acceptGroupInvite(accountRef: String, groupIdHex: String) async throws -> AppGroupRecordFfi
@@ -372,10 +397,27 @@ nonisolated final class MarmotClient: MarmotRuntime, @unchecked Sendable {
 
     let marmot: Marmot
     let rootPath: String
+    private let storageProfile: MarmotStorageProfile
+    private let suppliedSecretStore: (any SecretStore)?
     var storageRootPath: String { rootPath }
 
     convenience init() throws {
         try self.init(rootPath: MarmotStorageRoot.resolve(), relayUrls: Self.seedRelays)
+    }
+
+    /// Pairing needs general-purpose relays; the inbox relays reject its event kind.
+    /// Explicit custom runtimes retain their supplied route, including isolated tests.
+    static let pairingRelays = ["wss://nos.lol", "wss://relay.primal.net"]
+
+    static func pairingOptions(_ options: MarmotOptions, runtimeRelays: [String]) -> MarmotOptions {
+        #if WN_EXPERIMENTAL_DEVICE_SYNC
+            guard runtimeRelays == seedRelays else { return options }
+            var configured = options
+            configured.pairingRelayUrls = pairingRelays
+            return configured
+        #else
+            return options
+        #endif
     }
 
     static func defaultStorageRootPath() -> String {
@@ -385,16 +427,29 @@ nonisolated final class MarmotClient: MarmotRuntime, @unchecked Sendable {
     init(
         rootPath: String,
         relayUrls: [String],
-        cursorPersistence: CursorPersistenceFfi = .advance
+        cursorPersistence: CursorPersistenceFfi = .advance,
+        storageProfile: MarmotStorageProfile = .current,
+        secretStore: (any SecretStore)? = nil,
+        relayPolicy: RelayPolicyFfi? = nil
     ) throws {
         self.rootPath = rootPath
+        self.storageProfile = storageProfile
+        self.suppliedSecretStore = secretStore
+        #if WN_CURRENT_SDK_API
+            var runtimeOptions = MarmotOptions(deployment: marmotDeploymentWhiteNoise())
+        #else
+            var runtimeOptions = MarmotOptions()
+        #endif
+        runtimeOptions.relayPolicy = relayPolicy
+        runtimeOptions.cursorPersistence = cursorPersistence
+        runtimeOptions.clientName = "whitenoise"
+        runtimeOptions.secretStore = secretStore ?? storageProfile.makeSecretStore()
+        runtimeOptions.attachmentAcquisitionMode = .hostManaged
         self.marmot = try Marmot.newWithConfiguration(
             rootPath: rootPath,
             relayUrls: relayUrls,
-            options: MarmotOptions(
-                cursorPersistence: cursorPersistence,
-                clientName: "whitenoise",
-                attachmentAcquisitionMode: .hostManaged
+            options: Self.pairingOptions(
+                runtimeOptions, runtimeRelays: relayUrls
             )
         )
     }
@@ -406,6 +461,82 @@ nonisolated final class MarmotClient: MarmotRuntime, @unchecked Sendable {
     func listAccounts() throws -> [AccountSummaryFfi] {
         try marmot.listAccounts()
     }
+
+    func synchronizedHistoryPage(
+        accountRef: String, groupIdHex: String, afterMessageIdHex: String?, limit: UInt32
+    ) throws -> SynchronizedHistoryPage {
+        #if WN_EXPERIMENTAL_DEVICE_SYNC
+            return SynchronizedHistoryPage(
+                try marmot.synchronizedHistoryPage(
+                    accountRef: accountRef, groupIdHex: groupIdHex, afterMessageIdHex: afterMessageIdHex, limit: limit))
+        #else
+            throw SynchronizedHistoryReadError.unavailable
+        #endif
+    }
+
+    #if WN_EXPERIMENTAL_DEVICE_SYNC
+        func deviceLinkingCapabilities() -> DeviceLinkingCapabilitiesFfi {
+            marmot.deviceLinkingCapabilities()
+        }
+
+        func deviceLinkingTargets(accountRef: String) async throws -> [DeviceLinkingTargetFfi] {
+            try await marmot.deviceLinkingTargets(accountRef: accountRef)
+        }
+
+        func pendingDeviceLinkingApprovals(accountRef: String) async throws -> [DeviceLinkingApproval] {
+            try await marmot.pendingDeviceLinkingApprovals(accountRef: accountRef)
+        }
+
+        func historyTransferRecipients(accountRef: String, groupIdHex: String) async throws
+            -> [HistoryTransferRecipientFfi]
+        {
+            try await marmot.historyTransferRecipients(accountRef: accountRef, groupIdHex: groupIdHex)
+        }
+
+        func beginHistoryTransfer(accountRef: String, groupIdHex: String, recipientDevice: Data) async throws
+            -> HistoryTransfer
+        {
+            try await marmot.beginHistoryTransfer(
+                accountRef: accountRef, groupIdHex: groupIdHex, recipientDevice: recipientDevice)
+        }
+        func accountChatSharingTargets(accountRef: String) async throws -> AccountSharingTargetsFfi {
+            try await marmot.accountChatSharingTargets(accountRef: accountRef)
+        }
+        func beginAccountChatSharing(accountRef: String, recipientDevice: Data) async throws -> AccountSharingApproval {
+            try await marmot.beginAccountChatSharing(accountRef: accountRef, recipientDevice: recipientDevice)
+        }
+        func pendingAccountChatSharing(accountRef: String) async throws -> [AccountSharingApproval] {
+            try await marmot.pendingAccountChatSharing(accountRef: accountRef)
+        }
+        func pendingHistoryRequests(accountRef: String) async throws -> [HistoryConsent] {
+            try await marmot.pendingHistoryRequests(accountRef: accountRef)
+        }
+
+        func beginSelectedChatCopy(accountRef: String, groupIdHex: String, linkedRosterSelector: Data) async throws
+            -> SelectedChatCopy
+        {
+            try await marmot.beginSelectedChatCopy(
+                accountRef: accountRef, groupIdHex: groupIdHex, linkedRosterSelector: linkedRosterSelector)
+        }
+        func receiveSelectedChatCopyRequest(accountRef: String, packet: Data) async throws -> SelectedChatConsent {
+            try await marmot.receiveSelectedChatCopyRequest(accountRef: accountRef, packet: packet)
+        }
+
+        func beginDeviceLinkingSession(accountRef: String) async throws -> DeviceLinkingSession {
+            try await marmot.beginAutomaticDeviceLinkingSession(accountRef: accountRef)
+        }
+
+        func approveDeviceLinkingSession(accountRef: String, request: Data, target: Data?) async throws
+            -> DeviceLinkingSession
+        {
+            if PairingQRCode.isAutomaticBootstrap(request), let code = String(data: request, encoding: .utf8) {
+                return try await marmot.scanAutomaticDeviceLinkingSession(
+                    accountRef: accountRef, code: code)
+            }
+            return try await marmot.approveDeviceLinkingSession(
+                accountRef: accountRef, request: request, target: target)
+        }
+    #endif
 
     func npub(accountIdHex: String) -> String? {
         marmot.npub(accountIdHex: accountIdHex)
@@ -906,6 +1037,15 @@ nonisolated final class MarmotClient: MarmotRuntime, @unchecked Sendable {
 
     func deleteAllLocalData() async throws {
         try await Self.deleteAllLocalData(
+            purgeAccountKeychain: {
+                if let suppliedSecretStore {
+                    for account in try marmot.listAccounts() {
+                        try suppliedSecretStore.removeSecret(label: account.label, accountIdHex: account.accountIdHex)
+                    }
+                } else {
+                    try MarmotAccountKeychain.purgeAllAccountKeys(service: storageProfile.keychainService)
+                }
+            },
             shutdown: { await marmot.shutdown() },
             rootPath: rootPath
         )
@@ -954,6 +1094,26 @@ nonisolated final class MarmotClient: MarmotRuntime, @unchecked Sendable {
             relays: relays,
             bootstrapRelays: bootstrapRelays
         )
+    }
+
+    func existingDirectConversation(accountRef: String, peerAccountId: String) async throws
+        -> DirectConversationDestination?
+    {
+        #if WN_EXPERIMENTAL_DEVICE_SYNC
+            guard
+                let conversation = try await marmot.existingAccountDirectConversation(
+                    accountRef: accountRef, peerAccountId: peerAccountId
+                )
+            else { return nil }
+            switch conversation {
+            case .localMls(let conversation): return .localMls(conversation)
+            case .pairedSource(let conversation): return .pairedSource(conversation)
+            }
+        #else
+            return try await marmot.existingDirectConversation(
+                accountRef: accountRef, peerAccountId: peerAccountId
+            ).map(DirectConversationDestination.localMls)
+        #endif
     }
 
     func createGroup(accountRef: String, name: String, memberRefs: [String], description: String?) async throws
@@ -1548,9 +1708,11 @@ nonisolated enum MarmotAccountKeychainPurgeError: LocalizedError, Equatable {
 }
 
 nonisolated enum MarmotAccountKeychain {
-    private static let service = "com.marmot.whitenoise"
-
     static func purgeAllAccountKeys() throws {
+        try purgeAllAccountKeys(service: MarmotStorageProfile.current.keychainService)
+    }
+
+    static func purgeAllAccountKeys(service: String) throws {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -1586,7 +1748,6 @@ enum MarmotStorageRootError: LocalizedError {
 }
 
 nonisolated enum MarmotStorageRoot {
-    private static let appSupportDirectoryName = "White Noise"
     private static let marmotDirectoryName = "Marmot"
 
     static func resolve(
@@ -1610,8 +1771,10 @@ nonisolated enum MarmotStorageRoot {
         return try resolve(baseURL: base, fileManager: fileManager)
     }
 
-    static func resolve(baseURL: URL, fileManager: FileManager = .default) throws -> String {
-        let root = storageRootURL(baseURL: baseURL)
+    static func resolve(
+        baseURL: URL, fileManager: FileManager = .default, profile: MarmotStorageProfile = .current
+    ) throws -> String {
+        let root = storageRootURL(baseURL: baseURL, profile: profile)
         var isDirectory: ObjCBool = false
 
         if fileManager.fileExists(atPath: root.path, isDirectory: &isDirectory) {
@@ -1635,12 +1798,12 @@ nonisolated enum MarmotStorageRoot {
         guard let base = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
             return L10n.string("Application Support unavailable")
         }
-        return storageRootURL(baseURL: base).path
+        return storageRootURL(baseURL: base, profile: .current).path
     }
 
-    private static func storageRootURL(baseURL: URL) -> URL {
+    private static func storageRootURL(baseURL: URL, profile: MarmotStorageProfile) -> URL {
         baseURL
-            .appendingPathComponent(appSupportDirectoryName, isDirectory: true)
+            .appendingPathComponent(profile.directoryName, isDirectory: true)
             .appendingPathComponent(marmotDirectoryName, isDirectory: true)
     }
 }

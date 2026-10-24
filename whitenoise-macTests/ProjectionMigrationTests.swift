@@ -95,6 +95,14 @@ struct ProjectionMigrationTests {
         #expect(runtime.explicitAttachmentRequestTargets.isEmpty)
     }
 
+    #if WN_CURRENT_SDK_API
+        @Test func anExplicitTapRearmsMediaCleanedByRetention() async throws {
+            try await explicitAttachmentTapRearmsOnlyWorkTheRequestWillNotRestart(
+                state: .cleanedBySetting, rearms: true
+            )
+        }
+    #endif
+
     private static func transferSnapshot(_ state: AttachmentTransferStateFfi) -> AttachmentTransferSnapshotFfi {
         AttachmentTransferSnapshotFfi(items: [
             AttachmentTransferStatusFfi(
@@ -156,6 +164,8 @@ struct ProjectionMigrationTests {
         let target = try #require(model.items.first?.target)
         let didReceiveTransfer = await waitFor { model.transfersByTarget[target]?.state == state }
         try #require(didReceiveTransfer)
+        #expect(runtime.explicitAttachmentDownloadTargets.isEmpty)
+        #expect(runtime.explicitAttachmentRequestTargets.isEmpty)
 
         _ = try await model.downloadExplicitly(target)
 
@@ -1946,18 +1956,35 @@ struct ProjectionMigrationTests {
 
 struct MarmotKitReleaseProvenanceTests {
     @Test func generatedReleaseProvenancePinsTheAuditedBuild() throws {
-        #expect(MarmotKitVersion.mdkTag == "marmotkit-v0.13.0")
-        #expect(MarmotKitVersion.mdkSHA == "891ab34980ee9dc2ef45bf690733a6e31d3e6778")
-        #expect(MarmotKitVersion.uniffiVersion == "0.29.4")
-        #expect(MarmotKitVersion.features == "otlp-export,product-analytics-export")
-        #expect(MarmotKitVersion.swiftPMChecksum == "a5b74c4ad8b5da6bd00b24173fa6628cc6aba1dfb9a13ee4d5ff0af1d2081366")
-        #expect(
-            MarmotKitVersion.vendoredSwiftSHA256 == "c4218e90a1a94d9d8834f589db504660669e1a2a42a72d78c5f64e41a6e04d3a")
-        #expect(MarmotKitVersion.distribution == "static-library-and-privacy-v1")
-        #expect(MarmotKitVersion.privacySHA256 == "3759ff2493741386342599b39673989a461f491ad1fb207a7133a2b0035140f7")
-        let privacyData = try #require(MarmotKitVersion.privacyManifestData())
-        #expect(
-            SHA256.hash(data: privacyData).map { String(format: "%02x", $0) }.joined()
-                == MarmotKitVersion.privacySHA256)
+        #if WN_CURRENT_SDK_API || WN_EXPERIMENTAL_DEVICE_SYNC
+            // The SDK profile guard verifies the installed native archive and manifest
+            // before compiling. Local provenance intentionally has no published-release pin.
+            #expect(MarmotKitVersion.mdkSHA.count == 40)
+            #expect(MarmotKitVersion.mdkSHA.allSatisfy { $0.isHexDigit && !$0.isUppercase })
+            #expect(MarmotKitVersion.mdkTag == "local-\(MarmotKitVersion.mdkSHA)")
+            #expect(MarmotKitVersion.uniffiVersion == "0.29.4")
+            #if WN_EXPERIMENTAL_DEVICE_SYNC
+                #expect(MarmotKitVersion.features == "otlp-export,product-analytics-export,experimental-device-sync")
+            #else
+                #expect(MarmotKitVersion.features == "otlp-export,product-analytics-export")
+            #endif
+        #else
+            #expect(MarmotKitVersion.mdkTag == "marmotkit-v0.13.0")
+            #expect(MarmotKitVersion.mdkSHA == "891ab34980ee9dc2ef45bf690733a6e31d3e6778")
+            #expect(MarmotKitVersion.uniffiVersion == "0.29.4")
+            #expect(MarmotKitVersion.features == "otlp-export,product-analytics-export")
+            #expect(
+                MarmotKitVersion.swiftPMChecksum == "a5b74c4ad8b5da6bd00b24173fa6628cc6aba1dfb9a13ee4d5ff0af1d2081366")
+            #expect(
+                MarmotKitVersion.vendoredSwiftSHA256
+                    == "c4218e90a1a94d9d8834f589db504660669e1a2a42a72d78c5f64e41a6e04d3a")
+            #expect(MarmotKitVersion.distribution == "static-library-and-privacy-v1")
+            #expect(
+                MarmotKitVersion.privacySHA256 == "3759ff2493741386342599b39673989a461f491ad1fb207a7133a2b0035140f7")
+            let privacyData = try #require(MarmotKitVersion.privacyManifestData())
+            #expect(
+                SHA256.hash(data: privacyData).map { String(format: "%02x", $0) }.joined()
+                    == MarmotKitVersion.privacySHA256)
+        #endif
     }
 }

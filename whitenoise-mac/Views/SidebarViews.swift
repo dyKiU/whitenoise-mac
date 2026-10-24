@@ -148,15 +148,32 @@ private struct AccountRailAvatar: View {
 }
 
 struct ChatListDrawerView: View {
+    @State private var conversationSource = ConversationSourcePreference.shared
     @Environment(WorkspaceState.self) private var workspace
     @Environment(\.locale) private var locale
     let model: ChatListViewModel?
     let historyNotices: HistoryNoticesViewModel?
+    #if WN_EXPERIMENTAL_DEVICE_SYNC
+        var automaticChats: AccountChatListViewModel? = nil
+        var selectAutomaticChat: (String) -> Void = { _ in }
+    #endif
 
     init(model: ChatListViewModel? = nil, historyNotices: HistoryNoticesViewModel? = nil) {
         self.model = model
         self.historyNotices = historyNotices
     }
+
+    #if WN_EXPERIMENTAL_DEVICE_SYNC
+        init(
+            model: ChatListViewModel?, historyNotices: HistoryNoticesViewModel?,
+            automaticChats: AccountChatListViewModel?, selectAutomaticChat: @escaping (String) -> Void
+        ) {
+            self.model = model
+            self.historyNotices = historyNotices
+            self.automaticChats = automaticChats
+            self.selectAutomaticChat = selectAutomaticChat
+        }
+    #endif
 
     private var isShowingSettings: Bool {
         if case .settings = workspace.selection { return true }
@@ -184,6 +201,18 @@ struct ChatListDrawerView: View {
                 let listing = visibleChats(for: filter)
                 let visibleChats = listing.chats
                 let isCollapsed = workspace.isChatListCollapsed
+                #if WN_EXPERIMENTAL_DEVICE_SYNC
+                    let query = workspace.searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+                    let hasAutomaticRows =
+                        conversationSource.showsSharedChats && filter == .active
+                        && (automaticChats?.pairedRows.contains { row in
+                            query.isEmpty
+                                || AutomaticChatPeerDisplay.title(row, workspace: workspace).localizedStandardContains(
+                                    query)
+                        } ?? false)
+                #else
+                    let hasAutomaticRows = false
+                #endif
 
                 if isCollapsed {
                     CollapsedChatListHeader(isShowingArchived: isShowingArchived)
@@ -199,6 +228,34 @@ struct ChatListDrawerView: View {
 
                 ScrollView {
                     LazyVStack(spacing: 3) {
+                        #if WN_EXPERIMENTAL_DEVICE_SYNC
+                            if conversationSource.showsSharedChats, filter == .active {
+                                AutomaticChatListSection(
+                                    model: automaticChats, searchText: workspace.searchText,
+                                    excludedGroupIds: [], select: selectAutomaticChat,
+                                    isCollapsed: isCollapsed,
+                                    selectedGroupId: {
+                                        if case .chat(let id) = workspace.selection { return id }
+                                        return nil
+                                    }(),
+                                    activeAccountIdHex: workspace.activeAccount?.accountIdHex,
+                                    senderName: { AutomaticChatPeerDisplay.name($0, workspace: workspace) },
+                                    isBlocked: { model?.isBlocked(accountID: $0) == true },
+                                    title: { AutomaticChatPeerDisplay.title($0, workspace: workspace) }
+                                )
+                                .task(
+                                    id: [automaticChats?.accountRef ?? ""]
+                                        + (automaticChats?.pairedRows.compactMap(\.directPeerAccountIdHex) ?? [])
+                                ) {
+                                    guard !Task.isCancelled,
+                                        let model = automaticChats,
+                                        model.accountRef == workspace.activeAccount?.accountRef
+                                    else { return }
+                                    workspace.requestPeerProfileRefresh(
+                                        model.pairedRows.compactMap(\.directPeerAccountIdHex))
+                                }
+                            }
+                        #endif
                         ForEach(visibleChats) { chat in
                             ChatSidebarRow(
                                 chat: chat,
@@ -222,11 +279,20 @@ struct ChatListDrawerView: View {
                     .padding(.vertical, 8)
                 }
                 .accessibilityIdentifier(isShowingArchived ? "chat.archived.list" : "chat.list")
+                #if WN_EXPERIMENTAL_DEVICE_SYNC
+                    .onScrollPhaseChange { _, phase in
+                        if phase == .interacting, filter == .active {
+                            Task { await automaticChats?.pairedUserScrollChanged(true) }
+                        } else if phase == .idle {
+                            Task { await automaticChats?.pairedUserScrollChanged(false) }
+                        }
+                    }
+                #endif
                 .overlay {
                     // The notice needs room for an icon over a line or two of prose; in the
                     // collapsed rail it would render as a column of hyphenated fragments. An
                     // empty rail is legible on its own, and widening it brings the wording back.
-                    if visibleChats.isEmpty, !isCollapsed {
+                    if visibleChats.isEmpty, !isCollapsed, !hasAutomaticRows {
                         if workspace.isSearchingSidebarMessages {
                             ProgressView()
                                 .controlSize(.small)
@@ -264,6 +330,9 @@ struct ChatListDrawerView: View {
         .background {
             MessagesSidebarBackground(level: .drawer)
         }
+        .onChange(of: conversationSource.showsSharedChats) { _, _ in
+            workspace.chatListFilter = .active
+        }
     }
 }
 
@@ -273,6 +342,9 @@ extension ChatListDrawerView {
     /// ones, and an archived row there must offer Unarchive rather than Pin — mdk refuses to pin
     /// an archived chat.
     fileprivate func visibleChats(for filter: ChatListFilter) -> (chats: [ChatItem], archivedIds: Set<String>) {
+        #if WN_EXPERIMENTAL_DEVICE_SYNC
+            guard !conversationSource.showsSharedChats else { return (chats: [], archivedIds: []) }
+        #endif
         let chats: [ChatItem]
         let useBoundedWindow = workspace.searchText
             .trimmingCharacters(in: .whitespacesAndNewlines)

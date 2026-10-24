@@ -6,6 +6,12 @@ on:
     branches:
       - master
   workflow_dispatch:
+    inputs:
+      scope:
+        description: Full qualification or focused behavioral onboarding mutations
+        type: choice
+        options: [full, onboarding-mutations, shared-ui-format, shared-ui-raster-measure, shared-ui-raster-red-green, shared-ui-raster-pfp, shared-ui-cli-schema, shared-ui-native-calibration, shared-ui-archive-summary]
+        default: full
   schedule:
     - cron: "17 9 * * *"
 
@@ -13,7 +19,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: mac-ci-${{ github.workflow }}-${{ github.ref }}
+  group: mac-ci-${{ github.workflow }}-${{ github.ref }}-${{ inputs.scope || 'full' }}
   cancel-in-progress: true
 
 env:
@@ -37,7 +43,135 @@ env:
 # `PR Checks` at the bottom is the aggregate gate. Keep that name: it is what
 # branch protection requires, and it is the only status that has to be green.
 jobs:
+  # SHARED_UI_FORMAT_JOBS_BEGIN
+  shared-ui-format:
+    if: github.event_name == 'workflow_dispatch' && contains(fromJSON('["shared-ui-format","shared-ui-raster-measure","shared-ui-raster-red-green","shared-ui-raster-pfp"]'), inputs.scope)
+    runs-on: macos-26
+    timeout-minutes: 15
+    env:
+      SHARED_UI_BASELINE: 2a60df8f95245328b43b324c325a31540b2488e5
+      WN_EXPERIMENTAL_DEVICE_SYNC: '0'
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Whole source, closed native parser fixtures and hosted formatter
+        run: python3 scripts/ci/shared-ui-qualification.py --mode preflight
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: shared-ui-format-${{ github.sha }}
+          path: |
+            build/shared-ui-qualification/result.json
+            build/shared-ui-qualification/format.patch
+          if-no-files-found: error
+          retention-days: 7
+  shared-ui-raster:
+    needs: shared-ui-format
+    if: github.event_name == 'workflow_dispatch' && contains(fromJSON('["shared-ui-raster-measure","shared-ui-raster-red-green","shared-ui-raster-pfp"]'), inputs.scope)
+    runs-on: macos-26
+    timeout-minutes: 100
+    env:
+      SHARED_UI_BASELINE: 2a60df8f95245328b43b324c325a31540b2488e5
+      WN_EXPERIMENTAL_DEVICE_SYNC: '0'
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Cache unchanged published MarmotKit artifact
+        uses: ./.github/actions/marmotkit-cache
+      - name: Exact real raster suite, no runtime retries
+        run: |
+          python3 scripts/ci/shared-ui-qualification.py --mode '${{ inputs.scope == 'shared-ui-raster-measure' && 'measure' || inputs.scope == 'shared-ui-raster-red-green' && 'red-green' || 'pfp' }}'
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: shared-ui-raster-${{ inputs.scope }}-${{ github.sha }}
+          path: build/shared-ui-qualification/result.json
+          if-no-files-found: error
+          retention-days: 7
+  shared-ui-cli-schema:
+    if: github.event_name == 'workflow_dispatch' && inputs.scope == 'shared-ui-cli-schema'
+    runs-on: macos-26
+    timeout-minutes: 5
+    env:
+      SHARED_UI_BASELINE: 2a60df8f95245328b43b324c325a31540b2488e5
+      WN_EXPERIMENTAL_DEVICE_SYNC: '0'
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Exact owned source and bounded static CLI help/schema only
+        run: python3 scripts/ci/shared-ui-qualification.py --mode cli-schema
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: shared-ui-cli-schema-${{ github.sha }}
+          path: |
+            build/shared-ui-qualification/result.json
+            build/shared-ui-qualification/cli-schema/*.txt
+          if-no-files-found: error
+          retention-days: 7
+  shared-ui-native-calibration:
+    if: github.event_name == 'workflow_dispatch' && inputs.scope == 'shared-ui-native-calibration'
+    runs-on: macos-26
+    timeout-minutes: 10
+    env:
+      SHARED_UI_BASELINE: 2a60df8f95245328b43b324c325a31540b2488e5
+      WN_EXPERIMENTAL_DEVICE_SYNC: '0'
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Owned hostless Swift Testing calibration, no app or MarmotKit
+        run: python3 scripts/ci/shared-ui-qualification.py --mode native-calibration
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: shared-ui-native-calibration-${{ github.sha }}
+          path: |
+            build/shared-ui-qualification/result.json
+            build/shared-ui-qualification/native-calibration/synthetic-build-output.txt
+          if-no-files-found: error
+          retention-days: 7
+  shared-ui-archive-summary:
+    if: github.event_name == 'workflow_dispatch' && inputs.scope == 'shared-ui-archive-summary'
+    runs-on: macos-26
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+    env:
+      SHARED_UI_BASELINE: 2a60df8f95245328b43b324c325a31540b2488e5
+      WN_EXPERIMENTAL_DEVICE_SYNC: '0'
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Export pinned existing native archive summary without rebuilding
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/ci/shared-ui-qualification.py --mode archive-summary
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: shared-ui-archive-summary-${{ github.sha }}
+          path: build/shared-ui-qualification/result.json
+          if-no-files-found: error
+          retention-days: 7
+  # SHARED_UI_FORMAT_JOBS_END
   checks:
+    if: github.event_name != 'workflow_dispatch' || inputs.scope == 'full'
     name: Static checks
     runs-on: macos-26
     timeout-minutes: 15
@@ -84,6 +218,7 @@ jobs:
         run: scripts/ci/macos-sanity-checks.sh
 
   test:
+    if: github.event_name != 'workflow_dispatch' || inputs.scope == 'full'
     name: Unit tests
     runs-on: macos-26
     timeout-minutes: 30
@@ -99,14 +234,68 @@ jobs:
         run: |
           set -o pipefail
           rm -rf TestResults.xcresult
-          xcodebuild test \
-            -project "$PROJECT" \
-            -scheme "$SCHEME" \
-            -testPlan PR \
-            -destination "$DESTINATION" \
-            -resultBundlePath TestResults.xcresult \
-            -enableCodeCoverage YES \
-            CODE_SIGNING_ALLOWED=NO
+          WN_TEST_RESULT_BUNDLE="$PWD/TestResults.xcresult" \
+            scripts/test-isolated.sh -enableCodeCoverage YES
+
+      - name: Export native test execution counts
+        if: always()
+        env:
+          TEST_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          bundle="TestResults.xcresult"
+          if [ ! -d "$bundle" ]; then
+            echo "::notice::No XCResult bundle was produced; native execution counts are unavailable."
+            exit 0
+          fi
+          umask 077
+          mkdir -p build
+          raw_summary="$RUNNER_TEMP/TestResults-summary-private.json"
+          trap 'rm -f "$raw_summary"' EXIT
+          xcrun xcresulttool get test-results summary --path "$bundle" > "$raw_summary"
+          export TEST_CHECKOUT_SHA="$(git rev-parse HEAD)"
+          export TEST_CHECKOUT_TREE="$(git rev-parse 'HEAD^{tree}')"
+          python3 - "$raw_summary" <<'PYTHON'
+          import json
+          import os
+          import sys
+          from pathlib import Path
+
+          raw = json.loads(Path(sys.argv[1]).read_text())
+          for key in ("totalTestCount", "passedTests", "failedTests", "skippedTests"):
+              if key not in raw or type(raw[key]) is not int or raw[key] < 0:
+                  raise ValueError("Missing or invalid native count field: " + key)
+          fields = ("totalTestCount", "passedTests", "failedTests", "skippedTests",
+                    "expectedFailures", "result", "startTime", "finishTime", "duration")
+          summary = {key: raw[key] for key in fields if key in raw}
+          # Preserve per-configuration native counts separately; parameterized
+          # runs and definition counts must never be added together.
+          if "devicesAndConfigurations" in raw:
+              summary["devicesAndConfigurations"] = [
+                  {key: row[key] for key in fields if key in row}
+                  for row in raw["devicesAndConfigurations"]
+              ]
+          report = {
+              "provenance": {
+                  "checkout_sha": os.environ["TEST_CHECKOUT_SHA"],
+                  "checkout_tree": os.environ["TEST_CHECKOUT_TREE"],
+                  "source_sha": os.environ["TEST_SOURCE_SHA"],
+                  "event_sha": os.environ["GITHUB_SHA"],
+                  "command": ["xcrun", "xcresulttool", "get", "test-results", "summary",
+                              "--path", "TestResults.xcresult"],
+              },
+              "summary": summary,
+              "counts_note": "Native summary fields retained verbatim; no cross-configuration or parameterized-run totals are synthesized.",
+          }
+          Path("build/MacTestResults-summary.json").write_text(json.dumps(report, indent=2) + "\n")
+          PYTHON
+
+      - name: Upload native test execution counts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mac-test-summary
+          path: build/MacTestResults-summary.json
+          if-no-files-found: warn
 
       # No `if:` on purpose. Coverage from a run whose tests failed measures a
       # partial suite, and publishing that number would quietly lower the
@@ -138,6 +327,7 @@ jobs:
           retention-days: 7
 
   build:
+    if: github.event_name != 'workflow_dispatch' || inputs.scope == 'full'
     name: Release build
     runs-on: macos-26
     timeout-minutes: 30
@@ -162,6 +352,7 @@ jobs:
             CODE_SIGNING_ALLOWED=NO
 
   analyze:
+    if: github.event_name != 'workflow_dispatch' || inputs.scope == 'full'
     name: Static analysis
     runs-on: macos-26
     timeout-minutes: 30
@@ -184,6 +375,7 @@ jobs:
             CODE_SIGNING_ALLOWED=NO
 
   coverage:
+    if: github.event_name != 'workflow_dispatch' || inputs.scope == 'full'
     name: Coverage
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -254,7 +446,7 @@ jobs:
     name: PR Checks
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    if: ${{ always() }}
+    if: ${{ always() && (github.event_name != 'workflow_dispatch' || inputs.scope == 'full') }}
     needs: [checks, test, build, analyze, coverage]
 
     steps:
@@ -278,3 +470,53 @@ jobs:
         run: |
           echo "::error::One or more Mac CI jobs did not succeed."
           exit 1
+
+  onboarding-mutations:
+    name: Onboarding behavioral mutation qualification
+    if: github.event_name == 'workflow_dispatch' && inputs.scope == 'onboarding-mutations'
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - name: Check out exact candidate and reviewed baseline
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Validate source and result parser controls
+        run: python3 scripts/ci/onboarding-mutations.py --preflight
+      - name: Remote focused format preflight and feedback
+        run: |
+          python3 - <<'PYFORMAT'
+          import difflib
+          from pathlib import Path
+          import subprocess
+          files = ['whitenoise-mac/Features/Onboarding/OnboardingCoordinator.swift',
+                   'whitenoise-mac/Views/Onboarding/OnboardingView.swift',
+                   'whitenoise-macTests/AddProfileRoutingTests.swift',
+                   'whitenoise-macTests/AccountSetupGuideTests.swift']
+          output = Path('build/onboarding-format')
+          output.mkdir(parents=True, exist_ok=True)
+          lint = subprocess.run(['xcrun', 'swift-format', 'lint', '--configuration', '.swift-format', '--strict', *files])
+          if lint.returncode:
+              patch = []
+              for name in files:
+                  formatted = subprocess.run(['xcrun', 'swift-format', 'format', '--configuration', '.swift-format', name], capture_output=True, text=True, check=True).stdout
+                  patch.extend(difflib.unified_diff(Path(name).read_text().splitlines(True), formatted.splitlines(True), fromfile='a/' + name, tofile='b/' + name))
+              (output / 'feedback.patch').write_text(''.join(patch))
+          raise SystemExit(lint.returncode)
+          PYFORMAT
+      - name: Cache MarmotKit binary artifact
+        uses: ./.github/actions/marmotkit-cache
+      - name: Run baseline, runtime mutants and exact restored controls
+        run: python3 scripts/ci/onboarding-mutations.py
+      - name: Preserve compact qualification and failed attempts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: onboarding-mutation-qualification
+          path: |
+            build/onboarding-mutations/result.json
+            build/onboarding-mutations/*.json
+            build/onboarding-mutations/*.log
+            build/onboarding-format/feedback.patch
+          if-no-files-found: warn
+          retention-days: 14

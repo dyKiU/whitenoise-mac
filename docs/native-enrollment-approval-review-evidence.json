@@ -1,0 +1,144 @@
+{
+  "sdk_source": "3fab3184d8cc089c7a3d24988443ff2d38ee93a5",
+  "sdk_gates": "Candidate release SDK all ten gates pass; shared generation exact three files; no test-policy overrides",
+  "red_source_stash": "04c05b2ee373702787d6d252284ef61e7cc7395d",
+  "initial_green_source_stash": "6b064cf7a2c18abff31e347c43a08dc20c12d580",
+  "controls_source_stash": "ef2190fffdd8be2c289a10dd156ca7504854575a",
+  "final_source_stash": "56bee1e9d4bbdb7676c4a1de4d327534c18ff484",
+  "m5_candidate_sdk4_stash": "2302862617fc2f460ff2d531499152be6618a8ec",
+  "m5_original_e6_sdk4_stash": "04df88451abb0e39fce66fcca2a616ecf21e5906",
+  "phases": [
+    {
+      "phase": "red-v1",
+      "source_base": "0d00d59ef5dbeb249879e62290d1f6d7e6485dac",
+      "source_inputs": 438,
+      "input_manifest_sha256": "a1ad294f78d6f008e8faf74197a9514952f122f0ba0481244b5ce4f8674edc43",
+      "profile": "local-3fab/experimentalflag1",
+      "installed_manifest_sha256": "b050fbc04df5f4701a7508d5d1315e1fe29fb2da189fb05c88e426a0c4112a66",
+      "exit_code": 65,
+      "seconds": 45.89,
+      "log_sha256": "ce4fd6cdbb7e24e46f669156c7f9595604eabd0d2abb53130084efd304d2324a",
+      "tests": {
+        "result": "Failed",
+        "totalTestCount": 2,
+        "passedTests": 0,
+        "failedTests": 2,
+        "skippedTests": 0
+      },
+      "test_failures": [
+        {
+          "failureText": "Caught error: .DeviceLinkingNotReady",
+          "targetName": "whitenoise-macTests",
+          "testIdentifier": 1,
+          "testIdentifierString": "DeviceEnrollmentApprovalReviewTests/originalReviewForwardPreservesCapturedRevisionAndReadOnlyMetadata()",
+          "testIdentifierURL": "test://com.apple.xcode/whitenoise-mac/whitenoise-macTests/DeviceEnrollmentApprovalReviewTests/originalReviewForwardPreservesCapturedRevisionAndReadOnlyMetadata()",
+          "testName": "originalReviewForwardPreservesCapturedRevisionAndReadOnlyMetadata()"
+        },
+        {
+          "failureText": "Caught error: .DeviceLinkingNotReady",
+          "targetName": "whitenoise-macTests",
+          "testIdentifier": 2,
+          "testIdentifierString": "DeviceEnrollmentApprovalReviewTests/reviewedModelRequiresExplicitActionOnSameOriginalRevision()",
+          "testIdentifierURL": "test://com.apple.xcode/whitenoise-mac/whitenoise-macTests/DeviceEnrollmentApprovalReviewTests/reviewedModelRequiresExplicitActionOnSameOriginalRevision()",
+          "testName": "reviewedModelRequiresExplicitActionOnSameOriginalRevision()"
+        }
+      ]
+    },
+    {
+      "phase": "green-v1",
+      "source_base": "0d00d59ef5dbeb249879e62290d1f6d7e6485dac",
+      "source_inputs": 438,
+      "input_manifest_sha256": "60946a1094550acc7d49d224ab0fe8af8302ec78b004c37530dcee02058e292a",
+      "profile": "local-3fab/experimentalflag1",
+      "installed_manifest_sha256": "b050fbc04df5f4701a7508d5d1315e1fe29fb2da189fb05c88e426a0c4112a66",
+      "exit_code": 0,
+      "seconds": 17.43,
+      "log_sha256": "bb47f8259c6d5fe80214115e2c65cce4ba92c1ba7d93dbc7414dbbce09cb1e33",
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 2,
+        "passedTests": 2,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "test_failures": []
+    },
+    {
+      "phase": "green-v2",
+      "source_base": "0d00d59ef5dbeb249879e62290d1f6d7e6485dac",
+      "source_inputs": 438,
+      "input_manifest_sha256": "47703d9e0273df52fa814e2f8bd8c8e738b408b42448061e9e409680a032743e",
+      "profile": "local-3fab/experimentalflag1",
+      "installed_manifest_sha256": "b050fbc04df5f4701a7508d5d1315e1fe29fb2da189fb05c88e426a0c4112a66",
+      "exit_code": 0,
+      "seconds": 8.49,
+      "log_sha256": "d1631b00b8a075d715a936df039a5ba1ac44a5143fd1c30f45e505bd61d9ea40",
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 7,
+        "passedTests": 7,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "test_failures": []
+    },
+    {
+      "phase": "affected-v2",
+      "source_base": "0d00d59ef5dbeb249879e62290d1f6d7e6485dac",
+      "source_inputs": 438,
+      "input_manifest_sha256": "47703d9e0273df52fa814e2f8bd8c8e738b408b42448061e9e409680a032743e",
+      "profile": "local-3fab/experimentalflag1",
+      "installed_manifest_sha256": "b050fbc04df5f4701a7508d5d1315e1fe29fb2da189fb05c88e426a0c4112a66",
+      "exit_code": 65,
+      "seconds": 10.38,
+      "log_sha256": "65af118c610b4fa4ff429edd7e6faa52912c807e0263d17d705762dfcbd6348e",
+      "tests": {
+        "result": "Failed",
+        "totalTestCount": 60,
+        "passedTests": 59,
+        "failedTests": 1,
+        "skippedTests": 0
+      },
+      "test_failures": [
+        {
+          "failureText": "Expectation failed: !capabilities.enrollmentSupported\ncapabilities.enrollmentSupported \u2192 false",
+          "targetName": "whitenoise-macTests",
+          "testIdentifier": 56,
+          "testIdentifierString": "NativeDeviceLinkingRuntimeTests/matchedRuntimeReportsVerificationWithoutAdvertisingEnrollment()",
+          "testIdentifierURL": "test://com.apple.xcode/whitenoise-mac/whitenoise-macTests/NativeDeviceLinkingRuntimeTests/matchedRuntimeReportsVerificationWithoutAdvertisingEnrollment()",
+          "testName": "matchedRuntimeReportsVerificationWithoutAdvertisingEnrollment()"
+        }
+      ]
+    },
+    {
+      "phase": "affected-v3",
+      "source_base": "0d00d59ef5dbeb249879e62290d1f6d7e6485dac",
+      "source_inputs": 438,
+      "input_manifest_sha256": "2a3f52e9a7c2b763b71e4abc108dae39932569b078b9ba9a03d9b84dda2d3eb0",
+      "profile": "local-3fab/experimentalflag1",
+      "installed_manifest_sha256": "b050fbc04df5f4701a7508d5d1315e1fe29fb2da189fb05c88e426a0c4112a66",
+      "exit_code": 0,
+      "seconds": 9.33,
+      "log_sha256": "8b64f5ff0d18bd8f86c5ecc923525f22dddf4bfd6a5104d827a262af2d1d6846",
+      "tests": {
+        "result": "Passed",
+        "totalTestCount": 60,
+        "passedTests": 60,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "test_failures": []
+    }
+  ],
+  "final_owned_hashes": {
+    "whitenoise-mac/Session/NativeDeviceLinkingApprovalScope.swift": "d6f89ed91475347f219889c5c01575f7ed029eac0a6cc8230aabc991c717cbdc",
+    "whitenoise-mac/Features/DeviceEnrollment/DeviceEnrollmentApprovalViewModel.swift": "8d76bb5036a8b1f2f752be53b3c20acf584d53f374e541a02a0340a8e3b7a112",
+    "whitenoise-macTests/DeviceEnrollmentApprovalReviewTests.swift": "c8f2b2f92909313e823c163a2a790d385606dd05bcf621d29b505b8f3aa4e241",
+    "whitenoise-macTests/NativeDeviceLinkingRuntimeTests.swift": "0d9152c56a1dc8d8fc62300d1013b3d58f579fd3b7ccc1463aff2153326c1068"
+  },
+  "counts": "Focused controls 7 test methods, 11 parameterized case executions; final affected 60 test methods. Repeated executions are not unique tests.",
+  "scope": "Original SDK approval scope forwards read-only review metadata with before/after lifetime checks; model binds explicit approval to exact reviewed revision and clears keys on retirement/stale review. Refresh never approves. Actual SessionState A-B-A/deactivation/account-exit, malformed review, SDK error, phase change and exact cleanup retry controls.",
+  "fixture_correction": "Affected-v2 59/60: previous e6 unavailable-capability assertion fails for qualified3fab. Changed only smoke-test name/expectation; application capability remains SDK-derived.",
+  "limits": "Generated-protocol native lifetime controls; not actual fresh SDK A/B/C application acceptance. Approval pane, iOS counterpart, full native PR and integrated final SDK remain pending. No development app installation/publishing or account data changes.",
+  "checks": "Scoped canonical swift-format strict and git diff --check pass."
+}

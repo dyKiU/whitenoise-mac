@@ -1249,6 +1249,26 @@ struct GroupsTests: WorkspaceTestSupport {
     }
 
     @MainActor
+    @Test func visibleContactRefreshAdoptsRemoteFollowChangesWithoutPublishing() async throws {
+        let account = desktopAccount()
+        let peer = String(repeating: "a", count: 64)
+        let runtime = FakeMarmotRuntime(accounts: [account])
+        let state = WorkspaceState(clientFactory: { runtime })
+        await state.bootstrap()
+        await state.showContactDetails(accountIdHex: peer, displayName: "Contact", pictureURL: nil)
+        #expect(state.contactFollowStatus(accountIdHex: peer) == .known(false))
+
+        runtime.installFollows(accountRef: account.label, follows: [peer])
+        await state.refreshFollowStatus(forContactIdHex: peer)
+        #expect(state.contactFollowStatus(accountIdHex: peer) == .known(true))
+
+        runtime.installFollows(accountRef: account.label, follows: [])
+        await state.refreshFollowStatus(forContactIdHex: peer)
+        #expect(state.contactFollowStatus(accountIdHex: peer) == .known(false))
+        #expect(runtime.followMutationCalls.isEmpty)
+    }
+
+    @MainActor
     @Test func failedFollowStatusRefreshKeepsTheKnownRelationship() async throws {
         // A failed refresh must not fail closed: showing "Follow" for someone this account
         // already follows invites a duplicate publish and misreports the relationship.
@@ -4849,6 +4869,13 @@ struct GroupsTests: WorkspaceTestSupport {
         state.chatsByAccount[accountId, default: []].append(existing)
         #expect(state.existingDirectChat(peerAccountIdHex: Self.bobAccountIdHex)?.id == "existing-dm")
 
+        // The local rows describe the chooser; the SDK supplies actual reuse policy.
+        runtime.existingDirectConversationsByPeer[Self.bobAccountIdHex.lowercased()] = .localMls(
+            .init(
+                groupIdHex: "existing-dm", reusable: true, lifecycleState: .stable,
+                selfMembership: .member, pendingConfirmation: false, leaveRequestPending: false,
+                disbanding: false, archived: false, activitySortAt: 1))
+
         state.showNewChat()
         await state.startDirectChat(with: Self.bobDraftRecipient(), reusingExisting: false)
 
@@ -4890,6 +4917,13 @@ struct GroupsTests: WorkspaceTestSupport {
             ]
         )
 
+        // The local rows describe the chooser; the SDK supplies actual reuse policy.
+        runtime.existingDirectConversationsByPeer[Self.bobAccountIdHex.lowercased()] = .localMls(
+            .init(
+                groupIdHex: "active-dm", reusable: true, lifecycleState: .stable,
+                selfMembership: .member, pendingConfirmation: false, leaveRequestPending: false,
+                disbanding: false, archived: false, activitySortAt: 1))
+
         await state.messageContact(Self.bobDraftRecipient())
 
         #expect(state.selection == .chat("active-dm"))
@@ -4920,6 +4954,13 @@ struct GroupsTests: WorkspaceTestSupport {
         let reused = try #require(state.existingDirectChat(peerAccountIdHex: peer))
         #expect(reused.id == "direct-group")
         #expect(reused.isArchived)
+
+        // The local rows describe the chooser; the SDK supplies actual reuse policy.
+        runtime.existingDirectConversationsByPeer[Self.bobAccountIdHex.lowercased()] = .localMls(
+            .init(
+                groupIdHex: "direct-group", reusable: true, lifecycleState: .stable,
+                selfMembership: .member, pendingConfirmation: false, leaveRequestPending: false,
+                disbanding: false, archived: true, activitySortAt: 1))
 
         await state.messageContact(
             NewChatRecipient(
@@ -4953,6 +4994,13 @@ struct GroupsTests: WorkspaceTestSupport {
         let accountId = try #require(state.activeAccountId)
         let peer = Self.bobAccountIdHex
         state.archivedChatsByAccount[accountId] = [Self.directChat("direct-group", peer: peer, updatedAt: .now)]
+
+        // The local rows describe the chooser; the SDK supplies actual reuse policy.
+        runtime.existingDirectConversationsByPeer[Self.bobAccountIdHex.lowercased()] = .localMls(
+            .init(
+                groupIdHex: "direct-group", reusable: true, lifecycleState: .stable,
+                selfMembership: .member, pendingConfirmation: false, leaveRequestPending: false,
+                disbanding: false, archived: true, activitySortAt: 1))
 
         await state.messageContact(
             NewChatRecipient(
@@ -5015,6 +5063,12 @@ struct GroupsTests: WorkspaceTestSupport {
         var archived = directGroup()
         archived.archived = true
         runtime.installGroups([archived])
+        // The chooser rows do not grant reuse: the actual SDK lookup owns it.
+        runtime.existingDirectConversationsByPeer[bobAccountIdHex.lowercased()] = .localMls(
+            .init(
+                groupIdHex: archived.groupIdHex, reusable: true, lifecycleState: .stable,
+                selfMembership: .member, pendingConfirmation: false, leaveRequestPending: false,
+                disbanding: false, archived: true, activitySortAt: 1))
         let state = WorkspaceState(clientFactory: { runtime })
 
         await state.bootstrap()
@@ -5288,6 +5342,20 @@ struct GroupsTests: WorkspaceTestSupport {
         await state.createNewChat()
 
         #expect(runtime.createdGroupMemberRefs.isEmpty)
+        #expect(runtime.createGroupAttempts.isEmpty)
+        #expect(runtime.promoteAdminDetailedCallCount == 0)
+        #expect(state.selection == .chat("direct-group"))
+        #expect(!state.isNewChatComposerVisible)
+
+        state.showNewChat()
+        await state.startDirectChat(
+            with: NewChatRecipient(
+                sourceQuery: "npub1alice", memberRef: "npub1alice", accountIdHex: aliceId,
+                npub: "npub1alice", displayName: "Alice", pictureURL: nil))
+
+        #expect(runtime.createdGroupMemberRefs.isEmpty)
+        #expect(runtime.createGroupAttempts.isEmpty)
+        #expect(runtime.promoteAdminDetailedCallCount == 0)
         #expect(state.selection == .chat("direct-group"))
         #expect(!state.isNewChatComposerVisible)
     }
@@ -5646,7 +5714,7 @@ struct GroupsTests: WorkspaceTestSupport {
         await state.createNewChat()
 
         #expect(runtime.createdGroupMemberRefs == [aliceId])
-        #expect(runtime.createdGroupName == "Alice NIP-05")
+        #expect(runtime.createdGroupName == "")
         #expect(state.selection == .chat("created-group"))
     }
 

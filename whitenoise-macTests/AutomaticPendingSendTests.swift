@@ -1,0 +1,253 @@
+import Foundation
+import MarmotKit
+import Testing
+
+@testable import whitenoise_mac
+
+#if WN_EXPERIMENTAL_DEVICE_SYNC
+    nonisolated private final class PendingSendState: @unchecked Sendable {
+        // This bounded test gate and observations are serialized by one lock.
+        private let lock = NSLock()
+        private var value: LocalSendStatusFfi = .queued
+        private var calls = 0
+        private var blocked = false
+        private var entered = false
+        private let release = DispatchSemaphore(value: 0)
+        let eventId = String(repeating: "a", count: 64)
+        var callCount: Int { lock.withLock { calls } }
+        var isWaiting: Bool { lock.withLock { entered } }
+        func reject() { lock.withLock { value = .rejected } }
+        func holdNextStatus() { lock.withLock { blocked = true } }
+        func finishStatus() { release.signal() }
+        func status() throws -> LocalSendStatusFfi {
+            let held = lock.withLock {
+                calls += 1
+                entered = blocked
+                return blocked
+            }
+            if held, release.wait(timeout: .now() + 5) != .success { throw CancellationError() }
+            return lock.withLock { value }
+        }
+    }
+
+    nonisolated private final class PendingConversation: AccountConversationObserving, @unchecked Sendable {
+        private let lock = NSLock()
+        private var pending: CheckedContinuation<AccountConversationWindowSnapshotFfi?, Error>?
+        private var queue: [AccountConversationWindowSnapshotFfi] = []
+        private var cancelled = false
+        private let initial: AccountConversationWindowSnapshotFfi
+        init(_ initial: AccountConversationWindowSnapshotFfi) { self.initial = initial }
+        func snapshot() -> AccountConversationWindowSnapshotFfi? { initial }
+        func next() async throws -> AccountConversationWindowSnapshotFfi? {
+            try await withCheckedThrowingContinuation { reply in
+                lock.lock()
+                if cancelled {
+                    lock.unlock()
+                    reply.resume(returning: nil)
+                } else if !queue.isEmpty {
+                    let value = queue.removeFirst()
+                    lock.unlock()
+                    reply.resume(returning: value)
+                } else {
+                    pending = reply
+                    lock.unlock()
+                }
+            }
+        }
+        func emit(_ value: AccountConversationWindowSnapshotFfi) {
+            let reply = lock.withLock {
+                let reply = pending
+                pending = nil
+                if reply == nil { queue.append(value) }
+                return reply
+            }
+            reply?.resume(returning: value)
+        }
+        func olderPage(sequence: UInt64, before: PairedChatMessageCursorFfi?) async throws
+            -> AccountConversationWindowSnapshotFfi
+        { throw CancellationError() }
+        func cancel() {
+            let reply = lock.withLock {
+                cancelled = true
+                let reply = pending
+                pending = nil
+                return reply
+            }
+            reply?.resume(returning: nil)
+        }
+    }
+
+    nonisolated private struct PendingFactory: AccountChatObserving {
+        let original: PendingConversation
+        func openAccountChatList(accountRef: String, initialRows: UInt32) async throws -> any AccountChatListObserving {
+            throw CancellationError()
+        }
+        func openAccountConversation(accountRef: String, groupIdHex: String, initialRows: UInt32) async throws
+            -> any AccountConversationObserving
+        { original }
+    }
+
+    @MainActor @Suite struct AutomaticPendingSendTests {
+        private let group = "0102"
+        private func snapshot(sequence: UInt64, eventId: String? = nil) -> AccountConversationWindowSnapshotFfi {
+            let source = PairedChatSourceFfi(
+                deviceHex: String(repeating: "b", count: 64), policyDigestHex: String(repeating: "c", count: 64),
+                protectedGeneration: 1, sourceEpoch: 1, sourceSequence: sequence,
+                sourceDigestHex: String(repeating: "d", count: 64))
+            let header = PairedChatSummaryFfi(groupIdHex: group, name: "Synthetic", description: "", source: source)
+            let rows: [AccountConversationRowFfi] =
+                eventId.map { id in
+                    [
+                        .pairedSource(
+                            row: PairedChatMessageFfi(
+                                kind: 9, canonicalChat: true, messageIdHex: id,
+                                authorHex: String(repeating: "e", count: 64),
+                                createdAt: 1, expiresAt: nil, deleted: false, content: "Synthetic message",
+                                contentTokens: MarkdownDocumentFfi(
+                                    blocks: [], truncated: false, blankLinesBefore: Data()),
+                                tags: [], mediaAttachments: [], source: source))
+                    ]
+                } ?? []
+            return AccountConversationWindowSnapshotFfi(
+                generation: "synthetic-generation", sequence: sequence, header: .pairedSource(header: header),
+                rows: rows, nextBefore: nil)
+        }
+        private func waitFor(_ predicate: () -> Bool) async -> Bool {
+            let clock = ContinuousClock()
+            let deadline = clock.now.advanced(by: .seconds(3))
+            while clock.now < deadline {
+                if predicate() { return true }
+                do { try await Task.sleep(for: .milliseconds(1)) } catch { return false }
+            }
+            return predicate()
+        }
+        private func runtimeWithoutStorage() -> FakeMarmotRuntime {
+            // These fakes never open storage; avoid sweeping unrelated on-disk test roots.
+            let storagePath = FileManager.default.temporaryDirectory
+                .appendingPathComponent("automatic-pending-\(UUID().uuidString)", isDirectory: true).path
+            return FakeMarmotRuntime(accounts: [], storageRoot: .explicit(storagePath))
+        }
+
+        private func ready() async throws -> (AccountConversationViewModel, PendingConversation, PendingSendState) {
+            let original = PendingConversation(snapshot(sequence: 1))
+            let state = PendingSendState()
+            let runtime = runtimeWithoutStorage()
+            runtime.localSendAcceptanceForToken = { token in .init(clientToken: token, messageIdHex: state.eventId) }
+            runtime.localSendStatusForToken = { _ in try state.status() }
+            let model = AccountConversationViewModel(
+                accountRef: "synthetic-account", groupIdHex: group, runtime: runtime,
+                observations: PendingFactory(original: original))
+            model.start()
+            #expect(await waitFor { model.snapshot != nil })
+            return (model, original, state)
+        }
+
+        @Test func nativeMarkdownProjectionClearsOnDeletionAndAccountRetirement() async throws {
+            let (model, original, state) = try await ready()
+            defer { model.invalidate() }
+            var replacement = snapshot(sequence: 2, eventId: state.eventId)
+            guard case .pairedSource(var message) = replacement.rows[0] else {
+                Issue.record("Expected source-attested synthetic row")
+                return
+            }
+            message.contentTokens = .init(
+                blocks: [.paragraph(inlines: [.text(content: "Synthetic rendered text")])],
+                truncated: false, blankLinesBefore: Data())
+            replacement.rows = [.pairedSource(row: message)]
+            original.emit(replacement)
+            #expect(await waitFor { model.markdownByMessageId[state.eventId] != nil })
+            replacement.sequence = 3
+            message.deleted = true
+            replacement.rows = [.pairedSource(row: message)]
+            original.emit(replacement)
+            #expect(await waitFor { model.snapshot?.sequence == 3 })
+            #expect(model.markdownByMessageId.isEmpty)
+            replacement.sequence = 4
+            message.deleted = false
+            replacement.rows = [.pairedSource(row: message)]
+            original.emit(replacement)
+            #expect(await waitFor { model.markdownByMessageId[state.eventId] != nil })
+            model.invalidate()
+            #expect(model.markdownByMessageId.isEmpty)
+        }
+
+        @Test func observedCanonicalRowBeforeAdmissionReturnsDoesNotLeaveDuplicatePendingBubble() async throws {
+            let original = PendingConversation(snapshot(sequence: 1))
+            let state = PendingSendState()
+            let runtime = runtimeWithoutStorage()
+            runtime.localSendAcceptanceForToken = { token in .init(clientToken: token, messageIdHex: state.eventId) }
+            runtime.localSendStatusForToken = { _ in try state.status() }
+            runtime.messageActionGateEnabled = true
+            let model = AccountConversationViewModel(
+                accountRef: "synthetic-account", groupIdHex: group, runtime: runtime,
+                observations: PendingFactory(original: original))
+            model.start()
+            defer {
+                runtime.releaseMessageActionGate()
+                model.invalidate()
+            }
+            #expect(await waitFor { model.snapshot != nil })
+            let sending = Task { try await model.sendText("Synthetic message") }
+            #expect(await waitFor { runtime.didReachMessageActionGate })
+            let token = try #require(model.pendingTexts.keys.first)
+            #expect(model.pendingTexts[token]?.acceptedMessageIdHex == nil)
+            original.emit(snapshot(sequence: 2, eventId: state.eventId))
+            #expect(await waitFor { model.snapshot?.sequence == 2 })
+            #expect(model.pairedMessages.map(\.messageIdHex) == [state.eventId])
+            runtime.releaseMessageActionGate()
+            let acceptance = try await sending.value
+            #expect(acceptance.clientToken == token)
+            #expect(acceptance.messageIdHex == state.eventId)
+            await model.refreshPendingStatus()
+            #expect(model.pendingTexts.isEmpty)
+            #expect(model.pairedMessages.map(\.messageIdHex) == [acceptance.messageIdHex])
+        }
+
+        @Test func knownCanonicalImportReplacesQueuedBubbleWithoutClaimingSentBeforeReceipt() async throws {
+            let (model, original, state) = try await ready()
+            defer { model.invalidate() }
+            let acceptance = try await model.sendText("Synthetic message")
+            #expect(acceptance.messageIdHex == state.eventId)
+            await model.refreshPendingStatus()
+            #expect(model.pendingTexts.count == 1)
+            if case .queued? = model.pendingTexts.values.first?.status {} else { Issue.record("Expected queued") }
+            original.emit(snapshot(sequence: 2, eventId: state.eventId))
+            #expect(await waitFor { model.snapshot?.sequence == 2 })
+            #expect(model.pendingTexts.isEmpty)
+            #expect(model.pairedMessages.map(\.messageIdHex) == [state.eventId])
+        }
+
+        @Test func newerOriginalWindowRefreshesRejectedTokenWithoutManualStatusAction() async throws {
+            let (model, original, state) = try await ready()
+            defer { model.invalidate() }
+            _ = try await model.sendText("Synthetic message")
+            await model.refreshPendingStatus()
+            let calls = state.callCount
+            state.reject()
+            original.emit(snapshot(sequence: 2))
+            #expect(await waitFor { model.snapshot?.sequence == 2 })
+            #expect(await waitFor { state.callCount > calls })
+            #expect(
+                await waitFor {
+                    if case .rejected? = model.pendingTexts.values.first?.status { return true }
+                    return false
+                })
+            #expect(model.pairedMessages.isEmpty)
+        }
+
+        @Test func lateStatusCannotRepopulateRetiredAccountOwner() async throws {
+            let (model, _, state) = try await ready()
+            _ = try await model.sendText("Synthetic message")
+            state.holdNextStatus()
+            let refresh = Task { await model.refreshPendingStatus() }
+            #expect(await waitFor { state.isWaiting })
+            model.invalidate()
+            state.reject()
+            state.finishStatus()
+            await refresh.value
+            #expect(model.snapshot == nil)
+            #expect(model.pendingTexts.isEmpty)
+            #expect(model.error == nil)
+        }
+    }
+#endif

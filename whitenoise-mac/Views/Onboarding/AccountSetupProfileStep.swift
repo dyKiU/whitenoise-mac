@@ -264,7 +264,7 @@ struct AccountSetupProfileForm: View {
     let model = OnboardingCoordinator.preview(steps: [
         OnboardingStepStateFfi(
             step: .profile, status: .retryableFailure,
-            findings: [.init(issue: .timedOut, endpoint: "wss://relay.example.com")],
+            findings: [OnboardingCoordinator.previewFinding(issue: .timedOut, endpoint: "wss://relay.example.com")],
             actions: [.retry, .continueWithout], checkedAt: nil
         )
     ])
