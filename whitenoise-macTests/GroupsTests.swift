@@ -5612,7 +5612,7 @@ struct GroupsTests: WorkspaceTestSupport {
         #expect(allowed?.url?.absoluteString == "https://relay.example.com/x")
     }
 
-    @Test func nip05ResolverStreamingCapRejectsOversizedBodyWithoutContentLength() async {
+    @MainActor @Test func nip05ResolverStreamingCapRejectsOversizedBodyWithoutContentLength() async {
         // No advertised length, so the streaming cap (not the pre-check) is what must fire.
         NIP05URLProtocolStub.configure(body: Data(repeating: 0x20, count: 512 * 1024), sendContentLength: false)
         let config = URLSessionConfiguration.ephemeral
@@ -5627,7 +5627,7 @@ struct GroupsTests: WorkspaceTestSupport {
         }
     }
 
-    @Test func nip05ResolverPreCheckRejectsOversizedContentLength() async {
+    @MainActor @Test func nip05ResolverPreCheckRejectsOversizedContentLength() async {
         NIP05URLProtocolStub.configure(body: Data(repeating: 0x20, count: 512 * 1024), sendContentLength: true)
         let config = URLSessionConfiguration.ephemeral
         config.protocolClasses = [NIP05URLProtocolStub.self]
@@ -5641,7 +5641,7 @@ struct GroupsTests: WorkspaceTestSupport {
         }
     }
 
-    @Test func nip05ResolverStreamsAndDecodesSmallBody() async throws {
+    @MainActor @Test func nip05ResolverStreamsAndDecodesSmallBody() async throws {
         let hex = String(repeating: "a", count: 64)
         NIP05URLProtocolStub.configure(body: Data("{\"names\":{\"alyce\":\"\(hex)\"}}".utf8), sendContentLength: true)
         let config = URLSessionConfiguration.ephemeral
