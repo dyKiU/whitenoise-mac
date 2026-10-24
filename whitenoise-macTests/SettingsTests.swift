@@ -1707,14 +1707,14 @@ struct SettingsTests: WorkspaceTestSupport {
                 lud16: nil
             )
         )
-        var buildConfig = telemetryBuildConfig(environment: "production")
+        let buildConfig = MainActorTelemetryBuildConfig(telemetryBuildConfig(environment: "production"))
         let state = WorkspaceState(
-            telemetryBuildConfigProvider: { buildConfig },
+            telemetryBuildConfigProvider: { buildConfig.value },
             clientFactory: { runtime }
         )
         await state.bootstrap()
 
-        buildConfig = telemetryBuildConfig(environment: "staging")
+        buildConfig.value = telemetryBuildConfig(environment: "staging")
         runtime.productAnalyticsRuntimeConfigGateEnabled = true
         async let stalePrimaryConfiguration: Void = state.configureObservabilityRuntime()
         while !runtime.didReachProductAnalyticsRuntimeConfigGate {
@@ -3517,5 +3517,14 @@ struct SettingsTests: WorkspaceTestSupport {
         #expect(throws: DiagnosticLogExport.ExportError.self) {
             try DiagnosticLogExport.snapshot(file: file)
         }
+    }
+}
+
+@MainActor
+private final class MainActorTelemetryBuildConfig {
+    var value: TelemetryBuildConfig
+
+    init(_ value: TelemetryBuildConfig) {
+        self.value = value
     }
 }
