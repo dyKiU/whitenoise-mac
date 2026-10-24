@@ -133,7 +133,7 @@ final class NIP05RedirectPolicy: NSObject, URLSessionTaskDelegate {
     }
 }
 
-struct NIP05Identifier: Equatable {
+nonisolated struct NIP05Identifier: Equatable {
     /// The spec-legal local part, accepted case-insensitively and stored lowercased. Anything
     /// wider (`:`, `/`, …) lets a full profile ref or URL masquerade as a name.
     private static let localPartAlphabet = Set("abcdefghijklmnopqrstuvwxyz0123456789-_.")

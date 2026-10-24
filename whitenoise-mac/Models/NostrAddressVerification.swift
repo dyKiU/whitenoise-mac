@@ -19,7 +19,7 @@ import Foundation
 /// has `NIP05Resolver`, so the seal means the thing it looks like it means: the domain's
 /// `/.well-known/nostr.json` maps that name to *this* account's public key. An address that is
 /// merely typed in and published is `.unverified`, and draws no seal.
-enum NostrAddressVerification: Equatable, Sendable {
+nonisolated enum NostrAddressVerification: Equatable, Sendable {
     /// Nothing to verify: the profile carries no address, or what it carries is not address-shaped.
     case none
     /// The well-known document is being fetched.

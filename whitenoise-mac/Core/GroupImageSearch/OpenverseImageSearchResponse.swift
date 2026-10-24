@@ -1,5 +1,5 @@
 import Foundation
 
-struct OpenverseImageSearchResponse: Decodable {
+nonisolated struct OpenverseImageSearchResponse: Decodable {
     let results: [OpenverseImageRecord]
 }

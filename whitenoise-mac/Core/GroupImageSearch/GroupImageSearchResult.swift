@@ -1,6 +1,6 @@
 import Foundation
 
-struct GroupImageSearchResult: Identifiable, Hashable, Sendable {
+nonisolated struct GroupImageSearchResult: Identifiable, Hashable, Sendable {
     let id: String
     let title: String
     let imageURL: String

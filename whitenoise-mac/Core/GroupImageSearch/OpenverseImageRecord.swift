@@ -1,6 +1,6 @@
 import Foundation
 
-struct OpenverseImageRecord: Decodable {
+nonisolated struct OpenverseImageRecord: Decodable {
     let id: String
     let title: String?
     let url: String?
