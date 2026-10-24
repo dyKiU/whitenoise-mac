@@ -473,7 +473,7 @@ nonisolated enum ConversationTranscriptExport {
 
     private static func uint64(from data: Data) -> UInt64 {
         var value: UInt64 = 0
-        withUnsafeMutableBytes(of: &value) { destination in
+        _ = withUnsafeMutableBytes(of: &value) { destination in
             data.copyBytes(to: destination)
         }
         return UInt64(bigEndian: value)

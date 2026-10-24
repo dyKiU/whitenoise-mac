@@ -425,7 +425,7 @@ extension WorkspaceState {
         // resolves already-archived chats.
         let wasActive = chatLookupByAccount[account.id]?[groupIdHex] != nil
         let current = chatItem(accountId: account.id, chatId: groupIdHex)
-        removeChatFromList(chatId: groupIdHex, forAccountId: account.id)
+        _ = removeChatFromList(chatId: groupIdHex, forAccountId: account.id)
 
         var chat = baseChatItem(from: row, account: account)
         // Preserve enrichment-resolved metadata across the archive move — when

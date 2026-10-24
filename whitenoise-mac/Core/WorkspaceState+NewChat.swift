@@ -825,7 +825,7 @@ extension WorkspaceState {
 
         if retentionSecs > 0 {
             do {
-                try await client.updateMessageRetention(
+                _ = try await client.updateMessageRetention(
                     accountRef: activeAccount.accountRef,
                     groupIdHex: groupIdHex,
                     disappearingMessageSecs: retentionSecs
