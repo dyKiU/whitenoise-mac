@@ -1,12 +1,12 @@
 import Foundation
 import MarmotKit
 
-struct DiagnosticLogSnapshot: Sendable {
+nonisolated struct DiagnosticLogSnapshot: Sendable {
     let fileName: String
     let data: Data
 }
 
-enum DiagnosticLogExport {
+nonisolated enum DiagnosticLogExport {
     enum ExportError: Error {
         case noLogs
         case fileChangedDuringRead
