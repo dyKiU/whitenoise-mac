@@ -171,11 +171,11 @@ import XCTest
         }
         private func render(model: SynchronizedHistoryViewModel, fixture: MacImportedHistoryFixture) async throws {
             var lifetime: MacHistoryGraphLifetime? = .init()
-            weak var retiredGraph = lifetime
+            weak let retiredGraph = lifetime
             var host: NSHostingView<AnyView>? = NSHostingView(
                 rootView: AnyView(MacHistoryHostedRoot(model: model, lifetime: try XCTUnwrap(lifetime))))
             lifetime = nil
-            weak var retiredHost = host
+            weak let retiredHost = host
             let window = NSWindow(
                 contentRect: NSRect(x: 0, y: 0, width: 800, height: 660),
                 styleMask: [.titled, .closable], backing: .buffered, defer: false)
