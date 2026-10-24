@@ -297,11 +297,11 @@ enum MessagesLayout {
     static let accountRailAvatarFrameSize: CGFloat = 58
     /// Room a top-of-window header leaves for the traffic lights, which float over the content
     /// in a `.hiddenTitleBar` window.
-    static let sidebarTitlebarTopPadding: CGFloat = 42
+    nonisolated static let sidebarTitlebarTopPadding: CGFloat = 42
     /// The same header once a window-level notice band holds the top edge. The band contains the
     /// traffic lights, so a header below it needs only its own breathing room — keeping the full
     /// clearance would open 42pt of dead air under the band.
-    static let sidebarTitlebarPaddingBelowNoticeBand: CGFloat = 12
+    nonisolated static let sidebarTitlebarPaddingBelowNoticeBand: CGFloat = 12
     /// Least height at which a full-width top notice still covers the traffic lights rather than
     /// being crossed by them: measured with `standardWindowButton`, the buttons run from 9pt to
     /// 23pt below the window's top edge, so this leaves 15pt under them. A *minimum* — the

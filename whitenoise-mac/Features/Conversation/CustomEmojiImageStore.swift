@@ -37,7 +37,7 @@ final class CustomEmojiImageStore {
     /// Waits before each retry of a failed download; once they are spent the image is given up.
     /// The attachment has no tile or Download action of its own (it draws as text), so this is
     /// its only way back from a timeout or a relay hiccup.
-    static let defaultRetryDelays: [Duration] = [.seconds(15), .seconds(60), .seconds(240)]
+    nonisolated static let defaultRetryDelays: [Duration] = [.seconds(15), .seconds(60), .seconds(240)]
 
     @ObservationIgnored private let accountId: String
     @ObservationIgnored private let accountRef: String

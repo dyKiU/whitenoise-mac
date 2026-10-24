@@ -93,7 +93,7 @@ final class WorkspaceState {
     /// a note-to-self chat is the ordinary case. Session-scoped, purely to avoid rescanning.
     @ObservationIgnored var unrecoverableDirectPeerGroupIds = Set<String>()
     /// How far back to look for the newest message from someone other than this account.
-    static let directPeerRecoveryScanLimit: UInt32 = 200
+    nonisolated static let directPeerRecoveryScanLimit: UInt32 = 200
     @ObservationIgnored var chatLookupByAccount: [String: [String: ChatItem]] = [:]
     @ObservationIgnored var chatIndexByAccount: [String: [String: Int]] = [:]
     @ObservationIgnored var chatListGenerationByAccount: [String: Int] = [:]
