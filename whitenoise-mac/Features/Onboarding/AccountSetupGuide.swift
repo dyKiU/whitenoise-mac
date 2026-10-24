@@ -196,8 +196,8 @@ struct AccountSetupGuide: Equatable {
         case .otherInstallationPossible: "Another installation may exist."
         case .discoveryIncomplete: "Some discovery sources could not be checked."
         #if WN_CURRENT_SDK_API
-        // Only the declared-route query completed; this is not publication or readiness evidence.
-        case .inspectionCompleted: "Done"
+            // Only the declared-route query completed; this is not publication or readiness evidence.
+            case .inspectionCompleted: "Done"
         #endif
         }
     }
