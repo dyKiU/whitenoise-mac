@@ -50,7 +50,7 @@ enum RelayRole: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    var label: String {
+    nonisolated var label: String {
         switch self {
         case .profile: L10n.string("Profile")
         case .inbox: L10n.string("Inbox")
@@ -185,7 +185,7 @@ extension RelayURLValidator {
     }
 }
 
-extension RelaySettingsSnapshot {
+@MainActor extension RelaySettingsSnapshot {
     /// The published set for a role — what the core says actually reached the network, rather
     /// than what the account has declared.
     func publishedRelays(for role: RelayRole) -> [String] {

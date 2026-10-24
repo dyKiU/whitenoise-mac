@@ -2186,7 +2186,7 @@ extension ProfileDraft {
 }
 
 extension RelaySettingsSnapshot {
-    init(lists: AccountRelayListsFfi) {
+    nonisolated init(lists: AccountRelayListsFfi) {
         self.init(
             nip65: lists.nip65.relays.isEmpty ? lists.defaultRelays : lists.nip65.relays,
             inbox: lists.inbox.relays.isEmpty ? lists.defaultRelays : lists.inbox.relays,
@@ -2204,7 +2204,7 @@ extension MissingRelayListKindFfi {
     /// User-facing name for a relay list the account hasn't published yet, in the same
     /// vocabulary the Relays page names the list's role in — `NIP-65` is the kind number, not
     /// something a reader of that page has been shown.
-    var displayLabel: String {
+    nonisolated var displayLabel: String {
         switch self {
         case .nip65: return RelayRole.profile.label
         case .inbox: return RelayRole.inbox.label

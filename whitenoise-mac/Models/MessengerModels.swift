@@ -3675,7 +3675,7 @@ struct ProfileDraft: Equatable {
     }
 }
 
-struct RelaySettingsSnapshot: Equatable {
+nonisolated struct RelaySettingsSnapshot: Equatable {
     var nip65: [String]
     var inbox: [String]
     var defaultRelays: [String]
@@ -3685,7 +3685,7 @@ struct RelaySettingsSnapshot: Equatable {
     var missing: [String]
     var isComplete: Bool
 
-    static let defaults = RelaySettingsSnapshot(
+    @MainActor static let defaults = RelaySettingsSnapshot(
         nip65: RelayRole.profile.defaultRelays,
         inbox: RelayRole.inbox.defaultRelays,
         // The account's publish set mirrors its NIP-65 list, so a profile published before the
