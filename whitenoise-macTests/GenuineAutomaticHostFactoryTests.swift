@@ -447,7 +447,7 @@
             return (group, text)
         }
 
-        private func factorySemanticObservation(
+        nonisolated private func factorySemanticObservation(
             stage: String, cause: String, bootstrap: String,
             rosterReady: Bool, scannerFresh: Bool, historiesCommitted: Bool, missingChatsAbsent: Bool
         ) {
