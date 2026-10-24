@@ -77,6 +77,28 @@ import Testing
         )
     }
 
+    #if WN_CURRENT_SDK_API
+    @Test func aCompletedInspectionDoesNotCompleteTheStepOrGrantReadiness() {
+        let finding = OnboardingFindingFfi(
+            issue: .inspectionCompleted, endpoint: "wss://relay.example.com",
+            context: .declaredRoute, purpose: .directoryQuery, outcome: .success,
+            declaredCapability: .read, actions: [], observedRevision: nil
+        )
+        let step = F.step(.relays, .retryableFailure, findings: [finding], actions: [.retry])
+        let snapshot = F.snapshot(steps: [step])
+        let guide = AccountSetupGuide(snapshot: snapshot, recoveryRequired: false)
+
+        #expect(AccountSetupGuide.issueKey(finding.issue) == "Done")
+        #expect(guide.steps == [step])
+        #expect(guide.phase == .attention(step))
+        #expect(guide.reviewStep == .relays)
+        #expect(AccountSetupGuide.checkState(step) == .requiredFix)
+        #expect(snapshot.ready == false)
+        #expect(step.status == .retryableFailure)
+        #expect(step.actions == [.retry])
+    }
+    #endif
+
     // MARK: - Profile step
 
     @Test func anEditableProfileOffersTheFormSaveAndNotNow() {
