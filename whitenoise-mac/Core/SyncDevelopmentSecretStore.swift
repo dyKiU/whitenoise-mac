@@ -1,4 +1,5 @@
 import Foundation
+import LocalAuthentication
 import MarmotKit
 import Security
 
@@ -64,12 +65,14 @@ nonisolated final class SyncDevelopmentSecretStore: SecretStore {
         try MarmotAccountKeychain.purgeAllAccountKeys(service: service)
     }
 
-    private func accountQuery(_ accountIdHex: String) -> [String: Any] {
-        [
+    func accountQuery(_ accountIdHex: String) -> [String: Any] {
+        let context = LAContext()
+        context.interactionNotAllowed = true
+        return [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: accountIdHex,
-            kSecUseAuthenticationUI as String: kSecUseAuthenticationUIFail,
+            kSecUseAuthenticationContext as String: context,
         ]
     }
 

@@ -1,4 +1,6 @@
 import Foundation
+import LocalAuthentication
+import Security
 import Testing
 
 @testable import whitenoise_mac
@@ -6,6 +8,33 @@ import Testing
 @Suite struct SyncDevelopmentSecretStoreTests {
     private func isolatedStore() -> SyncDevelopmentSecretStore {
         SyncDevelopmentSecretStore(service: "dev.ipf.whitenoise.tests.\(UUID().uuidString)")
+    }
+
+    @MainActor
+    @Test func accountQueriesUseFreshNoninteractiveAuthenticationContexts() throws {
+        let store = isolatedStore()
+        let first = store.accountQuery("synthetic-account")
+        let second = store.accountQuery("synthetic-account")
+        let other = store.accountQuery("other-synthetic-account")
+        let firstContext = try #require(first[kSecUseAuthenticationContext as String] as? LAContext)
+        let secondContext = try #require(second[kSecUseAuthenticationContext as String] as? LAContext)
+        let otherContext = try #require(other[kSecUseAuthenticationContext as String] as? LAContext)
+        #expect(firstContext.interactionNotAllowed)
+        #expect(secondContext.interactionNotAllowed)
+        #expect(otherContext.interactionNotAllowed)
+        #expect(firstContext !== secondContext && firstContext !== otherContext && secondContext !== otherContext)
+        let expectedKeys = Set([
+            kSecClass as String, kSecAttrService as String, kSecAttrAccount as String,
+            kSecUseAuthenticationContext as String,
+        ])
+        for query in [first, second, other] {
+            #expect(Set(query.keys) == expectedKeys)
+            #expect((query[kSecAttrService as String] as? String) == store.service)
+            #expect((query[kSecClass as String] as? String) == (kSecClassGenericPassword as String))
+        }
+        #expect((first[kSecAttrAccount as String] as? String) == "synthetic-account")
+        #expect((second[kSecAttrAccount as String] as? String) == "synthetic-account")
+        #expect((other[kSecAttrAccount as String] as? String) == "other-synthetic-account")
     }
 
     @Test func credentialReopensByAccountIdentityAfterLabelChange() throws {
