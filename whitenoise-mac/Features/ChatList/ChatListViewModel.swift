@@ -156,7 +156,7 @@ final class ChatListViewModel {
     func setVisibleWindowAnchor(groupIdHex: String) {
         guard let snapshot = windowSnapshot,
             snapshot.rows.contains(where: { $0.row.groupIdHex == groupIdHex }),
-            let windowSubscription
+            windowSubscription != nil
         else { return }
         if case .retained(let current, _) = snapshot.anchor, current == groupIdHex { return }
         enqueueWindowCommand { subscription, sequence in
