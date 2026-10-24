@@ -72,6 +72,27 @@ final class OnboardingCoordinator {
         return model
     }
 
+    /// Builds display/test findings for preview snapshots, whose coordinator has no runtime.
+    nonisolated static func previewFinding(
+        issue: OnboardingIssueFfi,
+        endpoint: String?
+    ) -> OnboardingFindingFfi {
+        #if WN_CURRENT_SDK_API
+            OnboardingFindingFfi(
+                issue: issue,
+                endpoint: endpoint,
+                context: .unknown,
+                purpose: .unknown,
+                outcome: .unknown,
+                declaredCapability: .none,
+                actions: [],
+                observedRevision: nil
+            )
+        #else
+            OnboardingFindingFfi(issue: issue, endpoint: endpoint)
+        #endif
+    }
+
     /// Starts a new session on the checkpoint, on the checklist: every caller — Try Again,
     /// Cancel, Recover — begins again from the top, so no step's screen survives into it.
     func start() {

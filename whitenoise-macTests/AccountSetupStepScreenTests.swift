@@ -40,7 +40,7 @@ import Testing
             .profile,
             [
                 F.step(
-                    .profile, .retryableFailure, findings: [.init(issue: .timedOut, endpoint: nil)],
+                    .profile, .retryableFailure, findings: [F.finding(issue: .timedOut, endpoint: nil)],
                     actions: [.retry, .continueWithout]
                 )
             ]
@@ -61,7 +61,7 @@ import Testing
             .relays,
             [
                 F.step(
-                    .relays, .needsInput, findings: [.init(issue: .missing, endpoint: nil)],
+                    .relays, .needsInput, findings: [F.finding(issue: .missing, endpoint: nil)],
                     actions: [.useRecommendedRelays, .editRelays, .editDiscoveryRelays, .retry]
                 )
             ]
@@ -78,7 +78,7 @@ import Testing
             .relays,
             [
                 F.step(
-                    .relays, .needsInput, findings: [.init(issue: .noUsableRoute, endpoint: "wss://a.example")],
+                    .relays, .needsInput, findings: [F.finding(issue: .noUsableRoute, endpoint: "wss://a.example")],
                     actions: [.editRelays, .editDiscoveryRelays]
                 )
             ]
@@ -107,7 +107,7 @@ import Testing
             .singleDevice,
             [
                 F.step(
-                    .singleDevice, .retryableFailure, findings: [.init(issue: .discoveryIncomplete, endpoint: nil)],
+                    .singleDevice, .retryableFailure, findings: [F.finding(issue: .discoveryIncomplete, endpoint: nil)],
                     actions: [.retry]
                 )
             ],
@@ -120,7 +120,7 @@ import Testing
             .keyPackage,
             [
                 F.step(
-                    .keyPackage, .retryableFailure, findings: [.init(issue: .publicationFailed, endpoint: nil)],
+                    .keyPackage, .retryableFailure, findings: [F.finding(issue: .publicationFailed, endpoint: nil)],
                     actions: [.retry]
                 )
             ]
@@ -130,7 +130,7 @@ import Testing
             .follows,
             [
                 F.step(
-                    .follows, .retryableFailure, findings: [.init(issue: .unreachable, endpoint: "wss://a.example")],
+                    .follows, .retryableFailure, findings: [F.finding(issue: .unreachable, endpoint: "wss://a.example")],
                     actions: [.retry, .continueWithout]
                 )
             ]
