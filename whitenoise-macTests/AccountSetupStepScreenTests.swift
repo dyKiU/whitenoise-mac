@@ -130,7 +130,8 @@ import Testing
             .follows,
             [
                 F.step(
-                    .follows, .retryableFailure, findings: [F.finding(issue: .unreachable, endpoint: "wss://a.example")],
+                    .follows, .retryableFailure,
+                    findings: [F.finding(issue: .unreachable, endpoint: "wss://a.example")],
                     actions: [.retry, .continueWithout]
                 )
             ]

@@ -518,7 +518,8 @@ struct AccountSetupFollowsStep: View {
     let model = OnboardingCoordinator.preview(steps: [
         OnboardingStepStateFfi(
             step: .keyPackage, status: .retryableFailure,
-            findings: [OnboardingCoordinator.previewFinding(issue: .publicationFailed, endpoint: nil)], actions: [.retry], checkedAt: nil
+            findings: [OnboardingCoordinator.previewFinding(issue: .publicationFailed, endpoint: nil)],
+            actions: [.retry], checkedAt: nil
         )
     ])
     AccountSetupStepScreen(model: model, step: .keyPackage)
