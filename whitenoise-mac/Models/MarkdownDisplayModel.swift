@@ -222,6 +222,9 @@ nonisolated enum MarkdownDisplayBlock {
             self = .table(header: displayHeader, rows: displayRows)
         case .mathBlock(let content):
             self = .mathBlock(PeerDisplayText.strippingBidiControls(content))
+        case .details:
+            // Preserve the existing empty fallback for unsupported details blocks.
+            self = .paragraph(AttributedString())
         @unknown default:
             self = .paragraph(AttributedString())
         }
