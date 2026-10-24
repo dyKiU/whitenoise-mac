@@ -543,7 +543,7 @@ extension WorkspaceState {
         guard !cachedPictures.isEmpty || !needsPicture.isEmpty || !needsNpub.isEmpty else { return }
 
         let fetched =
-            (try? await FFIExecutor.run {
+            (try? await FFIExecutor.run { [needsPicture, needsNpub] in
                 (
                     pictures: needsPicture.reduce(into: [String: String]()) { result, hex in
                         result[hex] = (try? client.userProfile(accountIdHex: hex))?.picture?.nilIfBlank
