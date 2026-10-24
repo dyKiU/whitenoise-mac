@@ -7,7 +7,7 @@ import Testing
 /// Rendering, voting, and composing kind-1068 polls from MDK's projected tally.
 @MainActor
 struct PollTests {
-    private static let pollKind: UInt64 = 1068
+    nonisolated private static let pollKind: UInt64 = 1068
 
     private static func poll(
         kind: MessagePoll.Kind = .singleChoice,

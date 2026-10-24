@@ -11,7 +11,7 @@ import Testing
 struct MessageReactionsTests: WorkspaceTestSupport {
     private typealias Presentation = MessageReactionDetailsPresentation
 
-    private static let target = String(repeating: "a", count: 64)
+    nonisolated private static let target = String(repeating: "a", count: 64)
 
     private static func account(_ byte: Int) -> String {
         String(repeating: String(format: "%02x", byte), count: 32)

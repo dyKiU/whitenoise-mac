@@ -13,7 +13,7 @@ import Testing
 
 @MainActor
 struct DirectChatChooserTests {
-    private static let peer = String(repeating: "b", count: 64)
+    nonisolated private static let peer = String(repeating: "b", count: 64)
     private static let other = String(repeating: "c", count: 64)
 
     private static func chat(
